@@ -6,3 +6,5 @@ build
 *~
 *.egg-info
 *png
+/calibration_30min
+/calibration_models
