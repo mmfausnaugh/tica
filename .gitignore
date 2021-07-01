@@ -8,3 +8,6 @@ build
 *png
 /calibration_30min
 /calibration_models
+/calibration_02min
+/calibration_10min
+/calibration_20sec
