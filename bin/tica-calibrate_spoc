@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+
+sector=$1
+
+#make in list for tica
+for i in 1 2 3 4; do
+    for j in 1 2 3 4; do
+	mkdir cam${i}_ccd${j}
+	cd cam${i}_ccd${j}
+	ls /pdo/spoc-data/sector-${sector}/ffis/tess*-${i}-${j}-*ffir*fits* > inlist
+	cd ..
+    done
+done
+
+#run tica
+for i in 1 2 3 4; do    
+    for j in 1 2 3 4; do
+	cd cam${i}_ccd${j}
+	python ~/python/tica/bin/tica-cal-ccd2ccd inlist --outdir . --caldir ~/python/tica/calibration_10min --parallel --log ../tica.log
+	cd ..
+    done
+done
+

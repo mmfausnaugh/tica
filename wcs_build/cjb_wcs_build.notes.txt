@@ -1,0 +1,95 @@
+wcs_build - Add WCS info to TESS images
+Assumes the images have been broken down into the camera/ccd combo,
+such that there are 16 sets of FFI images
+
+Python package depencies
+gwcs - This means you need a recent python >=3.5
+tess-point - >0.5.0  (this is when 'analytic' reverse pixel->ra&dec was added)
+photutils
+Usual other packages numpy astropy h5py etc.
+There is some debugging that can use pyds9, but it is not needed unless you want to dig in the weeds.
+
+There are 3 steps for adding WCS
+Step 0. Choose a frame to act as reference image.  During the dimmest
+   background away from a momentum dump is a good choice. Anything really
+   works.  Currently there is no software to choose reference image epoch
+   but I have some ideas to make this automated.
+
+Step 1. Choose suitable Control point targets on all the reference images 
+     over the 16 camera/ccd combos.
+     The main function to do this for a single camera/ccd combo is
+     step1_get_refimg_ctrlpts.py
+     This routine uses tess-point reverse function to estimate 
+     ra & dec at the center of the the CTRL_PER_COL x CTRL_PER_ROW
+     sub regions.  A MAST TIC cone search is performed on each subregion
+     to get suitable control point targets over a specified Tmag range.
+     The next phase looks at each proposed control point and to 
+     be included in the fit it needs to be an isolated well behaved
+     profile in col and row determined from the gdPRF_calc routine.
+     Once the list of 'good' targets decided, it performs a wcs fit
+     using gwcs, identifies outliers that are trimmed from the list
+     and then the remaining reference control points for the ref image
+     are written out into a hd5 file.
+
+     It reports the std of the wcs fit residual at the bright and faint
+     end in arcsec.  This is typically <2.4 arcsec at the bright end.
+     DEBUG_LEVEL=2 can turn on some figures which show the control
+     point distribution over detector, and residual of fit plots.
+     DEBUG_LEVEL=3 will look at targets with the largest outliers
+       and actually show you their profiles and image if pyds9 is working
+       so you can try and see why it is such an outlier to try 
+       and tweak criteria for excluding it.
+
+     The bottleneck are the MAST TIC cone searches.  So this could potentially
+     be sped up with interal TIC queries.  I tested parallelizing, but
+     the MAST TIC calls result in no savings.  Thus, they are run in serial.
+
+     Shell script step1_allcam_allccd.sh 
+     can be edited to do all 16 camera/ccd combos for you in serial.
+     
+
+Step 2. Main Event.
+     Use the ref image control points to fit wcs over a stack of images.
+     For each image subregion a first order translation is determined
+      from the nTry brightest stars.  Then all targets are evaluated
+     again for having well-behaved isolated profiles using gdPRF_calc.
+     As scattered light creeps in some stars are dropped as they
+     no longer have a contrast above the background set in gdPRF_calc.
+     If a star fails gdPRF_calc its position is set to the reference image
+     position plus the first order translation for sub region.  This way
+     we can continue to do high order wcs fits as scattered light becomes
+     strong.  We can even get 'wcs' in a completely obliterated detector
+     as it will just revert to the reference image.  Not sure what the purpose
+     is, but it keeps a nice stable fit through crappy data.
+
+     The wcs and its inverse from gwcs are converted to the FITS SIP distortion
+     standard.  Currently I am not saving the wcs header information in the
+     images.  I am creating a standalone fits file which has the wcs header
+     along with a fits table extension that gives the flux-weighted 
+     col and row for each reference star along with whether it passed gdPRF.
+     Diagnostics of the wcs fit residuals are also stored in the fits header.
+     I would strongly encourage to add these wcs fits diagnostics and the 
+     extension table into the actual data when we get to that stage.
+     This allows the end user to have another criteria for when the data
+     wcs is getting dicey from scattered light.  Provides a nice list
+     of targets and where they are for test data analysis.  Also,
+     could be used to try a more time consuming prf fitting down the road
+     and they have excellent starting positions already available.  Plus,
+     they can help spot wcs issues or perform their own functional form.
+
+     The actual code to fit wcs on an orbit or sector stack of images
+     is step2_mkwcs.py.
+     I use GNU parallel in step2_allcam_allccd.sh to launch 16 jobs
+     to perform the fitting.
+     If you're having trouble with getting the command to work with 
+     GNUparallel to call the command correctly, you can replace 
+    '--results mkwcs' with  'echo'
+      between parallel and python in the script and it will print
+      the command out rather than executing it.
+     Note: --results mkwcs in the parallel call will
+      store stdout from routines to a directory structure under mkwcs
+      This directory structure is hard to cd into last directory
+      because of " third input.  I need to figure a better way of
+     quoting with parallel
+
+

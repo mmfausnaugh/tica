@@ -1,0 +1,78 @@
+#!/usr/bin/env python
+import scipy as sp
+from astropy.io import fits
+import sys
+sys.path.insert(0,'/pcds/users/faus/tica/')
+from tica.tica import *
+import glob
+from astropy.table import Table
+
+cal_dir = sys.argv[1]
+
+#assme all cam ffi files in one place
+ifiles = glob.glob('*')
+
+#4 CCDs per cam, 4 sectors per CCD
+times_out      = sp.zeros(len(ifiles)*16)
+ccd_out        = sp.zeros(len(ifiles)*16)
+sector_out     = sp.array(['']*len(ifiles)*16)
+mean_out       = sp.zeros(len(ifiles)*16)
+std_out        = sp.zeros(len(ifiles)*16)
+mean_cal_out   = sp.zeros(len(ifiles)*16)
+std_cal_out    = sp.zeros(len(ifiles)*16)
+correction_out = sp.zeros(len(ifiles)*16)
+
+for ii,ifile in enumerate(ifiles):
+    if 'txt' in ifile or 'csv' in ifile:
+        continue
+    if 'profile' in ifile:
+        continue
+
+    print(ifile)
+    im = FFI_File(ifile, 
+                  calibration=Calibration(calibration_dir = cal_dir), 
+                  outdir = '.')    
+
+    for jj,ccd in enumerate(im.CCDs):
+        label, mean, std = ccd.report('overclock',save=False,plot = False)
+        times_out[ ii*16 + 4*jj : ii*16 + 4*(jj+1)] = im.header['STARTTJD']
+        ccd_out[   ii*16 + 4*jj : ii*16 + 4*(jj+1)] = ccd.ccdnum
+        sector_out[ii*16 + 4*jj : ii*16 + 4*(jj+1)] = label
+        mean_out[  ii*16 + 4*jj : ii*16 + 4*(jj+1)] = mean
+        std_out[   ii*16 + 4*jj : ii*16 + 4*(jj+1)] = std
+        
+        cal_overclock = ccd.overclock_correct()
+        for kk in range(4):
+            s1 = ccd.sectors[kk]
+            s2 = cal_overclock.sectors[kk]
+            correct = sp.unique(s1.overclock - s2.overclock)
+            correction_out[ii*16 + 4*jj + kk] = correct
+
+
+
+    for jj,ccd in enumerate(im.calibrated_CCDs):
+        label, mean, std = ccd.report('overclock',save=False, plot = False)
+        mean_cal_out[ii*16 + 4*jj : ii*16 + 4*(jj+1)] = mean
+        std_cal_out[ ii*16 + 4*jj : ii*16 + 4*(jj+1)] = std
+
+
+t = Table(sp.c_[times_out,
+                ccd_out,        
+                sector_out,     
+                mean_out,       
+                std_out,        
+                mean_cal_out,   
+                std_cal_out,    
+                correction_out],
+          names=('Time','ccd','sector','mean','std','mean_cal','std_cal','correct'))
+
+t.write('test_stats.csv',overwrite=True)
+#print(sp.c_[times_out,
+#            ccd_out,        
+#            sector_out,     
+#            mean_out,       
+#            std_out,        
+#            mean_cal_out,   
+#            std_cal_out,    
+#            correction_out])
+

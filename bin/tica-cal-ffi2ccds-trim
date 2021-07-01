@@ -1,0 +1,102 @@
+#!/usr/bin/env python
+#
+# Copyright (C) 2017 - Massachusetts Institute of Technology (MIT)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+
+import sys
+import os.path
+import scipy as sp
+import matplotlib.pyplot as plt
+import argparse
+import logging
+from multiprocessing import Pool
+from time import time
+
+DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(DIR, '..'))
+
+import scipy as sp
+import matplotlib.pyplot as plt
+
+import tica
+from tica.tica import Calibration, Sector, CCD, CCD_File, FFI_File
+
+#def worker(filename, calibration=None, outdir="."):
+def worker( in_tuple ):
+    filename = in_tuple[0]
+    outdir = in_tuple[1]
+
+    #it knows about calibration as a global variable...very yucky...
+    im = FFI_File(filename, calibration=calibration, outdir=outdir)
+    im.write_calibrated_trimmed_CCDs()
+
+if __name__ == "__main__":
+
+    parser = argparse.ArgumentParser(prog='tica', description="Calibrate FITS files")
+    parser.add_argument("fileinputs", metavar="FILES", help="file containing list of FITS files to process")
+    parser.add_argument("--outdir", metavar="DIRECTORY", help="directory in which to place the results")
+    parser.add_argument("--caldir", metavar="DIRECTORY", default=None,
+                        help="calibration directory")
+    parser.add_argument("--version", action="version", version="tica %s" % tica.__version__)
+    parser.add_argument("--parallel", action="store_true", help="run files in parallel")
+    parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
+    parser.add_argument("-l", "--log", metavar="LOG_FILE", help="log file")
+
+    args = parser.parse_args()
+
+    # setup logging
+    tica.setup_logging(debug=args.debug, filename=args.log)
+    logger = logging.getLogger(__name__)
+
+    if args.outdir:
+        outdir=args.outdir
+    else:
+        outdir="."  # if outdir is not set, default to current directory
+
+    try:
+        inlist = sp.genfromtxt(args.fileinputs, dtype=str)
+    except IOError:
+        logger.error("input file not found: %s" % args.fileinputs)
+        sys.exit(1)
+
+    # setup calibration object before processing files so it is done just once
+    if args.caldir:
+        print args.caldir
+        calibration = Calibration(calibration_dir=args.caldir)
+    else:
+        calibration = None
+
+    if calibration is None:
+        logger.error("No calibration dir specified.  You must choose"
+                     "calibration models appropriate for the exposure time")
+        sys.exit(1)
+
+
+    starttime = time()
+
+    if args.parallel:
+        p = Pool()
+        for filename in inlist:
+            p.apply_async(worker, ( (filename, outdir), ) )
+        p.close()
+        p.join()
+    else:
+        for filename in inlist:
+            worker( (filename, outdir))
+    runtime = time() - starttime
+
+    print "Runtime: {0:.2f}sec".format(runtime), "parallel" if args.parallel else "single" 
+

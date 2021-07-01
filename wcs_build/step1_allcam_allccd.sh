@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+
+#SECTOR=27
+#REFFIN=00116500
+SECTOR=$1
+REFFIN=$2
+
+#dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
+dstem="/data/tess1/image_sub/""sector$SECTOR""/"
+
+# TICA
+#REF_IMG_TEMPLATE="
+#/pdo/users/faus/test_tica_wcs/s27/tso/cam!_ccd%/tess2020201040111-00116500-!-crm-ffi_ccd%.cal.fits"
+# OUTPUT_REFS will also use the replacement construct
+if [ -d "$dstem""refout" ]; then
+   echo "refout exists"
+else
+    mkdir "$dstem""refout"
+fi
+
+
+DEBUGIT=2
+
+for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
+  for ((jCcd = 1; jCcd <=4 ; jCcd++)); do
+      USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)
+      USE_OUT="$dstem""refout/reftica_s$SECTOR""_$iCam""-$jCcd"".h5"
+
+      echo ${USE_REF}
+      echo ${USE_OUT}
+      
+      if [ -e $USE_OUT ]; then
+	  echo "skipping $USE_OUT; already exists"
+	  continue
+      fi
+
+      python "/pdo/users/faus/python/tica/wcs_build/"step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT}
+  done
+done
