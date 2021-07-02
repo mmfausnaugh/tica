@@ -1,0 +1,5 @@
+outs:
+- md5: ec984351b1b21b29b675e4a5d2ae2ca8.dir
+  size: 5966298238
+  nfiles: 150
+  path: flat_combine

@@ -1,0 +1,5 @@
+outs:
+- md5: 0bb2df47b3862d0facd1eefe04e3a738.dir
+  size: 1138731890
+  nfiles: 65
+  path: twodbias_20s

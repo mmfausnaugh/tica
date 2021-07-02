@@ -1,0 +1,5 @@
+outs:
+- md5: 7a7db7cbae58ab19317024a3c61cbf27.dir
+  size: 568258560
+  nfiles: 32
+  path: raw_twodbias
