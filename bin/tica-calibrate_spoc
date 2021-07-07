@@ -1,16 +1,18 @@
 #!/usr/bin/env bash
 
-sector=$1
+#as an example:  /pdo/spoc-data/sector-${sector}/ffis/
+input_dir=$1
 
 #make in list for tica
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
 	mkdir cam${i}_ccd${j}
 	cd cam${i}_ccd${j}
-	ls /pdo/spoc-data/sector-${sector}/ffis/tess*-${i}-${j}-*ffir*fits* > inlist
+	ls ${input_dir}/tess*-${i}-${j}-*ffir*fits* > inlist
 	cd ..
     done
 done
+
 
 #run tica
 for i in 1 2 3 4; do    
