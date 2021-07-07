@@ -22,11 +22,10 @@ Most by MMF, Aug/Sept 2017
 order is additive then multiplicative, for the expected data (I think)
 """
 
-import scipy as sp
+import numpy as np
 import os.path
 import sys
 import logging
-from scipy.stats import sigmaclip
 from matplotlib.ticker import FormatStrFormatter
 import matplotlib.pyplot as plt
 plt.rcParams['xtick.labelsize']='smaller'
@@ -38,8 +37,6 @@ from astropy.table import Table
 import datetime
 
 fstem = os.path.abspath(os.path.dirname(__file__) + '/../')
-#print(fstem.split('/')[0:-1])
-#fstem = os.path.join(fstem.split('/')[0:-1])
 with open(os.path.join(fstem, 'VERSION'),'r') as infile:
     version = infile.read()
 
@@ -48,7 +45,7 @@ with open(os.path.join(fstem, 'VERSION'),'r') as infile:
 def sum_frames(framelist):
     #    for f in framelist:  f.reassemble()
     imarray = [ frame.full_image for frame in framelist ] 
-    sumframe = sp.sum(imarray, axis = 0)
+    sumframe = np.sum(imarray, axis = 0)
     return FitsFrame(sumframe)
 
 def subtract_frames(frame1, frame2):
@@ -60,13 +57,13 @@ def subtract_frames(frame1, frame2):
 def mean_frames(framelist):
     #    for f in framelist:  f.reassemble()
     imarray = [ frame.full_image for frame in framelist ] 
-    meanframe = sp.mean( imarray, axis=0)
+    meanframe = np.mean( imarray, axis=0)
     return FitsFrame(meanframe)        
 
 def median_frames(framelist):
     #    for f in framelist:  f.reassemble()
     imarray = [ frame.full_image for frame in framelist ]  
-    medianframe = sp.median( imarray,axis=0)
+    medianframe = np.median( imarray,axis=0)
     return FitsFrame(medianframe)        
 
 
@@ -94,10 +91,10 @@ class Sector(object):
             else:
                 new = duse[ iuse : iuse + ncombine , :]
                     
-            rebin.append(sp.mean(new,axis=axis))
+            rebin.append(np.mean(new,axis=axis))
             iuse += ncombine
 
-        if sp.shape(rebin)[0] == 1:
+        if np.shape(rebin)[0] == 1:
             return rebin[0]
         else:
             return rebin        
@@ -116,7 +113,7 @@ class Calibration(object):
             with fits.open(fits_file) as fits_handle:
                 return fits_handle[0].data
         else:
-            logger.debug("FITS calibration file not found: %s", fits_file)
+            logger.debug("FITS calibration file not found: {}".format( fits_file ) )
             return None
 
     def __init__(self, calibration_dir=None):
@@ -214,7 +211,7 @@ class CCD(object):
         B = Sector(self.arr[:, 11:22], self.arr[:, 556:1068],  self.arr[:, 2103:2114])
         C = Sector(self.arr[:, 22:33], self.arr[:, 1068:1580], self.arr[:, 2114:2125])
         D = Sector(self.arr[:, 33:44], self.arr[:, 1580:2092], self.arr[:, 2125:2136])
-        self.sectors = sp.asarray([A, B, C, D])
+        self.sectors = np.asarray([A, B, C, D])
 
         self.gains = {'A':1.0,'B':1.0,'C':1.0,'D':1.0}
         #params for linearity correction
@@ -231,7 +228,7 @@ class CCD(object):
         """Returns a ndarry of the science pixels
         Expected to be used when using tica in 'library' mode
         """
-        return sp.c_[
+        return np.c_[
             self.sectors[0].science,
             self.sectors[1].science,
             self.sectors[2].science,
@@ -241,7 +238,7 @@ class CCD(object):
         """Return a 2d array of overclock pixels
         Expected to be used when using tica in 'library' mode
         """
-        return sp.c_[
+        return np.c_[
             self.sectors[0].overclock,
             self.sectors[1].overclock,
             self.sectors[2].overclock,
@@ -256,7 +253,7 @@ class CCD(object):
         B = self.sectors[1]
         C = self.sectors[2]
         D = self.sectors[3]
-        return sp.c_[  A.underclock, B.underclock, C.underclock, D.underclock,
+        return np.c_[  A.underclock, B.underclock, C.underclock, D.underclock,
                        A.science, B.science,  C.science,  D.science,
                        A.overclock,   B.overclock,    C.overclock,   D.overclock   ]
 
@@ -324,12 +321,12 @@ class CCD(object):
         return out/caldata
 
     def smear_correct(self, out):
-        #smear = sp.mean( out[2061:2068 ,:] ,axis=0)
-        smear = sp.median( out[2061:2068 ,:] ,axis=0)
+        #smear = np.mean( out[2061:2068 ,:] ,axis=0)
+        smear = np.median( out[2061:2068 ,:] ,axis=0)
 
         #weighted mean.  remeber that error = sqrt(cts),
         #but weights = 1/error^2 = 1/cts
-        #smear = 1./sp.sum( (1./out[2061:2069 ,:]) ,axis=0)
+        #smear = 1./np.sum( (1./out[2061:2069 ,:]) ,axis=0)
         return out - smear
     
     def overclock_correct(self):
@@ -348,9 +345,9 @@ class CCD(object):
         mask_col = slice(3,  None)
         mask_row = slice(750,None)
 
-        cal = CCD(sp.zeros((2078,2136)))
+        cal = CCD(np.zeros((2078,2136)))
         for i in range(len(self.sectors)):
-            correct = sp.mean(self.sectors[i].overclock[mask_row, mask_col] )
+            correct = np.mean(self.sectors[i].overclock[mask_row, mask_col] )
             cal.sectors[i].underclock = self.sectors[i].underclock - correct
             cal.sectors[i].science      = self.sectors[i].science - correct
             cal.sectors[i].overclock   = self.sectors[i].overclock - correct
@@ -369,7 +366,7 @@ class CCD(object):
         you can't be bit by state changes....  consider changing
 
         """
-        guse = sp.asarray([self.gains['A'], self.gains['B'], self.gains['C'], self.gains['D'] ])
+        guse = np.asarray([self.gains['A'], self.gains['B'], self.gains['C'], self.gains['D'] ])
         for i,s in enumerate(out.sectors):
             s.underclock *= guse[i]
             s.science *= guse[i]
@@ -396,10 +393,10 @@ class CCD(object):
         you can't be bit by state changes....  consider changing
 
         """
-        gplus  = sp.asarray([self.gplus['A'],  self.gplus['B'],  self.gplus['C'],  self.gplus['D'] ])
-        gminus = sp.asarray([self.gminus['A'], self.gminus['B'], self.gminus['C'], self.gminus['D']])
+        gplus  = np.asarray([self.gplus['A'],  self.gplus['B'],  self.gplus['C'],  self.gplus['D'] ])
+        gminus = np.asarray([self.gminus['A'], self.gminus['B'], self.gminus['C'], self.gminus['D']])
         for i,s in enumerate(out.sectors):
-#            print self.camnum, self.ccdnum, i,  gplus[i],gminus[i], sp.mean(( (1 + s.science/720.0*gplus[i])*(1 - s.science/720.0*gminus[i]) ))
+#            print self.camnum, self.ccdnum, i,  gplus[i],gminus[i], np.mean(( (1 + s.science/720.0*gplus[i])*(1 - s.science/720.0*gminus[i]) ))
             s.science = s.science/( (1 + s.science/720.0/0.99*gplus[i])*(1 - s.science/720.0/0.99*gminus[i]) )
         return out
 
@@ -416,7 +413,7 @@ class CCD(object):
         """
         labels = ['A','B','C','D']
         for i,s in enumerate(out.sectors):
-            #            print self.camnum, self.ccdnum, i,  gplus[i],gminus[i], sp.mean(( (1 + s.science/720.0*gplus[i])*(1 - s.science/720.0*gminus[i]) ))
+            #            print self.camnum, self.ccdnum, i,  gplus[i],gminus[i], np.mean(( (1 + s.science/720.0*gplus[i])*(1 - s.science/720.0*gminus[i]) ))
             s.science = self.spoc_linearity.linearity_correct(s.science, self.camnum, self.ccdnum , labels[i])
         return out
 
@@ -456,7 +453,7 @@ class CCD(object):
                 axes[j][0].plot(  collapsed_rows[j] )
                 axes[j][1].plot(  collapsed_cols[j]  )
                 axes[j][2].hist(
-                    sp.ravel(duse), 50)
+                    np.ravel(duse), 50)
 
                 #                axes[j][0].set_xlim([-0.5, 11])
                 #                axes[j][1].set_xlim([-50, 2150])
@@ -509,7 +506,7 @@ class CCD(object):
         ccd_out = []
         for sector in self.sectors:                
             ccd_out.append( sector.rebin(ncombine, axis, region) )
-        return sp.asarray(ccd_out)
+        return np.asarray(ccd_out)
 
 
 
@@ -584,7 +581,7 @@ class CCD_File(CCD):
             print('calibration failed')
 
     def write_calibrate(self):      
-        hdu_out = fits.PrimaryHDU(self.calibrated_frame.get_frame().astype(sp.float32))
+        hdu_out = fits.PrimaryHDU(self.calibrated_frame.get_frame().astype(np.float32))
         for key in self.header.keys():                                                     
             #censor the standard fits headers, which have to be changed.                      
             #Let astropy handle internally                                                    
@@ -630,10 +627,10 @@ class CCD_File(CCD):
             
         # FIXME: should we have a forced override option?
         try:
-            self.logger.info("generating output calibration file: %s" % hdupath)
+            self.logger.info("generating output calibration file: {}".format( hdupath ) )
             hdulist.writeto(hdupath)
         except IOError:
-            self.logger.info("output calibrated file already exists, skipping generation: %s" % hdupath)
+            self.logger.info("output calibrated file already exists, skipping generation: {}".format(hdupath) )
 
             
         
@@ -681,7 +678,7 @@ class FFI(object):
  
 
         self.camnum = None
-        self.CCDs = sp.asarray([ ccd1, ccd2, ccd3, ccd4 ])
+        self.CCDs = np.asarray([ ccd1, ccd2, ccd3, ccd4 ])
         self.logger = logging.getLogger(__name__)
 
 
@@ -690,20 +687,20 @@ class FFI(object):
         ##  B = Sector(self.arr[:, 11:22], self.arr[:2048, 556:1068],  self.arr[:, 2103:2114])
         ##  C = Sector(self.arr[:, 22:33], self.arr[:2048, 1068:1580], self.arr[:, 2114:2125])
         ##  D = Sector(self.arr[:, 33:44], self.arr[:2048, 1580:2092], self.arr[:, 2125:2136])
-        ##  self.sectors = sp.asarray([A, B, C, D])
+        ##  self.sectors = np.asarray([A, B, C, D])
         out = []
         for ccd in CCDlist:
             A = ccd.sectors[0]
             B = ccd.sectors[1]
             C = ccd.sectors[2]
             D = ccd.sectors[3]
-            out.append( sp.c_[  A.underclock, B.underclock, C.underclock, D.underclock,
+            out.append( np.c_[  A.underclock, B.underclock, C.underclock, D.underclock,
                                             A.science, B.science, C.science, D.science,
                                             A.overclock,   B.overclock,    C.overclock,   D.overclock   ])
             
-        return sp.r_[
-            sp.c_[  out[2], out[3] ],
-            sp.c_[  out[1][::-1, ::-1], out[0][::-1, ::-1]  ]
+        return np.r_[
+            np.c_[  out[2], out[3] ],
+            np.c_[  out[1][::-1, ::-1], out[0][::-1, ::-1]  ]
         ]
 
 
@@ -717,7 +714,7 @@ class FFI(object):
         return calibrated_CCDs
 
     def write_frame(self, CCDlist, stem):
-        hdu_out = fits.PrimaryHDU(self.get_frame(CCDlist).astype(sp.float32))
+        hdu_out = fits.PrimaryHDU(self.get_frame(CCDlist).astype(np.float32))
         for key in self.header.keys():                                                     
             #censor the standard fits headers, which have to be changed.                      
             #Let astropy handle internally,  Put in cam latter to be near CCD                                                    
@@ -755,9 +752,9 @@ class FFI(object):
                 
         try:
             hdulist.writeto(hdupath)
-            self.logger.info("generating output calibration file: %s" % hdupath)
+            self.logger.info("generating output calibration file: {}".foramt( hdupath) )
         except IOError:
-            self.logger.info("output calibrated file already exists, skipping generation: %s" % hdupath)
+            self.logger.info("output calibrated file already exists, skipping generation: {}".foramt(  hdupath) )
 
 
 
@@ -804,7 +801,7 @@ class FFI_File(FFI):
 
     def write_CCD_files(self,CCDlist, stem, calibrated=True):
         for i,ccd in enumerate(CCDlist):      
-            hdu_out = fits.PrimaryHDU(ccd.get_frame().astype(sp.float32))
+            hdu_out = fits.PrimaryHDU(ccd.get_frame().astype(np.float32))
             for key in self.header.keys():                                                     
                 #censor the standard fits headers, which have to be changed.                      
                 #Let astropy handle internally,  Put in cam latter to be near CCD                                                    
@@ -852,18 +849,18 @@ class FFI_File(FFI):
                 hdupath = os.path.join(self.outdir, inbasename + '_ccd'+str(i+1) + stem + inext)  # generate new path
 
             try:
-                ccd.logger.info("generating output calibration file: %s" % hdupath)
+                ccd.logger.info("generating output calibration file: {}".format(  hdupath) )
                 hdulist.writeto(hdupath)
             except IOError:
-                ccd.logger.info("output calibrated file already exists, skipping generation: %s" % hdupath)
+                ccd.logger.info("output calibrated file already exists, skipping generation: {}".format( hdupath) )
 
         
 
 
     def write_trimmed_CCD_files(self,CCDlist, stem, calibrated=True):
         for i,ccd in enumerate(CCDlist):      
-#            hdu_out = fits.PrimaryHDU(ccd.get_frame().astype(sp.float32))
-            hdu_out = fits.PrimaryHDU(ccd.get_image().astype(sp.float32)[0:2048,0:2048])
+#            hdu_out = fits.PrimaryHDU(ccd.get_frame().astype(np.float32))
+            hdu_out = fits.PrimaryHDU(ccd.get_image().astype(np.float32)[0:2048,0:2048])
             for key in self.header.keys():                                                     
                 #censor the standard fits headers, which have to be changed.                      
                 #Let astropy handle internally,  Put in cam latter to be near CCD                                                    
@@ -902,9 +899,9 @@ class FFI_File(FFI):
 
             try:
                 hdulist.writeto(hdupath)
-                ccd.logger.info("generating output calibration file: %s" % hdupath)
+                ccd.logger.info("generating output calibration file: {}".format( hdupath) )
             except IOError:
-                ccd.logger.info("output calibrated file already exists, skipping generation: %s" % hdupath)
+                ccd.logger.info("output calibrated file already exists, skipping generation: {}".foramt(  hdupath) )
 
 
 

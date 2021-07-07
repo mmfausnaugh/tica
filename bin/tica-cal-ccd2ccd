@@ -18,7 +18,7 @@
 
 import sys
 import os.path
-import scipy as sp
+import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import logging
@@ -51,7 +51,6 @@ if __name__ == "__main__":
     parser.add_argument("--outdir", metavar="DIRECTORY", help="directory in which to place the results")
     parser.add_argument("--caldir", metavar="DIRECTORY", default=None,
                         help="calibration directory")
-    parser.add_argument("--version", action="version", version="tica %s" % tica.__version__)
     parser.add_argument("--parallel", action="store_true", help="run files in parallel")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
     parser.add_argument("-l", "--log", metavar="LOG_FILE", help="log file")
@@ -68,9 +67,9 @@ if __name__ == "__main__":
         outdir="."  # if outdir is not set, default to current directory
 
     try:
-        inlist = sp.genfromtxt(args.fileinputs, dtype=str)
+        inlist = np.genfromtxt(args.fileinputs, dtype=str)
     except IOError:
-        logger.error("input file not found: %s" % args.fileinputs)
+        logger.error("input file not found: {}".format( args.fileinputs) )
         sys.exit(1)
 
     # setup calibration object before processing files so it is done just once

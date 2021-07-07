@@ -38,10 +38,15 @@ from tica.tica import Calibration, Sector, CCD, CCD_File, FFI_File
 def worker( in_tuple ):
     filename = in_tuple[0]
     outdir = in_tuple[1]
+    trim = in_tuple[2]
 
     #it knows about calibration as a global variable...very yucky...
     im = FFI_File(filename, calibration=calibration, outdir=outdir)
-    im.write_calibrated_CCDs()
+
+    if trim:
+        im.write_calibrated_trimmed_CCDs()
+    else:
+        im.write_calibrated_CCDs()
 
 if __name__ == "__main__":
 
@@ -52,6 +57,7 @@ if __name__ == "__main__":
                         help="calibration directory")
     parser.add_argument("--version", action="version", version="tica %s" % tica.__version__)
     parser.add_argument("--parallel", action="store_true", help="run files in parallel")
+    parser.add_argument("--trim", action="store_true", help="trim calibration pixels from edges")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
     parser.add_argument("-l", "--log", metavar="LOG_FILE", help="log file")
 
@@ -89,12 +95,12 @@ if __name__ == "__main__":
     if args.parallel:
         p = Pool(16)
         for filename in inlist:
-            p.apply_async(worker, ( (filename, outdir), ) )
+            p.apply_async(worker, ( (filename, outdir, args.trim), ) )
         p.close()
         p.join()
     else:
         for filename in inlist:
-            worker( (filename,  outdir))
+            worker( (filename,  outdir, args.trim))
     runtime = time() - starttime
 
     print("Runtime: {0:.2f}sec".format(runtime), "parallel" if args.parallel else "single") 

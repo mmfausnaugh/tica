@@ -13,7 +13,6 @@ setup(
                                     'btjd']),
     scripts=['bin/tica-cal-ccd2ccd', 
              'bin/tica-cal-ffi2ccds',
-             'bin/tica-cal-ffi2ccds-trim',
              'bin/tica-cal-ffi2ffi', 
              'bin/tica-ccd-report',  
              'bin/tica-ffi2ccds',

@@ -14,7 +14,6 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-__version__ = '0.3'
 __package__ = "tica"
 __author__ = 'Michael Fausnaugh'
 
@@ -24,13 +23,17 @@ import locale
 import sys
 import os.path
 
+fstem = os.path.abspath(os.path.dirname(__file__) + '/../')
+with open(os.path.join(fstem, 'VERSION'),'r') as infile:
+    version = infile.read()
+
 def platform_info():
     lines = []
-    lines.append('TICA: %s' % __version__)
-    lines.append('Python: %s' % sys.version.replace('\n', ' '))
-    lines.append('Host: %s' % platform.node())
-    lines.append('Platform: %s' % platform.platform())
-    lines.append('Locale: %s' % locale.setlocale(locale.LC_ALL))
+    lines.append('TICA: {}'.format(version) )
+    lines.append('Python: {}'.format( sys.version.replace('\n', ' ') )
+    lines.append('Host: {}'.format( platform.node() )
+    lines.append('Platform: {}'.format( platform.platform())
+    lines.append('Locale: {}'.format( locale.setlocale(locale.LC_ALL))
     return lines
 
 def setup_logging(debug=False, filename=None):
