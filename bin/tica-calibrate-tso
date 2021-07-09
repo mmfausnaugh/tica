@@ -5,6 +5,11 @@ o2=$2
 #directory where data are; assume that subdirs are
 #orbit-${o1}/ffi_fits and same for o2
 dstem=$3
+#~/python/tica/calibration_10min
+
+#consider logic like this for setting CALDIR
+#[[ -z "${DEPLOY_ENV}" ]] && MyVar='default' || MyVar="${DEPLOY_ENV}"
+CALDIR=$4
 
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
@@ -40,7 +45,7 @@ done
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
 #    python ~/python/tica/bin/tica-cal-ffi2ccds inlist --outdir . --caldir ~/python/tica/calibration --parallel --log ../tica.log
-    tica-cal-ffi2ccds inlist --outdir . --caldir ~/python/tica/calibration_10min --parallel --log ../tica.log
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel --log ../tica.log
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done
