@@ -24,7 +24,7 @@ dstem="/data/tess1/image_sub/""sector$SECTOR""/"
 
 for i in 1 2 3 4; do 
     for j in 1 2 3 4; do
-	python /pdo/users/faus/python/tica/wcs_build/step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT &
+	wcs_build/step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT &
     done
 done
 
