@@ -18,7 +18,7 @@ done
 for i in 1 2 3 4; do    
     for j in 1 2 3 4; do
 	cd cam${i}_ccd${j}
-	python ~/python/tica/bin/tica-cal-ccd2ccd inlist --outdir . --caldir ~/python/tica/calibration_10min --parallel --log ../tica.log
+	tica-cal-ccd2ccd inlist --outdir . --caldir ~/python/tica/calibration_10min --parallel --log ../tica.log
 	cd ..
     done
 done

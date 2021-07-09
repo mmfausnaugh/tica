@@ -19,24 +19,21 @@ setup(
              'bin/tica-ccds2ffi',
              'bin/tica-trim_ccds2ffi',
 
-             'bin/tica-calibrate_spoc',
-             'bin/tica-calibrate_tso',
-             'bin/tica-step1_allcam_allccd.sh',
-             'bin/tica-step2_allcam_allccd.sh'
+             'bin/tica-calibrate-spoc',
+             'bin/tica-calibrate-tso',
+             'bin/tica-wcs-step1-allcam-allccd',
+             'bin/tica-wcs-step2-allcam-allccd',
+
+             'wcs_build/step1_get_refimg_ctrlpts.py',
+             'wcs_build/step2_mkwcs.py',
+
          ],
     install_requires=[
         'numpy',
         'scipy',
         'astropy',
         'matplotlib',
-        'os',
-        'sys',
-        'glob',
         'logging',
-        'multiprocessing',
-        'argparse',
-        'datetime',
-        'time',
 
 )    
 

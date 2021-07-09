@@ -7,16 +7,17 @@ SECTOR=$1
 REFFIN=$2
 
 #dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
-dstem="/data/tess1/image_sub/""sector$SECTOR""/"
+#this is the output directory
+dstem=$3
 
 # TICA
 #REF_IMG_TEMPLATE="
 #/pdo/users/faus/test_tica_wcs/s27/tso/cam!_ccd%/tess2020201040111-00116500-!-crm-ffi_ccd%.cal.fits"
 # OUTPUT_REFS will also use the replacement construct
-if [ -d "$dstem""refout" ]; then
+if [ -d "$dstem""/refout" ]; then
    echo "refout exists"
 else
-    mkdir "$dstem""refout"
+    mkdir "$dstem""/refout"
 fi
 
 
@@ -35,6 +36,7 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
 	  continue
       fi
 
-      python "/pdo/users/faus/python/tica/wcs_build/"step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT}
+      #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
+      python step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT}
   done
 done
