@@ -17,7 +17,7 @@ setup(
              'bin/tica-ccd-report',  
              'bin/tica-ffi2ccds',
              'bin/tica-ccds2ffi',
-             'bin/tica-trim_ccds2ffi',
+             'bin/tica-trim-ccds2ffi',
 
              'bin/tica-calibrate-spoc',
              'bin/tica-calibrate-tso',
@@ -33,7 +33,8 @@ setup(
         'scipy',
         'astropy',
         'matplotlib',
-        'logging',
+        'logging'
+        ]
 
 )    
 
