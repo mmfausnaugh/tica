@@ -30,10 +30,10 @@ with open(os.path.join(fstem, 'VERSION'),'r') as infile:
 def platform_info():
     lines = []
     lines.append('TICA: {}'.format(version) )
-    lines.append('Python: {}'.format( sys.version.replace('\n', ' ') )
-    lines.append('Host: {}'.format( platform.node() )
-    lines.append('Platform: {}'.format( platform.platform())
-    lines.append('Locale: {}'.format( locale.setlocale(locale.LC_ALL))
+    lines.append('Python: {}'.format( sys.version.replace('\n', ' ') ))
+    lines.append('Host: {}'.format( platform.node() ) )
+    lines.append('Platform: {}'.format( platform.platform()) )
+    lines.append('Locale: {}'.format( locale.setlocale(locale.LC_ALL)) )
     return lines
 
 def setup_logging(debug=False, filename=None):
