@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(prog='tica', description="Calibrate FITS files")
     parser.add_argument("fileinputs", metavar="FILES", help="file containing list of FITS files to process")
     parser.add_argument("--outdir", metavar="DIRECTORY", help="directory in which to place the results")
-    parser.add_argument("--version", action="version", version="tica %s" % tica.__version__)
+    parser.add_argument("--version", action="version", version="tica %s" % tica.version)
     parser.add_argument("--parallel", action="store_true", help="run files in parallel")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
     parser.add_argument("-l", "--log", metavar="LOG_FILE", help="log file")

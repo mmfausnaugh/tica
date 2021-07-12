@@ -75,7 +75,7 @@ if __name__ == "__main__":
     parser.add_argument("f4")
     parser.add_argument("--outdir", metavar="DIRECTORY", help="directory in which to place the results")
     parser.add_argument("--outfile", help="output file name")
-    parser.add_argument("--version", action="version", version="tica %s" % tica.__version__)
+    parser.add_argument("--version", action="version", version="tica %s" % tica.version)
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
     parser.add_argument("-l", "--log", metavar="LOG_FILE", help="log file")
 

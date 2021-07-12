@@ -28,8 +28,6 @@ from time import time
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
 
-import scipy as sp
-import matplotlib.pyplot as plt
 
 import tica
 from tica.tica import Calibration, Sector, CCD, CCD_File

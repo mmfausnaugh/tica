@@ -18,7 +18,7 @@
 
 import sys
 import os.path
-import scipy as sp
+import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import logging
@@ -26,7 +26,6 @@ from multiprocessing import Pool
 from time import time
 
 DIR = os.path.abspath(os.path.dirname(__file__))
-print(DIR)
 sys.path.insert(0, os.path.join(DIR, '..'))
 
 import scipy as sp
@@ -74,14 +73,13 @@ if __name__ == "__main__":
         outdir="."  # if outdir is not set, default to current directory
 
     try:
-        inlist = sp.genfromtxt(args.fileinputs, dtype=str)
+        inlist = np.genfromtxt(args.fileinputs, dtype=str)
     except IOError:
         logger.error("input file not found: %s" % args.fileinputs)
         sys.exit(1)
 
     # setup calibration object before processing files so it is done just once
     if args.caldir:
-        print(args.caldir)
         calibration = Calibration(calibration_dir=args.caldir)
     else:
         calibration = None

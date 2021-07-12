@@ -1,5 +1,27 @@
 #!/usr/bin/env bash
 
+# sets up directories for output of tica-cal-ffi2ccds.  
+#     The user sets the location of the data, which should be
+#     uncalibrated FFIs from the full camera.  Currently, these 
+#     are not public, and so this is closely set to the structure 
+#    of the POC filesystem.
+#  
+#    User also should set the calibration directory, either in an 
+#    environment variable or as a command line argument.
+
+
+usage() {
+    cat <<EOF
+  Sets up directories for output of tica-cal-ffi2ccds, and runs
+   that python script.
+
+  Requires CALDIR, location of data, and which orbits (that is specific to
+   poc filesystem, for us in TSO). 
+
+EOF
+exit
+}
+
 o1=$1
 o2=$2
 #directory where data are; assume that subdirs are
@@ -10,6 +32,7 @@ dstem=$3
 #consider logic like this for setting CALDIR
 #[[ -z "${DEPLOY_ENV}" ]] && MyVar='default' || MyVar="${DEPLOY_ENV}"
 CALDIR=$4
+
 
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
