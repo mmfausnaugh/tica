@@ -109,7 +109,8 @@ def binmedian(xdata, ydata, nBins=30, xmin=None, xmax=None, showDetail=False):
         
     return medata, midx, mndata, stddata, maddata, iargs, ndata
 
-
+# NOTE*** CJB 2021-07 Recommend removing inverse_wcs_from_points function as it is no longer
+#  correct
 def inverse_wcs_from_points(xy, world_coordinates, fiducial, degree=4):
     x, y = xy
     lon, lat = world_coordinates
@@ -129,6 +130,63 @@ def inverse_wcs_from_points(xy, world_coordinates, fiducial, degree=4):
     pipeline = [(skyframe, transform), \
                 (detector, None)]
     return WCS_gwcs(pipeline)
+
+def inverse_wcs_transform(hdr, ras, decs):
+    # does the inverse transform of going from ra&dec -> col, row pixel coordinates
+    #  uses the header wcs coefficients directly rather than numerical inversion.
+    fitDegree = hdr['AP_ORDER']
+    
+    # Get the cd matrix
+    # Convert columns and rows into the 
+    raproj = hdr['CRVAL1']
+    decproj = hdr['CRVAL2']
+    c11 = hdr['CD1_1'] 
+    c12 = hdr['CD1_2'] 
+    c21 = hdr['CD2_1'] 
+    c22 = hdr['CD2_2'] 
+    proj_point = SkyCoord(raproj, decproj, frame = 'icrs', unit=(u.deg, u.deg))
+    # Setup a transformation pipeline that will take ra and dec
+    #  do a sky rotation to be centered on CRVALs
+    # do a TAN projection to the 'intermediate world coordinates' of Shupe
+    # finally do matrix multiply of inverse CDmatrix to get to 
+    # U,V of corrected pixel coordinates
+    skyrot = models.RotateCelestial2Native(proj_point.data.lon, proj_point.data.lat, 180.0*u.deg)
+    projection=projections.Sky2Pix_TAN()
+    # Get the inverse of the cd matrix from wcs
+    cdmat = np.array([[c11,c12],[c21,c22]])
+    inv_cdmat = np.linalg.inv(cdmat)
+    matrix_tran = projections.AffineTransformation2D(matrix=inv_cdmat)
+    trans = (skyrot | projection | matrix_tran)
+    projection_U, projection_V = trans(ras, decs)
+    # now apply the SIP distortion polynomial
+    cols = np.zeros_like(ras)
+    rows = np.zeros_like(decs)
+    cols = projection_U
+    rows = projection_V
+#    cnt = 0
+    for i in range(1,fitDegree+1):
+        j = 0
+        while j+i <=fitDegree:
+            Ap = hdr['AP_{0:d}_{1:d}'.format(i,j)]
+            cols = cols + Ap * np.power(projection_U,i)*np.power(projection_V,j)
+            Bp = hdr['BP_{0:d}_{1:d}'.format(i,j)]
+            rows = rows + Bp * np.power(projection_U,i)*np.power(projection_V,j)
+#            print(i,j)
+            j = j + 1
+#            cnt = cnt + 1
+    for j in range(1,fitDegree+1):
+        i = 0
+#        while (i<j) and (j+i<=fitDegree) :
+        Ap = hdr['AP_{0:d}_{1:d}'.format(i,j)]
+        cols = cols + Ap * np.power(projection_U,i) * np.power(projection_V,j)
+        Bp = hdr['BP_{0:d}_{1:d}'.format(i,j)]
+        rows = rows + Bp * np.power(projection_U,i) * np.power(projection_V,j)
+#        print(i,j)
+        i = i + 1
+#        cnt = cnt + 1
+#    print(cnt)
+    return cols, rows
+
     
 def fit_wcs(ras, decs, cols, rows, tmags, \
             blkidxs=None, NCOL=None, \
@@ -231,6 +289,8 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     hdr['CRVAL2'] = decproj
     hdr['A_ORDER'] = fitDegree
     hdr['B_ORDER'] = fitDegree
+    hdr['AP_ORDER'] = fitDegree
+    hdr['BP_ORDER'] = fitDegree
         
     # Get the transformation matrix terms
     # polynomial fit object in x (col)
@@ -256,6 +316,11 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     ac = atmp*c
     ACoeffs = np.zeros((fitDegree+1,fitDegree+1), dtype=np.double)
     BCoeffs = np.zeros((fitDegree+1,fitDegree+1), dtype=np.double)
+    # NOTE CJB in hindsight for loop over i and loop over j below
+    #  sets some of the terms multiple times. For example
+    #  A_1_1 is set multipletimes. This does no harm, but
+    #  being inefficient and maybe confusing for someone debugging
+    # down the line.
     for i in range(2,fitDegree+1):
         j = 0
         while j+i <=fitDegree:
@@ -351,59 +416,38 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     lon, lat = radec
     skyrot = models.RotateCelestial2Native(proj_point.data.lon, proj_point.data.lat, 180.0*u.deg)
     projection=projections.Sky2Pix_TAN()
-    trans = (skyrot | projection)
-    projection_x, projection_y = trans(lon, lat)
-    # Here is where we need to fix parameters for the fitting polynomial
+    # invert the cd matrix
     cdmat = np.array([[c11,c12],[c21,c22]])
     inv_cdmat = np.linalg.inv(cdmat)
-    polyx = models.Polynomial2D(fitDegree, c0_0=0.0, c1_0=inv_cdmat[0,0], c0_1=inv_cdmat[0,1])
+    matrix_tran = projections.AffineTransformation2D(matrix=inv_cdmat)
+
+    trans = (skyrot | projection | matrix_tran)
+    projection_x, projection_y = trans(lon, lat)
+    # Here is where we need to fix parameters for the fitting polynomial
+    polyx = models.Polynomial2D(fitDegree, c0_0=0.0)
     polyx.c0_0.fixed = True
-    polyx.c1_0.fixed = True
-    polyx.c0_1.fixed = True
-    polyy = models.Polynomial2D(fitDegree, c0_0=0.0, c1_0=inv_cdmat[1,0], c0_1=inv_cdmat[1,1])
+    polyy = models.Polynomial2D(fitDegree, c0_0=0.0)
     polyy.c0_0.fixed = True
-    polyy.c1_0.fixed = True
-    polyy.c0_1.fixed = True
     fitter = fitting.LevMarLSQFitter()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         poly_proj_x = fitter(polyx, projection_x, projection_y, x)
         poly_proj_y = fitter(polyy, projection_x, projection_y, y)
-    transform = skyrot | projection | models.Mapping((0, 1, 0, 1)) | poly_proj_x & poly_proj_y
+    transform = skyrot | projection | matrix_tran | models.Mapping((0, 1, 0, 1)) | poly_proj_x & poly_proj_y
     skyframe = CelestialFrame(reference_frame=proj_point.frame)
     detector = Frame2D(name="detector")
     pipeline = [(skyframe, transform), \
                 (detector, None)]
     inv_gwcs_obj = WCS_gwcs(pipeline)
-    # Check gwcs inerse
-    #gwcs_pred_ras, gwcs_pred_decs = gwcs_obj(sclObsCols, sclObsRows)
-    #gwcs_pred_cols, gwcs_pred_rows = inv_gwcs_obj(gwcs_pred_ras, gwcs_pred_decs)
-    #plt.plot(sclObsCols, gwcs_pred_cols - sclObsCols, '.')
-    #plt.show()
-    #plt.plot(sclObsRows, gwcs_pred_rows - sclObsRows, '.')
-    #plt.show()
 
     # Convert the polynomial coefficients in to the SIP wcs format
-    # Get the transformation matrix terms
-    # polynomial fit object in x (ra)
-    cx = inv_gwcs_obj.forward_transform[3]
-    # polynomial fit object in y (dec)
-    cy = inv_gwcs_obj.forward_transform[4]
-    c11 = cx.c1_0.value
-    c12 = cx.c0_1.value
-    c21 = cy.c1_0.value
-    c22 = cy.c0_1.value
-    b = c12/c11
-    atmp = 1.0/c11
-    c = c21/c22
-    dtmp = 1.0/c22
-    bc = b*c
-    onembc = 1.0 - bc
-    if np.isclose(onembc, 0.0, rtol=1e-10, atol=1e-12):
-        print('Warning SIP polynomial conversion is ill behaved')
-    ac = atmp*c
-    APCoeffs = np.zeros((fitDegree+1,fitDegree+1), dtype=np.double)
-    BPCoeffs = np.zeros((fitDegree+1,fitDegree+1), dtype=np.double)
+    # polynomial fit objects
+    cx = inv_gwcs_obj.forward_transform[4]
+    cy = inv_gwcs_obj.forward_transform[5]
+    # NOTE CJB 2021-07 again like above in the loop over i and j
+    # there are terms being
+    # set multiple times. This does no harm other than  being
+    # inefficient and confusing for future examiners of code.
     for i in range(2,fitDegree+1):
         j = 0
         while j+i <=fitDegree:
@@ -411,13 +455,8 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
             coeffxVal = getattr(coeffxObj, 'value');
             coeffyObj = getattr(cy, 'c{0:d}_{1:d}'.format(i,j))
             coeffyVal = getattr(coeffyObj, 'value');
-            cura = coeffxVal * atmp
-            curd = coeffyVal * dtmp
-            curac = coeffxVal * ac
-            BPCoeffs[i,j] = (curd - curac)/ onembc 
-            APCoeffs[i,j] = (cura - b*BPCoeffs[i,j]) 
-            hdr['AP_{0:d}_{1:d}'.format(i,j)] = APCoeffs[i,j]* np.power(PIX2DEG, i+j-1)
-            hdr['BP_{0:d}_{1:d}'.format(i,j)] = BPCoeffs[i,j]* np.power(PIX2DEG, i+j-1)
+            hdr['AP_{0:d}_{1:d}'.format(i,j)] = coeffxVal
+            hdr['BP_{0:d}_{1:d}'.format(i,j)] = coeffyVal
             j = j +1
     for j in range(2,fitDegree+1):
         i = 0
@@ -426,37 +465,38 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
             coeffxVal = getattr(coeffxObj, 'value');
             coeffyObj = getattr(cy, 'c{0:d}_{1:d}'.format(i,j))
             coeffyVal = getattr(coeffyObj, 'value');
-            cura = coeffxVal * atmp
-            curd = coeffyVal * dtmp
-            curac = coeffxVal * ac
-            BPCoeffs[i,j] = (curd - curac)/ onembc
-            APCoeffs[i,j] = (cura - b*BPCoeffs[i,j])          
-            hdr['AP_{0:d}_{1:d}'.format(i,j)] = APCoeffs[i,j]* np.power(PIX2DEG, i+j-1)
-            hdr['BP_{0:d}_{1:d}'.format(i,j)] = BPCoeffs[i,j]* np.power(PIX2DEG, i+j-1)
+            hdr['AP_{0:d}_{1:d}'.format(i,j)] = coeffxVal
+            hdr['BP_{0:d}_{1:d}'.format(i,j)] = coeffyVal
             i = i +1
     i = 1
     j = 1
     coeffxObj = getattr(cx, 'c{0:d}_{1:d}'.format(i,j))
     coeffxVal = getattr(coeffxObj, 'value');
     coeffyObj = getattr(cy, 'c{0:d}_{1:d}'.format(i,j))
-    coeffyVal = getattr(coeffyObj, 'value');
-    cura = coeffxVal * atmp
-    curd = coeffyVal * dtmp
-    curac = coeffxVal * ac
-    BPCoeffs[i,j] = (curd - curac)/ onembc 
-    APCoeffs[i,j] = (cura - b*BPCoeffs[i,j])         
-    hdr['AP_{0:d}_{1:d}'.format(i,j)] = APCoeffs[i,j] * np.power(PIX2DEG, 1)
-    hdr['BP_{0:d}_{1:d}'.format(i,j)] = BPCoeffs[i,j] * np.power(PIX2DEG, 1)
+    coeffyVal = getattr(coeffyObj, 'value');      
+    hdr['AP_{0:d}_{1:d}'.format(i,j)] = coeffxVal
+    hdr['BP_{0:d}_{1:d}'.format(i,j)] = coeffyVal
+    i = 1
+    j = 0
+    coeffxObj = getattr(cx, 'c{0:d}_{1:d}'.format(i,j))
+    coeffxVal = getattr(coeffxObj, 'value');
+    coeffyObj = getattr(cy, 'c{0:d}_{1:d}'.format(i,j))
+    coeffyVal = getattr(coeffyObj, 'value');      
+    hdr['AP_{0:d}_{1:d}'.format(i,j)] = coeffxVal - 1.0
+    hdr['BP_{0:d}_{1:d}'.format(i,j)] = coeffyVal
+    i = 0
+    j = 1
+    coeffxObj = getattr(cx, 'c{0:d}_{1:d}'.format(i,j))
+    coeffxVal = getattr(coeffxObj, 'value');
+    coeffyObj = getattr(cy, 'c{0:d}_{1:d}'.format(i,j))
+    coeffyVal = getattr(coeffyObj, 'value');      
+    hdr['AP_{0:d}_{1:d}'.format(i,j)] = coeffxVal
+    hdr['BP_{0:d}_{1:d}'.format(i,j)] = coeffyVal - 1.0
 
     # Do comparison to wcs SIP interpretation of fit
-    my_inv_wcs = WCS(hdr)
-    radec_list = list(zip(ras[idxgd], decs[idxgd]))
-    radec_coords = np.array(radec_list, dtype=np.double)
-    pred_coords = my_inv_wcs.all_world2pix(radec_coords, 1)
-    predCol = np.array([x[0] for x in pred_coords], dtype=np.double)
-    predRow = np.array([x[1] for x in pred_coords], dtype=np.double)
-    deltaCols = (predCol - cols[idxgd])
-    deltaRows = (predRow - rows[idxgd])
+    my_pred_cols, my_pred_rows = inverse_wcs_transform(hdr, ras[idxgd], decs[idxgd])
+    deltaCols = (my_pred_cols + REFPIXCOL - cols[idxgd])
+    deltaRows = (my_pred_rows - REFPIXROW - rows[idxgd])
     deltaPixSeps = np.sqrt(deltaCols*deltaCols + deltaRows*deltaRows)
     idx = np.where(tmags[idxgd]<10.0)[0]
     std1 = np.std(deltaCols[idx])
