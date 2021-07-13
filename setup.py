@@ -33,9 +33,12 @@ setup(
         'scipy',
         'astropy',
         'matplotlib',
-        'logging'
+        'logging',
+        'h5py',
+        'photutils',
+        'statsmodels',
+        'gwcs'
         ]
 
 )    
-
 
