@@ -897,6 +897,19 @@ class FFI_File(FFI):
             inbasename, inext = os.path.splitext(infilename)  # get basename and extension 
             hdupath = os.path.join(self.outdir, inbasename + '_ccd'+str(i+1) + stem + inext)  # generate new path
 
+            inpath, infilename = os.path.split(self.fname)   # get path and original filename
+            inbasename, inext = os.path.splitext(infilename)  # get basename and extension
+            if inext == '.gz':
+                write_gz = True
+                inbasename, inext = os.path.splitext(inbasename)
+            else:
+                write_gz = False
+
+            if write_gz:
+                hdupath = os.path.join(self.outdir, inbasename + '_ccd'+str(i+1) + stem + inext + '.gz')  # generate new path
+            else:
+                hdupath = os.path.join(self.outdir, inbasename + '_ccd'+str(i+1) + stem + inext)  # generate new path
+
             try:
                 hdulist.writeto(hdupath)
                 ccd.logger.info("generating output calibration file: {}".format( hdupath) )

@@ -33,6 +33,15 @@ dstem=$3
 #[[ -z "${DEPLOY_ENV}" ]] && MyVar='default' || MyVar="${DEPLOY_ENV}"
 CALDIR=$4
 
+while [ $# -gt 0 ] ; do
+  case $1 in
+    --help)     usage   ;;
+    -h)         usage   ;;
+    *)          eval $1 ;;
+  esac
+  shift
+done
+
 
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do

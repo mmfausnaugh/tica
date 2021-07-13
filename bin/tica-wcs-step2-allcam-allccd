@@ -9,7 +9,8 @@ SECTOR=$1
 DEBUGIT=0
 
 #dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
-dstem="/data/tess1/image_sub/""sector$SECTOR""/"
+#dstem="/data/tess1/image_sub/""sector$SECTOR""/"
+dstem=$2
 
 # Example calling format
 # python step2_mkwcs.py -s 29 -ca 1 -cd 1 -rd refout/ref_S29_Orbit66_11.h5 -if '/pdo/qlp-data/orbit-66/ffi/cam1/ccd1/FITS/*' -fd 5 --savediaginfo -dbg 0
@@ -24,7 +25,7 @@ dstem="/data/tess1/image_sub/""sector$SECTOR""/"
 
 for i in 1 2 3 4; do 
     for j in 1 2 3 4; do
-	wcs_build/step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT &
+	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT &
     done
 done
 

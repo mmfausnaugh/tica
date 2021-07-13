@@ -9,7 +9,7 @@ Created on Thu Sep 17 18:49:13 2020
 import numpy as np
 from tess_stars2px import tess_stars2px_reverse_function_entry
 from tess_stars2px import tess_stars2px_function_entry
-from mast_filter_conesearch import mast_filter_conesearch
+
 try:
     import pyds9 as pd
 except ImportError:
@@ -19,6 +19,14 @@ import photutils.centroids as cent
 import matplotlib.pyplot as plt
 import h5py
 import os
+import sys
+
+DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(DIR, '..'))
+
+from wcs_build.mast_filter_conesearch import mast_filter_conesearch
+
+
 from astropy import units as u
 from astropy.coordinates import SkyCoord
 from astropy.time import Time
