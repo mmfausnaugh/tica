@@ -412,6 +412,11 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     #  We will following gwcs wcs_from_points function to do inverse
     #  however, the inverse needs to use the same reference points
     #  and inverse of the CDmatrix, so parameters need to be held fixed
+    c11 = hdr0['CD1_1'] 
+    c12 = hdr0['CD1_2'] 
+    c21 = hdr0['CD2_1'] 
+    c22 = hdr0['CD2_2'] 
+    
     x = (cols[idxgd] - REFPIXCOL)
     y = (rows[idxgd] - REFPIXROW)
     lon, lat = radec
