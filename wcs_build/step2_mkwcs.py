@@ -873,9 +873,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         print('{0:d} of {1:d} {2}'.format(iImg, nImg, curImg))
         # open image
         hdulistCal = fits.open(curImg)
-        if len(hdulistCal) == 2:
-            print('skipping,  already has WCS'.format(curImg))
-            continue
+#        if len(hdulistCal) == 2:
+#            print('skipping,  already has WCS'.format(curImg))
+#            continue
         imgNames = np.append(imgNames, os.path.basename(curImg))
         if not gotTimeStamp:
             try:
