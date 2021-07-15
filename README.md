@@ -25,14 +25,14 @@ Either use `pip3 install tica` or clone the repository:
 
 You can instead add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your path***true???**  
 
-2D bias and flat field calibration models are distributed by (dvc.org)[DVC].  To retrieve the model, install DVC on your system, and use 
+2D bias and flat field calibration models are distributed by (DVC)[htpps://www.dvc.org].  To retrieve the model, install DVC on your system, and use 
 
 ```
 cd calibration_models
-dvc pusll calibration_<exptime>
+dvc pull calibration_<exptime>
 ```
 
-where `<exptime>` corresponds to whatever exposure your FFIs are (30 minutes in Sectors 1--26, 10 minutes in Sectors 37--52).
+where `<exptime>` corresponds to whatever exposure your FFIs are (30 minutes in Sectors 1-26, 10 minutes in Sectors 37-52).
 
 ## Quick Start
 
@@ -40,35 +40,16 @@ The work horse script for calibrating reaw TESS data is `bin/tica-cal-ccd2ccd`. 
 
 An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available, but the user inputs the location of the FFIs as argument one and the location of the calilbration models as argument two.  The script will mkdir directories that organize the calibrated files by cam and ccd in the current directory.
 
-#### calibrating a set of files
+`bin/tica-calibrate-spoc` is also installed in the users PATH by default, and likely covers 99% of usecases.
 
-Use `cal-ccd2ccd` (in `bin` directory) to run example set of files:
+### Setting the calibration directory
 
-     cd examples/
-     ../bin/cal-ccd2ccd testcal.txt
-
-You can also put the output in a different directory
-
-     cd examples/
-     mkdir output
-     ../bin/cal-ccd2ccd --outdir output testcal.txt
-
-## Support
-
-Please submit bug reports and feature requests
-
-    https://tessgit.mit.edu/tess/tica/issues
-
-## Development
-
-The code for TICA is at
-
-    https://tessgit.mit.edu/tess/tica.git
-
-## Copyright and License
-
-TICA is Copyright(c) 2017, Massachusetts Institute of Technology (MIT)
-
-TICA is distributed under the terms of GPLv3
+***At the moment, users point to the appropriate calibration directory.  Flatfields are always the same, and don't matter.  2Dbiases just need to be rescaled for exptime.  We could make TICA automatically detect this (at some load on Users who must then store all files), or have the user set an environement variable, or some combination of the three***
 
 
+## To Do
+
+1. Document the remaining scripts---what should the public actually see given that they can't use everythign?
+2. Check install and that it runs.
+3. Do more details need to be provided about DVC/how to use DVC?
+4. Documentation of the algorithms and models?  Probably best to put that in Fausnaugh et al.	
