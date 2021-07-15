@@ -412,10 +412,10 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     #  We will following gwcs wcs_from_points function to do inverse
     #  however, the inverse needs to use the same reference points
     #  and inverse of the CDmatrix, so parameters need to be held fixed
-    c11 = hdr0['CD1_1'] 
-    c12 = hdr0['CD1_2'] 
-    c21 = hdr0['CD2_1'] 
-    c22 = hdr0['CD2_2'] 
+    c11 = hdr['CD1_1'] 
+    c12 = hdr['CD1_2'] 
+    c21 = hdr['CD2_1'] 
+    c22 = hdr['CD2_2'] 
     
     x = (cols[idxgd] - REFPIXCOL)
     y = (rows[idxgd] - REFPIXROW)
@@ -878,9 +878,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         print('{0:d} of {1:d} {2}'.format(iImg, nImg, curImg))
         # open image
         hdulistCal = fits.open(curImg)
-#        if len(hdulistCal) == 2:
-#            print('skipping,  already has WCS'.format(curImg))
-#            continue
+        if len(hdulistCal) == 2:
+            print('skipping,  already has WCS'.format(curImg))
+            continue
         imgNames = np.append(imgNames, os.path.basename(curImg))
         if not gotTimeStamp:
             try:
