@@ -412,7 +412,13 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     #  We will following gwcs wcs_from_points function to do inverse
     #  however, the inverse needs to use the same reference points
     #  and inverse of the CDmatrix, so parameters need to be held fixed
-    x, y = xy
+    c11 = hdr['CD1_1'] 
+    c12 = hdr['CD1_2'] 
+    c21 = hdr['CD2_1'] 
+    c22 = hdr['CD2_2'] 
+    
+    x = (cols[idxgd] - REFPIXCOL)
+    y = (rows[idxgd] - REFPIXROW)
     lon, lat = radec
     skyrot = models.RotateCelestial2Native(proj_point.data.lon, proj_point.data.lat, 180.0*u.deg)
     projection=projections.Sky2Pix_TAN()
@@ -496,7 +502,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     # Do comparison to wcs SIP interpretation of fit
     my_pred_cols, my_pred_rows = inverse_wcs_transform(hdr, ras[idxgd], decs[idxgd])
     deltaCols = (my_pred_cols + REFPIXCOL - cols[idxgd])
-    deltaRows = (my_pred_rows - REFPIXROW - rows[idxgd])
+    deltaRows = (my_pred_rows + REFPIXROW - rows[idxgd])
     deltaPixSeps = np.sqrt(deltaCols*deltaCols + deltaRows*deltaRows)
     idx = np.where(tmags[idxgd]<10.0)[0]
     std1 = np.std(deltaCols[idx])
