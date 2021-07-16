@@ -24,7 +24,7 @@ Either use `pip3 install tica` or clone the repository:
 
 You can instead add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
-2D bias and flat field calibration models are distributed via an application called (DVC)[htpps://www.dvc.org].  To retrieve the model, install DVC on your system, and use 
+2D bias and flat field calibration models are distributed via an application called [DVC](htpps://www.dvc.org).  To retrieve the model, install DVC on your system, and use 
 
 ```
 cd calibration_models
@@ -38,9 +38,17 @@ where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Se
 
 The work horse script for calibrating reaw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed by default, and can be run with `--help` to  see an explanation of the options available.  
 
-An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available, but fundamentally the user inputs the location of the FFIs and the location of the calilbration models.  The script will make directories that organize the calibrated files by cam and ccd in the current directory.
+An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available, but fundamentally the user inputs the location of the FFIs and the location of the calilbration models:
 
-`bin/tica-calibrate-spoc` is also installed in the users PATH by default, and likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd` or run that file directly.
+```
+mkdir tica_outputs
+cd tica_outputs
+tica-calibrate-spoc /absolutepath/to/raw/data ~/python/tica/calibration_10min
+```
+
+The script will make directories that organize the calibrated files by cam and ccd in the current directory.
+
+`bin/tica-calibrate-spoc` is also installed in the users PATH by default, and likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd` or run `tica-cal-ccd2ccd` directly from the comamnd line.
 
 ### Setting the calibration directory
 
@@ -52,4 +60,4 @@ An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/t
 1. Document the remaining scripts---what should the public actually see given that they can't use everythign?
 2. Check install and that it runs.
 3. Do more details need to be provided about DVC/how to use DVC?
-4. Documentation of the algorithms and models?  Probably best to put that in Fausnaugh et al.	
+4.  Would like some tutorial on tica data structures, which are useful for analyzing and manipulation TESS FFIs. (similar to my mapspec module)
