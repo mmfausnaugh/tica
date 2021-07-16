@@ -60,4 +60,5 @@ The script will make directories that organize the calibrated files by cam and c
 1. Document the remaining scripts---what should the public actually see given that they can't use everythign?
 2. Check install and that it runs.
 3. Do more details need to be provided about DVC/how to use DVC?
-4.  Would like some tutorial on tica data structures, which are useful for analyzing and manipulation TESS FFIs. (similar to my mapspec module)
+4.  Need some method for time dependent twodbias corrections (as of April 2021)
+5.  Would like some tutorial on tica data structures, which are useful for analyzing and manipulation TESS FFIs. (similar to my mapspec module)
