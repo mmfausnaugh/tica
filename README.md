@@ -4,13 +4,12 @@ The TESS Image Calibration (TICA) is a Python module for removing instrumental e
 
 There are currently five steps:
 
- 1. 2d bias correction: Remove fixed-pattern noise (a property of the electronics), using models from the POC
- 2. 1d bias correction: Remove the base level (time-dependent) amplifier signal, using the mean value of virtual columns.
+ 1. 2d bias correction: Remove fixed-pattern noise.
+ 2. 1d bias correction: Remove the baseline, time-dependent amplifier signal.
  4. Gain and Linearity: Correct non-linearity response and convert from ADU to photoelectrons.
  3. Smear correction:  Remove small contamination from shutterless transfer to the frame-store.
- 4. Flat-field correction: Correct for different sensitivities of each pixel, using models from the POC.
+ 4. Flat-field correction: Correct for different sensitivities of each pixel.
 
-Steps 1 is a single model, steps 2, 3 and 4 are array operations calculated for each image, and step 5 is a single model.
 
 ## Installation
 
@@ -23,24 +22,25 @@ Either use `pip3 install tica` or clone the repository:
   pip3 install -e .
   ```
 
-You can instead add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your path***true???**  
+You can instead add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
-2D bias and flat field calibration models are distributed by (DVC)[htpps://www.dvc.org].  To retrieve the model, install DVC on your system, and use 
+2D bias and flat field calibration models are distributed via an application called (DVC)[htpps://www.dvc.org].  To retrieve the model, install DVC on your system, and use 
 
 ```
 cd calibration_models
-dvc pull calibration_<exptime>
+dvc pull flat_combine
+dvc pull twodbias_<exptime>
 ```
 
-where `<exptime>` corresponds to whatever exposure your FFIs are (30 minutes in Sectors 1-26, 10 minutes in Sectors 37-52).
+where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-52.
 
 ## Quick Start
 
 The work horse script for calibrating reaw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed by default, and can be run with `--help` to  see an explanation of the options available.  
 
-An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available, but the user inputs the location of the FFIs as argument one and the location of the calilbration models as argument two.  The script will mkdir directories that organize the calibrated files by cam and ccd in the current directory.
+An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available, but fundamentally the user inputs the location of the FFIs and the location of the calilbration models.  The script will make directories that organize the calibrated files by cam and ccd in the current directory.
 
-`bin/tica-calibrate-spoc` is also installed in the users PATH by default, and likely covers 99% of usecases.
+`bin/tica-calibrate-spoc` is also installed in the users PATH by default, and likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd` or run that file directly.
 
 ### Setting the calibration directory
 
