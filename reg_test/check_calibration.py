@@ -6,6 +6,7 @@ import sys
 DIR = os.path.abspath(os.path.dirname(__file__))
 
 from tica.tica import Calibration, CCD_File
+from wcs_build.step2_mkwcs import fit_wcs_in_imgdir
 
 
 calibration = Calibration(calibration_dir =
@@ -48,6 +49,18 @@ output_checks = ['output_checks/tess2021041025908-s0035-1-1-0205-s_ffir.cal.fits
                  'output_checks/tess2021041025908-s0035-4-4-0205-s_ffir.cal.fits.gz']
 
 
+def run_wcs_fit(sector, cam, ccd, refdata, imglist):
+
+    outdir='./'
+    fitdeg = 6
+    save = False
+    debug = 0
+
+    print('in func!', sector, cam, ccd, refdata, imglist)
+    fit_wcs_in_imgdir(sector, cam, ccd,
+                      refdata, imglist,
+                      outdir, fitdeg,
+                      save, debug)
 
 def check_outputs(check_file_name):
     gold_f = fits.open(check_file_name)
@@ -85,6 +98,10 @@ for ii in range(len(inputs)):
     ccd1 = CCD_File(inputs[ii], calibration=calibration)
     ccd1.write_calibrate()
 
+    cam = int(ccd1.header['CAMERA'])
+    ccd = int(ccd1.header['CCD'])
+    ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
+    run_wcs_fit( 35, cam, ccd, ref_file, [os.path.basename( output_checks[ii] )] )
 
     check_outputs(output_checks[ii])
 

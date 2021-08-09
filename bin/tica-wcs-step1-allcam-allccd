@@ -37,7 +37,6 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
       fi
 
       #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
-      echo "blahblahblah"
       step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT}
   done
 done

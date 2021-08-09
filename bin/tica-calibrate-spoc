@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #as an example:  /pdo/spoc-data/sector-${sector}/ffis/
-input_dir=$1
+input_dir=$(realpath $1)
 CALDIR=$2
 
 #make in list for tica
@@ -19,7 +19,7 @@ done
 for i in 1 2 3 4; do    
     for j in 1 2 3 4; do
 	cd cam${i}_ccd${j}
-	tica-cal-ccd2ccd inlist --outdir . --caldir $CALDIR --parallel --log ../tica.log
+	tica-cal-ccd2ccd inlist --outdir . --caldir $CALDIR  --log ../tica.log
 	cd ..
     done
 done

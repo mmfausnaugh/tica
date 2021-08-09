@@ -66,10 +66,15 @@ if __name__ == "__main__":
 
     try:
         inlist = np.genfromtxt(args.fileinputs, dtype=str)
+        #silly numpy issue if there is only one entry in inlist
+        if inlist.size == 1:
+            inlist = inlist.reshape(1)
+
     except IOError:
         logger.error("input file not found: {}".format( args.fileinputs) )
         sys.exit(1)
 
+    
     # setup calibration object before processing files so it is done just once
     if args.caldir:
         calibration = Calibration(calibration_dir=args.caldir)
