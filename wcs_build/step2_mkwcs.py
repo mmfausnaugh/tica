@@ -193,7 +193,8 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
             blkidxs=None, NCOL=None, \
             fitDegree=5, noClip=False, DEBUG_LEVEL=0, MAKE_FIGS=None):
     # Use gwcs to fit a WCS and look at residuals if debugging
-    
+    np.random.seed(1010101)
+
     REFPIXCOL = 1024.0+45.0
     REFPIXROW = 1024.0
     PIX2DEG = 21.0/3600.0 # Turn pixels to degrees roughly
@@ -1064,6 +1065,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         if saveDiag == True:
             if np.mod(iImg, FIGOUTEVERY) == 0:
                 fileBase = os.path.splitext(os.path.basename(curImg))[0]
+
                 FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
         newhdr, allStd, brightStd, faintStd, allStdPix, \
                 brightStdPix, faintStdPix, gdResids, exResids = fit_wcs(ras[idxgd], decs[idxgd], \
