@@ -219,6 +219,8 @@ class CCD(object):
         self.gminus = {'A':0.0,'B':0.0,'C':0.0,'D':0.0}
 
         self.spoc_linearity = SpocLinearity_Updated()
+        self.coadds = 1
+        
 
     #===========================================
     # Convenience, return copies of CCD sections
@@ -414,7 +416,12 @@ class CCD(object):
         labels = ['A','B','C','D']
         for i,s in enumerate(out.sectors):
             #            print self.camnum, self.ccdnum, i,  gplus[i],gminus[i], np.mean(( (1 + s.science/720.0*gplus[i])*(1 - s.science/720.0*gminus[i]) ))
-            s.science = self.spoc_linearity.linearity_correct(s.science, self.camnum, self.ccdnum , labels[i])
+
+            s.science = self.spoc_linearity.linearity_correct(s.science, 
+                                                              self.camnum, self.ccdnum , 
+                                                              labels[i], 
+                                                              self.coadds)
+            
         return out
 
     
@@ -574,6 +581,11 @@ class CCD_File(CCD):
         #for linearity
         self.gplus  = LinearityModel.gain_gain['cam' + str(self.camnum)]['ccd' + str(self.ccdnum)]
         self.gminus = LinearityModel.gain_loss['cam' + str(self.camnum)]['ccd' + str(self.ccdnum)]
+
+        try:
+            self.coadds = self.header['NREADOUT']
+        except:
+            self.coadds = self.header['INT_TIME']*0.8/2
 
         try:
             self.calibrated_frame = self.calibrate()
@@ -788,6 +800,8 @@ class FFI_File(FFI):
             ccd.gains = GainModel.gains['cam' + str(ccd.camnum)]['ccd' + str(ccd.ccdnum)]
             ccd.gplus  = LinearityModel.gain_gain['cam' + str(ccd.camnum)]['ccd' + str(ccd.ccdnum)]
             ccd.gminus = LinearityModel.gain_loss['cam' + str(ccd.camnum)]['ccd' + str(ccd.ccdnum)]
+
+            ccd.coadds = self.header['INT_TIME']*0.8/2
 
 
 
@@ -1324,7 +1338,7 @@ class SpocLinearity_Updated(object):
     def __init__(self):
         pass
 
-    def linearity_correct(self,e_in,cam,ccd, channel):
+    def linearity_correct(self,e_in,cam,ccd, channel, N_coadds):
         """
         An FFI in units of electrons is passed in.
 
@@ -1335,7 +1349,7 @@ class SpocLinearity_Updated(object):
         guse = GainModel.gains['cam'+str(cam)]['ccd'+str(ccd)][channel]
         scale = cuse[0]
         offset = cuse[1]
-        
-        x = (e_in/720/0.99/guse - offset)*scale
+
+        x = (e_in/N_coadds/0.99/guse - offset)*scale
         return e_in*(cuse[2] + cuse[3]*x + cuse[4]*x**2)
 
