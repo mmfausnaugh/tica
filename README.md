@@ -2,13 +2,14 @@
 
 The TESS Image Calibration (TICA) is a Python module for removing instrumental effects from raw TESS images.
 
-There are currently five steps:
+There are currently six steps:
 
  1. 2d bias correction: Remove fixed-pattern noise.
  2. 1d bias correction: Remove the baseline, time-dependent amplifier signal.
- 4. Gain and Linearity: Correct non-linearity response and convert from ADU to photoelectrons.
- 3. Smear correction:  Remove small contamination from shutterless transfer to the frame-store.
- 4. Flat-field correction: Correct for different sensitivities of each pixel.
+ 3. Gain and Linearity: Convert from ADU to photoelectrons.
+ 4. Linearity: Correct non-linearity response.
+ 5. Smear correction:  Remove small contamination from shutterless transfer to the frame-store.
+ 6. Flat-field correction: Correct for different sensitivities of each pixel.
 
 
 ## Installation
@@ -22,9 +23,9 @@ Either use `pip3 install tica` or clone the repository:
   pip3 install -e .
   ```
 
-You can instead add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
+Instead, You can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
-2D bias and flat field calibration models are distributed via an application called [DVC](htpps://www.dvc.org).  To retrieve the model, install DVC on your system, and use 
+2D bias and flat field calibration models are distributed via an application called [DVC](htpps://www.dvc.org) (Data Version Control).  To retrieve the model, install DVC on your system, and use 
 
 ```
 cd calibration_models
@@ -36,7 +37,7 @@ where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Se
 
 ## Quick Start
 
-The work horse script for calibrating reaw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed by default, and can be run with `--help` to  see an explanation of the options available.  
+The workhorse script for calibrating reaw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed by default, and can be run with `--help` to  see an explanation of the options available.  
 
 An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available, but fundamentally the user inputs the location of the FFIs and the location of the calilbration models:
 
