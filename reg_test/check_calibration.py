@@ -76,23 +76,54 @@ def check_outputs(check_file_name):
         if key == 'COMMENT':
             if 'calibration applied at' in gold_f[0].header[key][0]:
                 continue
+        if 'A_' in key or 'B_' in key:
+            continue
+        if 'AP_' in key or 'BP_' in key:
+            continue
+        if 'RMS' in key or 'BP_' in key:
+            continue
+        if 'CHECKSUM' in key:
+            continue
         try:
-            assert gold_f[0].header[key] == test_f[0].header[key]
+            if key in ['CRVAL1', 'CRVAL2', 
+                       'CD1_1','CD1_2','CD2_1','CD2_2',
+                       'RA_TARG','DEC_TARG']:
+                assert np.isclose(gold_f[0].header[key],test_f[0].header[key],
+                                  atol=3.e-4,
+                                  rtol=1.e-12)
+            else:
+                assert gold_f[0].header[key] == test_f[0].header[key]
         except AssertionError:
             print('gold file {} = {}'.format(key, gold_f[0].header[key]))
             print('test file {} = {}'.format(key, test_f[0].header[key]))
+            raise
 
     #also, check that there are not new keywords in test_f
     for key in test_f[0].header.keys():
         if key == 'COMMENT':
             if 'calibration applied at' in test_f[0].header[key][0]:
                 continue
+        if 'A_' in key or 'B_' in key:
+            continue
+        if 'AP_' in key or 'BP_' in key:
+            continue
+        if 'RMS' in key or 'BP_' in key:
+            continue
+        if 'CHECKSUM' in key:
+            continue
         try:
-            assert gold_f[0].header[key] == test_f[0].header[key]
+            if key in ['CRVAL1', 'CRVAL2', 
+                       'CD1_1','CD1_2','CD2_1','CD2_2',
+                       'RA_TARG','DEC_TARG']:
+                assert np.isclose(gold_f[0].header[key],test_f[0].header[key],
+                                  atol=3.e-4,
+                                  rtol=1.e-12)
+            else:
+                assert gold_f[0].header[key] == test_f[0].header[key]
         except AssertionError:
             print('gold file {} = {}'.format(key, gold_f[0].header[key]))
             print('test file {} = {}'.format(key, test_f[0].header[key]))
-
+            raise
 
 for ii in range(len(inputs)):
     ccd1 = CCD_File(inputs[ii], calibration=calibration)
