@@ -7,6 +7,7 @@ Created on Mon Sep 28 14:15:43 2020
 """
 
 import numpy as np
+
 import h5py
 import matplotlib.pyplot as plt
 from astropy.wcs import WCS
@@ -218,7 +219,8 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     raproj, decproj, scinfo = tess_stars2px_reverse_function_entry(\
                          SECTOR_WANT, CAMERA_WANT, CCD_WANT, REFPIXCOL, REFPIXROW)
     proj_point = SkyCoord(raproj, decproj, frame = 'icrs', unit=(u.deg, u.deg))
-    print('proj_point1', proj_point)
+
+    #print('proj_point1', proj_point)
     #  Reference subtracted pixel coordinates
     sclObsCols = (cols - REFPIXCOL) * PIX2DEG
     sclObsRows = (rows - REFPIXROW) * PIX2DEG
@@ -226,37 +228,25 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     xy = (sclObsCols, sclObsRows)
     #print(np.c_[sclObsCols, sclObsRows, ras,decs][0:10])
     radec = (ras, decs)
-    print('len of xy and radec on fit 1',
-          len(sclObsCols),
-          len(sclObsRows),
-          len(ras),
-          len(decs))
-    gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
-    cx = gwcs_obj.forward_transform[1]
-    # polynomial fit object in y (row)
-    cy = gwcs_obj.forward_transform[2]
-    c11 = cx.c1_0.value
-    print(c11)
-    c12 = cx.c0_1.value
-    print(c12)
-    c21 = cy.c1_0.value
-    print(c21 )
-    c22 = cy.c0_1.value
-    print(c22 )
 
-    #jus to check determinancy, this one works
+    #print('len of xy and radec on fit 1',
+    #      len(sclObsCols),
+    #      len(sclObsRows),
+    #      len(ras),
+    #      len(decs))
+
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
     cx = gwcs_obj.forward_transform[1]
     # polynomial fit object in y (row)
     cy = gwcs_obj.forward_transform[2]
-    c11 = cx.c1_0.value
-    print(c11 * PIX2DEG)
-    c12 = cx.c0_1.value
-    print(c12 * PIX2DEG)
-    c21 = cy.c1_0.value
-    print(c21 * PIX2DEG)
-    c22 = cy.c0_1.value
-    print(c22 * PIX2DEG)
+    #c11 = cx.c1_0.value
+    #print(c11)
+    #c12 = cx.c0_1.value
+    #print(c12)
+    #c21 = cy.c1_0.value
+    #print(c21 )
+    #c22 = cy.c0_1.value
+    #print(c22 )
 
     gdResids = np.ones_like(cols, dtype=bool)
     # Look for outliers to trim
@@ -268,7 +258,8 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     # First trim out ones that deviate by absolute amount
     idxbd = np.where(deltaSeps >= OUTLIER_TRIM)[0]
     gdResids[idxbd] = False
-    print('gdResids1',len(gdResids[gdResids == True]))
+    #print('gdResids1',len(gdResids[gdResids == True]))
+
     # Next trim out ones that deviate by sigma based on tmag residual
     #  I use tmag residual in order to not remove stars based on 
     #  position that maybe didn't fit well the first time
@@ -281,7 +272,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         idxclp = np.where(cury >= OUTLIER_SIGMA*maddata[curi-1])[0]
         #print('{0:d} badn: {1:d}'.format(curi, len(idxclp)))
         gdResids[idxcur[idxclp]] = False
-    print('gdResids2',len(gdResids[gdResids == True]))
+    #print('gdResids2',len(gdResids[gdResids == True]))
     meddata, midx, mndata, stddata, maddata, iargs, ndata = binmedian(tmags, \
                                         deltaDecs)        
     unarg = np.sort(np.unique(iargs))
@@ -291,7 +282,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         idxclp = np.where(cury >= OUTLIER_SIGMA*maddata[curi-1])[0]
         #print('{0:d} badn: {1:d}'.format(curi, len(idxclp)))
         gdResids[idxcur[idxclp]] = False
-    print('gdResids3',len(gdResids[gdResids == True]))
+    #print('gdResids3',len(gdResids[gdResids == True]))
     idxgd = np.where(gdResids)[0]
     idxbd = np.where(np.logical_not(gdResids))[0]
 
@@ -302,16 +293,16 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     cx = gwcs_obj.forward_transform[1]
     # polynomial fit object in y (row)
     #check if it changes after clipping data
-    print("check after clipping data")
+    #print("check after clipping data")
     cy = gwcs_obj.forward_transform[2]
-    c11 = cx.c1_0.value
-    print(c11 )
-    c12 = cx.c0_1.value
-    print(c12 )
-    c21 = cy.c1_0.value
-    print(c21 )
-    c22 = cy.c0_1.value
-    print(c22 )
+    #c11 = cx.c1_0.value
+    #print(c11 )
+    #c12 = cx.c0_1.value
+    #print(c12 )
+    #c21 = cy.c1_0.value
+    #print(c21 )
+    #c22 = cy.c0_1.value
+    #print(c22 )
         
     # Iterate to find a better reference ra and dec
     #  such that there is no constant term in the polynomial fit
@@ -324,21 +315,21 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     raproj = newrefra
     decproj = newrefdec
     proj_point = SkyCoord(raproj, decproj, frame = 'icrs', unit=(u.deg, u.deg))
-    print('proj_point2', proj_point)
+    #print('proj_point2', proj_point)
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
-    cx = gwcs_obj.forward_transform[1]
+    #cx = gwcs_obj.forward_transform[1]
     #check if it changes with improved proj_point
     # polynomial fit object in y (row)
-    print("check improved proj_point")
-    cy = gwcs_obj.forward_transform[2]
-    c11 = cx.c1_0.value
-    print(c11 * PIX2DEG)
-    c12 = cx.c0_1.value
-    print(c12 * PIX2DEG)
-    c21 = cy.c1_0.value
-    print(c21 * PIX2DEG)
-    c22 = cy.c0_1.value
-    print(c22 * PIX2DEG)
+    #print("check improved proj_point")
+    #cy = gwcs_obj.forward_transform[2]
+    #c11 = cx.c1_0.value
+    #print(c11 * PIX2DEG)
+    #c12 = cx.c0_1.value
+    #print(c12 * PIX2DEG)
+    #c21 = cy.c1_0.value
+    #print(c21 * PIX2DEG)
+    #c22 = cy.c0_1.value
+    #print(c22 * PIX2DEG)
 
     # We have the wcs in polynomial form
     # now we need to convert it to SIP form
@@ -1107,6 +1098,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         for curibad in idx_badregion:
             idx = np.where(blkidxs == curibad)[0]
             # pick three random ones in this subregion
+            np.random.seed(1010101)
             idxUse = np.random.choice(idx, (3,), replace=False)
             gdPrfs[idxUse] = -1 # record these random added for plotting and diagnostics
             idxgd = np.append(idxgd, idxUse)
