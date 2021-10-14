@@ -43,9 +43,9 @@ def idx_filter(idx, *array_list):
 
 def flux_weighted_centroid(flux_stamp):
     r,c = np.shape(flux_stamp)
-    C,R = np.meshgrid( np.r_[0:r],
-                       np.c_[0:c])
-    #R,C = np.ogrid[0:r,0:c]
+    #C,R = np.meshgrid( np.r_[0:r],
+    #                   np.c_[0:c])
+    R,C = np.ogrid[0:r,0:c]
     norm = np.sum(flux_stamp)
     centroid_row = np.sum(flux_stamp*R)/norm
     centroid_col = np.sum(flux_stamp*C)/norm
