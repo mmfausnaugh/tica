@@ -10,17 +10,25 @@
 #    environment variable or as a command line argument.
 
 
-usage() {
-    cat <<EOF
+USAGE="
   Sets up directories for output of tica-cal-ffi2ccds, and runs
    that python script.
 
   Requires CALDIR, location of data, and which orbits (that is specific to
    poc filesystem, for us in TSO). 
+"
 
-EOF
-exit
-}
+[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    -h|--help) echo "$USAGE" ; exit  ;;
+    *)         eval $1 ;;
+  esac
+  shift
+done
+
+[ -z $verbose ] || v=yes
 
 o1=$1
 o2=$2

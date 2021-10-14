@@ -28,9 +28,9 @@ from btjd.btjd_correction import btjd_correction
 ephemeris_file = os.path.join( DIR,'../btjd/tess_ephem.txt')
 ephemeris_data = np.genfromtxt(os.path.join(ephemeris_file))
 
-from wcs_build.step1_get_refimg_ctrlpts import gdPRF_calc, idx_filter, ring_background
+from wcs_build.step1_get_refimg_ctrlpts import gdPRF_calc, idx_filter, ring_background, flux_weighted_centroid
 
-import photutils.centroids as cent
+#import photutils.centroids as cent
 
 from tess_stars2px import tess_stars2px_reverse_function_entry
 
@@ -42,7 +42,9 @@ from astropy import coordinates as coord
 import warnings
 import argparse
 
-from statsmodels import robust
+def calc_MAD(x):
+    abs_res = abs(x - np.median(x))
+    return np.median(abs_res)/0.6744897501960817  #0.67449
 
 
 def add_btjd_info(time, ra, dec, ephem_data):
@@ -84,7 +86,7 @@ def binmedian(xdata, ydata, nBins=30, xmin=None, xmax=None, showDetail=False):
             medata[i] = np.median(ydata[iuse])
             mndata[i] = np.mean(ydata[iuse])
             stddata[i] = np.std(ydata[iuse])
-            maddata[i] = robust.mad(ydata[iuse])
+            maddata[i] = calc_MAD(ydata[iuse])
             ndata[i] = len(ydata[iuse])
         elif len(iuse) > 0 and len(iuse) < 3:
             medata[i] = np.median(ydata[iuse])
@@ -594,8 +596,9 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
             mad1 = 0.0
             mad2 = 0.0
         else:
-            mad1 = robust.mad(deltaRas[idxAll])
-            mad2 = robust.mad(deltaDecs[idxAll])
+            mad1 = calc_MAD(deltaRas[idxAll])
+            mad2 = calc_MAD(deltaDecs[idxAll])            
+
         if np.isfinite(mad1) and np.isfinite(mad2):
             exResids[i]= np.sqrt(mad1*mad1+mad2*mad2)*c1
         else:
@@ -1002,7 +1005,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                 if gdPRF:
                     # Determine background from 2 pixel ring around box
                     bkgLev = ring_background(sciImgCal)
-                    centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    centOut = flux_weighted_centroid(sciImgCal-bkgLev)
                     # centroid_com produces 0-based coordinates
                     newCol = centOut[0]+colX[0]
                     newRow = centOut[1]+rowY[0]
@@ -1052,7 +1056,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                     rowY = np.arange(midRow-blkHlfCent, midRow+blkHlfCent+1)
                     # analysis region around target
                     sciImgCal = hdulistCal[0].data[midRow-blkHlfCent-1: midRow+blkHlfCent, midCol-blkHlfCent-1: midCol+blkHlfCent]
-                    centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    centOut = flux_weighted_centroid(sciImgCal-bkgLev)
+
                     # Once in blue moon centroids go nutsy check for it
                     idx = np.where((centOut<-1.0) | (centOut>blkHlfCent*2+2))[0]
                     if len(idx) == 0:

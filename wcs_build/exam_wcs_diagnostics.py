@@ -19,7 +19,7 @@ try:
     import pyds9 as pd
 except ImportError:
     print('Warning: No pyds9 installed.  No debugging with image display available')
-from statsmodels import robust
+from wcs_build.step2_get_refimg_ctrlpts import calc_MAD
 
 def idx_filter(idx, *array_list):
     new_array_list = []
@@ -412,8 +412,8 @@ if __name__ == '__main__':
         std1 = np.std(deltaRas[idxAll])
         std2 = np.std(deltaDecs[idxAll])
         usestd= np.sqrt(std1*std1+std2*std2)*c1
-        mad1 = robust.mad(deltaRas[idxAll])
-        mad2 = robust.mad(deltaDecs[idxAll])
+        mad1 = calc_MAD(deltaRas[idxAll])
+        mad2 = calc_MAD(deltaDecs[idxAll])
         usemad= np.sqrt(mad1*mad1+mad2*mad2)*c1
 
         print('Region: {0:d} std:{1:f} mad:{2:f}'.format(i, usestd, usemad))

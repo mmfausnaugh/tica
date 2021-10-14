@@ -15,7 +15,7 @@ try:
 except ImportError:
     print('Warning: No pyds9 installed.  No debugging with image display available')
 from astropy.io import fits
-import photutils.centroids as cent
+#import photutils.centroids as cent
 import matplotlib.pyplot as plt
 import h5py
 
@@ -41,6 +41,18 @@ def idx_filter(idx, *array_list):
     return new_array_list
 
 
+def flux_weighted_centroid(flux_stamp):
+    r,c = np.shape(flux_stamp)
+    C,R = np.meshgrid( np.r_[0:r],
+                       np.c_[0:c])
+    #R,C = np.ogrid[0:r,0:c]
+    norm = np.sum(flux_stamp)
+    centroid_row = np.sum(flux_stamp*R)/norm
+    centroid_col = np.sum(flux_stamp*C)/norm
+
+    #centroid_row = centroid_row - np.shape(flux_stamp)[0]/2.0 + 0.5
+    #centroid_col = centroid_col - np.shape(flux_stamp)[1]/2.0 + 0.5
+    return np.array([centroid_col, centroid_row])
 
 def gdPRF_calc(img, blkHlf, wingFAC=0.90, contrastFAC=3.5):
     rowSum = np.sum(img, axis=1)
@@ -306,8 +318,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                     gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
                     if gdPRF:                    # Determine background from 2 pixel ring around box
                         bkgLev = ring_background(sciImgCal)
-                        # use photutils to get centroid after removing background level
-                        centOut = cent.centroid_com(sciImgCal-bkgLev)
+                        #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                        centOut = flux_weighted_centroid( sciImgCal - bkgLev)
+                        print(centOut, centOut1)
                         # centroid_com produces 0-based coordinates
                         newCol = centOut[0]+colX[0]
                         newRow = centOut[1]+rowY[0]
@@ -392,14 +405,14 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
 #                    plt.show()
 
                     if gdPRF:
-                        # use photutils for centroiding
                         #  pixel coordinates in x and y directions
                         # Use small blkHlfCent region for final centroid calc
                         colX = np.arange(midCol-blkHlfCent, midCol+blkHlfCent+1)
                         rowY = np.arange(midRow-blkHlfCent, midRow+blkHlfCent+1)
                         # analysis region around target
                         sciImgCal = hdulistCal[0].data[midRow-blkHlfCent-1: midRow+blkHlfCent, midCol-blkHlfCent-1: midCol+blkHlfCent]
-                        centOut = cent.centroid_com(sciImgCal-bkgLev)
+                        #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                        centOut = flux_weighted_centroid( sciImgCal - bkgLev)
                         # centroid_com produces 0-based coordinates
                         newCol = centOut[0]+colX[0]
                         newRow = centOut[1]+rowY[0]
