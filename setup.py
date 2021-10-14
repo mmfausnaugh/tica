@@ -35,8 +35,6 @@ setup(
         'matplotlib',
         'logging',
         'h5py',
-        'photutils',
-        'statsmodels',
         'gwcs'
         ]
 

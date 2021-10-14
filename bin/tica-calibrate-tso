@@ -10,45 +10,54 @@
 #    environment variable or as a command line argument.
 
 
-USAGE="
-  Sets up directories for output of tica-cal-ffi2ccds, and runs
-   that python script.
+o1=''
+o2=''
+#directory where data are; assume that subdirs are
+#orbit-${o1}/ffi_fits and same for o2
+dstem=''
+#~/python/tica/calibration_10min
+#consider logic like this for setting CALDIR
+#[[ -z "${DEPLOY_ENV}" ]] && MyVar='default' || MyVar="${DEPLOY_ENV}"
+CALDIR=''
 
-  Requires CALDIR, location of data, and which orbits (that is specific to
-   poc filesystem, for us in TSO). 
+USAGE="
+  Usage: tica-calibrate-tso o1=<orbit1> o2-<orbit2> \
+    dstem=<data_dir_path> CALDIR=<calibration_dir_path>
+
+  This script sets up directories for output of tica-cal-ffi2ccds, and
+   runs tica-cal-ffi2ccds.  tica-cal-ffi2ccds is a python script--this
+   bash script tells the python where the data are and what
+   calibration to use.
+
+   <orbit1> and/or <orbit2> must be a integer number for the expected
+   orbit.  They may also be the string 'None', which will skip that
+   orbit.
+
+   <data_dir_path> is the directory for the orbit directories,
+     currently assumes the raw ffis are in '$dstem'/orbits-'$o1'/ffi_fits/
+
+   <CALDIR> is a directory that comes with the tica package, for
+     example, ~/python/tica/calibration_10min
+
 "
 
 [ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
 
 while [ $# -gt 0 ] ; do
   case $1 in
-    -h|--help) echo "$USAGE" ; exit  ;;
+    "-h" | "--help") echo "$USAGE" ; exit  ;;
     *)         eval $1 ;;
   esac
   shift
 done
 
-[ -z $verbose ] || v=yes
+#check that all variables are set
+[[ $o1 == '' ]] && { echo "$USAGE" ; echo "set orbit 1 to an integer (or 'None'): o1=<\d\d>" ; exit ; }
+[[ $o2 -eq '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
+[[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit ; }
 
-o1=$1
-o2=$2
-#directory where data are; assume that subdirs are
-#orbit-${o1}/ffi_fits and same for o2
-dstem=$3
-#~/python/tica/calibration_10min
-
-#consider logic like this for setting CALDIR
-#[[ -z "${DEPLOY_ENV}" ]] && MyVar='default' || MyVar="${DEPLOY_ENV}"
-CALDIR=$4
-
-while [ $# -gt 0 ] ; do
-  case $1 in
-    --help)     usage   ;;
-    -h)         usage   ;;
-    *)          eval $1 ;;
-  esac
-  shift
-done
+#[ -z $verbose ] || v=yes
 
 
 for i in 1 2 3 4; do
