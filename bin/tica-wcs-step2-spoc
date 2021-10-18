@@ -5,12 +5,51 @@
 #SECTOR=27
 #DEBUGIT=0
 
-SECTOR=$1
-DEBUGIT=1
+SECTOR=''
+DEBUGIT=0
 
 #dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
 #dstem="/data/tess1/image_sub/""sector$SECTOR""/"
-dstem=$2
+dstem=''
+
+USAGE="
+  Usage: tica-wcs-step2-spoc SECTOR=<sector> dstem=<data_dir_path> DUBIT=<debug_flag>
+
+  This script runs step2_mkwcs.py step2_mkwcs.py is a python script
+  that loops over FFIs in a given directory, measures star positions,
+  fits WCS coefficients, and adds the WCSs to the FFI headers.  It
+  also adds an binary table extension to the FITS files with the
+  measured star centroids.
+
+  This version can reconginze SPOC file names, and will make a new.
+
+  <SECTOR> is a two digit integer---calls to tess-point are used to
+  convert row/col to ra/dec.
+
+  <data_dir_path> is the directory where the FFIs are saved.
+  Currently assumes 16 directories, with naming convention
+  /data_dir_path/camX_ccdY/.  Note that the script makes
+  /data_dir_path/refout, and saves the h5 file there.
+
+  <debug_flag> is an integer, 0 for no output, 1 to print various
+  debugging statements.  Default is 0.
+
+"
+
+
+[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    *)         eval $1 ;;
+  esac
+  shift
+done
+
+#check that all variables are set
+[[ $SECTOR == '' ]] && { echo "$USAGE" ; echo "set sector to a two digit integer : SECTOR=<\d\d>" ; exit ; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
 
 # Example calling format
 # python step2_mkwcs.py -s 29 -ca 1 -cd 1 -rd refout/ref_S29_Orbit66_11.h5 -if '/pdo/qlp-data/orbit-66/ffi/cam1/ccd1/FITS/*' -fd 5 --savediaginfo -dbg 0

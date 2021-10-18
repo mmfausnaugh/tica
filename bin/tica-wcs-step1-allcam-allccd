@@ -3,12 +3,50 @@
 
 #SECTOR=27
 #REFFIN=00116500
-SECTOR=$1
-REFFIN=$2
-
+SECTOR=''
+REFFIN=''
 #dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
 #this is the output directory
-dstem=$3
+dstem=''
+
+
+USAGE="
+  Usage: tica-wcs-step1-allcam-allccd SECTOR=<sector> REFIN=<ffi_name> \
+    dstem=<data_dir_path> 
+
+  This script sets up directories for WCS star queries and runs
+  step1_get_refimg_ctrlpts.py.  step1_get_refimg_ctrlpts.py is a
+  python script that runs astroquery and writes .hd5 files.
+
+   <SECTOR> is a two digit integer---calls to tess-point are used to convert row/col to ra/dec.
+
+   <REFIN> is a reference FFI_INDEX.  The corresponding FFI will be
+   used as a fall back for star coords if they can't be measured in
+   other FFIs.  Only needs teh FFI_INDEX, though assumes files are
+   named as used in the POC (those files are not public).
+
+   <data_dir_path> is the directory where the FFIs are saved.
+   Currently assumes 16 directories, with naming convention
+   /data_dir_path/camX_ccdY/.  Note that the script makes
+   /data_dir_path/refout, and saves the h5 file there.
+
+"
+[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    *)         eval $1 ;;
+  esac
+  shift
+done
+
+
+#check that all variables are set
+[[ $SECTOR == '' ]] && { echo "$USAGE" ; echo "set sector to a two digit integer : SECTOR=<\d\d>" ; exit ; }
+[[ $REFFIN == '' ]] && { echo "$USAGE" ; echo "set reffin to an FFI_INDEX, which appears in the FFI file's name: reffin=<\d\d\d\d\d\d>" ; exit ; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
+
 
 # TICA
 #REF_IMG_TEMPLATE="
