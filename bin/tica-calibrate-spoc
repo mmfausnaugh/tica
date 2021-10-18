@@ -1,15 +1,54 @@
 #!/usr/bin/env bash
 
 #as an example:  /pdo/spoc-data/sector-${sector}/ffis/
-input_dir=$(realpath $1)
-CALDIR=$2
 
+input_dir=''
+CALDIR=''
+USAGE="
+  Usage: tica-calibrate-spoc input_dir=<data_dir_path>  CALDIR=<calibration_dir_path>
+
+  This script sets up directories for output of tica-cal-ccd2ccd, and
+   runs tica-cal-ccd2ccd.  tica-cal-ccd2ccd is a python script.  This
+   file (bash script) bash script tells the python where the data are
+   and what calibration to use.
+
+
+   <data_dir_path> is the directory for the orbit directories.  It
+     assumes that all the FFIs of interest are in that directory,
+     regardless of camera or CCD.  It doesn't care about the sector,
+     so you can combine FFIs from different sectors.  However, this is
+     not considered best practice, since systematic issues (e.g.,
+     backgrounds) and some instrument configurations (e.g., exposure
+     times between s26 and s27) change between sectors.
+
+   <CALDIR> is a directory that comes with the tica package, for
+     example, ~/python/tica/calibration_10min
+
+"
+[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    *)         eval $1 ;;
+  esac
+  shift
+done
+
+#check that all variables are set
+[[ $input_dir == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit
+ ; }
+[[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>
+" ; exit ; }
+
+
+input_dir_use=$(realpath $1)
 #make in list for tica
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
 	mkdir cam${i}_ccd${j}
 	cd cam${i}_ccd${j}
-	ls ${input_dir}/tess*-${i}-${j}-*ffir*fits* > inlist
+	ls ${input_dir_use}/tess*-${i}-${j}-*ffir*fits* > inlist
 	cd ..
     done
 done
