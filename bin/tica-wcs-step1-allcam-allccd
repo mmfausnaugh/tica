@@ -11,24 +11,28 @@ dstem=''
 
 
 USAGE="
-  Usage: tica-wcs-step1-allcam-allccd SECTOR=<sector> REFIN=<ffi_name> \
-    dstem=<data_dir_path> 
+  Usage: tica-wcs-step1-allcam-allccd SECTOR=<sector> REFIN=<ffi_name> dstem=<data_dir_path> 
 
-  This script sets up directories for WCS star queries and runs
+  This script sets up directories and runs
   step1_get_refimg_ctrlpts.py.  step1_get_refimg_ctrlpts.py is a
-  python script that runs astroquery and writes .hd5 files.
+  python script that runs astroquery and writes .h5 files.  The .h5
+  files contains a list of stars with RA and DEC values that can be
+  used to fit the WCS.
 
-   <SECTOR> is a two digit integer---calls to tess-point are used to convert row/col to ra/dec.
+  <SECTOR> is a two digit integer.  It is used in calls to the
+  tess-point python package, in order to convert row/col to ra/dec.
 
-   <REFIN> is a reference FFI_INDEX.  The corresponding FFI will be
-   used as a fall back for star coords if they can't be measured in
-   other FFIs.  Only needs teh FFI_INDEX, though assumes files are
-   named as used in the POC (those files are not public).
+  <REFIN> is a reference cadence, either FIN or TIN for TSO format
+  FFIs.  The corresponding FFI for this epoch should be free from
+  scattered light because suitable stars for the WCS are identified in
+  this reference image. This script assumes the FIN or TIN is in the
+  file name, as for TSO format FITS files.
 
-   <data_dir_path> is the directory where the FFIs are saved.
-   Currently assumes 16 directories, with naming convention
-   /data_dir_path/camX_ccdY/.  Note that the script makes
-   /data_dir_path/refout, and saves the h5 file there.
+  <data_dir_path> is the directory where the FFIs are saved.
+  Currently, this script assumes that 16 directories exist, with
+  naming convention /data_dir_path/cam\$i_ccd\$j/.  This script will
+  make a directory /data_dir_path/refout, and saves the .h5 files
+  there.
 
 "
 [ $# -eq 0 ] && { echo "$USAGE" ; exit ; }

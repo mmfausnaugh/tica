@@ -9,20 +9,21 @@ USAGE="
 
   This script sets up directories for output of tica-cal-ccd2ccd, and
    runs tica-cal-ccd2ccd.  tica-cal-ccd2ccd is a python script.  This
-   file (bash script) bash script tells the python where the data are
-   and what calibration to use.
+   file (bash script) tells the python script where the data are
+   stored and what calibration model to use.
 
 
-   <data_dir_path> is the directory for the orbit directories.  It
-     assumes that all the FFIs of interest are in that directory,
-     regardless of camera or CCD.  It doesn't care about the sector,
-     so you can combine FFIs from different sectors.  However, this is
-     not considered best practice, since systematic issues (e.g.,
-     backgrounds) and some instrument configurations (e.g., exposure
-     times between s26 and s27) change between sectors.
+   <data_dir_path> is the directory where the FITS files are saved.
+     This script assumes that all the FFIs of interest are in that
+     directory, regardless of camera or CCD.  This script doesn't care
+     about the sector, so you can calibrate FFIs from different
+     sectors all at once.  However, this is not considered best
+     practice, because the calibration model might change between
+     sectors.
 
-   <CALDIR> is a directory that comes with the tica package, for
-     example, ~/python/tica/calibration_10min
+   <CALDIR> is a directory with calibration models, which are
+     distributed with the git repository and DVC. For example, one
+     might set this variable to CALIDR=~/python/tica/caliration_10min
 
 "
 [ $# -eq 0 ] && { echo "$USAGE" ; exit ; }

@@ -21,23 +21,23 @@ dstem=''
 CALDIR=''
 
 USAGE="
-  Usage: tica-calibrate-tso o1=<orbit1> o2-<orbit2> \
-    dstem=<data_dir_path> CALDIR=<calibration_dir_path>
+  Usage: tica-calibrate-tso o1=<orbit1> o2=<orbit2> dstem=<data_dir_path> CALDIR=<calibration_dir_path>
 
-  This script sets up directories for output of tica-cal-ffi2ccds, and
-   runs tica-cal-ffi2ccds.  tica-cal-ffi2ccds is a python script--this
-   bash script tells the python where the data are and what
-   calibration to use.
+   This script sets up directories and runs tica-cal-ffi2ccds.
+     tica-cal-ffi2ccds is a python script.
 
-   <orbit1> and/or <orbit2> must be a integer number for the expected
-   orbit.  They may also be the string 'None', which will skip that
-   orbit.
+   <orbit1> and <orbit2> must be integer numbers or the string 'None',
+     which will skip either orbit 1 or orbit 2, as needed.
 
-   <data_dir_path> is the directory for the orbit directories,
-     currently assumes the raw ffis are in '$dstem'/orbits-'$o1'/ffi_fits/
+   <data_dir_path> is the directory in which the POC keeps the orbit
+     directories.  This script assumes that the raw ffis in FITS format
+     are in '\$dstem'/orbits-'\$o1'/ffi_fits/.  These FITS files
+     correspond to TSO format, which is not publicly available at this
+     time.
 
-   <CALDIR> is a directory that comes with the tica package, for
-     example, ~/python/tica/calibration_10min
+   <CALDIR> is a directory with calibration models, which are
+     distributed with the git repository and DVC. For example, one
+     might set this variable to CALIDR=~/python/tica/caliration_10min
 
 "
 
@@ -53,7 +53,7 @@ done
 
 #check that all variables are set
 [[ $o1 == '' ]] && { echo "$USAGE" ; echo "set orbit 1 to an integer (or 'None'): o1=<\d\d>" ; exit ; }
-[[ $o2 -eq '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
+[[ $o2 == '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
 [[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
 [[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit ; }
 

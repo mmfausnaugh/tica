@@ -538,7 +538,13 @@ class CCD_File(CCD):
             self.header = self.hdu[0].header
             image  = self.hdu[0].data
             
+        elif len(self.hdu) == 2 and self.hdu[1].header['XTENSION'] == 'BINTABLE':
+            self.header = self.hdu[0].header
+            image  = self.hdu[0].data
+
         #handles either spoc raw or cal---maybe more checks are needed??
+        #yes!, because tica calibrated FFIs now have 2 headers
+
         elif len(self.hdu) == 2 or len(self.hdu) == 3:
             assert self.hdu[0].data == None
 
@@ -575,7 +581,13 @@ class CCD_File(CCD):
         if self.camnum is None:
             self.camnum = self.header.get('CAMERA')
         if self.camnum is None:
+            self.camnum = self.header.get('CAMNUM')
+        if self.camnum is None:
             raise ValueError('Did not find camera number in the FITS header')
+
+        if self.ccdnum == None:
+            self.ccdnum = self.header.get('CCDNUM')
+
 
         self.gains = GainModel.gains['cam' + str(self.camnum)]['ccd' + str(self.ccdnum)]
         #for linearity

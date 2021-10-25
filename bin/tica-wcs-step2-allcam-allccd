@@ -14,21 +14,29 @@ dstem=''
 
 
 USAGE="
-  Usage: tica-wcs-step2-allcam-allccd SECTOR=<sector> dstem=<data_dir_path> DUBIT=<debug_flag>
+  Usage: tica-wcs-step2-allcam-allccd SECTOR=<sector> dstem=<data_dir_path> DEBUGIT=<debug_flag>
 
   This script runs step2_mkwcs.py step2_mkwcs.py is a python script
   that loops over FFIs in a given directory, measures star positions,
-  fits WCS coefficients, and adds the WCSs to the FFI headers.  It
-  also adds an binary table extension to the FITS files with the
-  measured star centroids.
+  fits WCS coefficients, and adds the WCSs to the FFI headers.  The
+  python script also adds a binary table extension to the FITS files
+  that stores the measurements of the star centroids.  The FITS files
+  are modified in place.
 
-  <SECTOR> is a two digit integer---calls to tess-point are used to
-  convert row/col to ra/dec.
+  <SECTOR> is a two digit integer.  It is used in calls to the
+  tess-point python package, in order to convert row/col to ra/dec.
 
   <data_dir_path> is the directory where the FFIs are saved.
-  Currently assumes 16 directories, with naming convention
-  /data_dir_path/camX_ccdY/.  Note that the script makes
-  /data_dir_path/refout, and saves the h5 file there.
+  Currently, this script assumes that 16 directories exist in this
+  location, with naming convention /data_dir_path/cam\$i_ccd\$j/.
+  This script also assumes that /data_dir_path/refout exists, and that
+  .h5 files are saved there with the RAs and DECs of good stars for
+  the WCS fit.  The .h5 files are produced with
+  tica-wcs-step1-allcam-allccd.
+
+  This script further assumes that all FFIs and .h5 files are saved
+  under TSO formats and naming conventions.  These files are not
+  publically available at this time.
 
   <debug_flag> is an integer, 0 for no output, 1 to print various
   debugging statements.  Default is 0.
@@ -64,7 +72,7 @@ done
 
 for i in 1 2 3 4; do 
     for j in 1 2 3 4; do
-	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT &
+	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT &
     done
 done
 

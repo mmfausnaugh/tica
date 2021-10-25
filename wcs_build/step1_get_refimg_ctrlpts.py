@@ -320,7 +320,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                         bkgLev = ring_background(sciImgCal)
                         #centOut = cent.centroid_com(sciImgCal-bkgLev)
                         centOut = flux_weighted_centroid( sciImgCal - bkgLev)
-                        print(centOut, centOut1)
+                        #print(centOut, centOut1)
                         # centroid_com produces 0-based coordinates
                         newCol = centOut[0]+colX[0]
                         newRow = centOut[1]+rowY[0]
