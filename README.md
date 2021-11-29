@@ -5,9 +5,9 @@ The TESS Image Calibration (TICA) is a Python module for removing instrumental e
 There are currently six steps:
 
  1. 2d bias correction: Remove fixed-pattern noise.
- 2. Scalar bias correction: Remove the baseline, time-dependent amplifier signal.
+ 2. Scalar bias correction: Remove the time-dependent amplifier pedestal.
  3. Gain and Linearity: Convert from ADU to photoelectrons.
- 4. Linearity: Correct non-linearity response.
+ 4. Linearity: Correct the non-linear response.
  5. Smear correction:  Remove small contamination from shutterless transfer to the frame-store.
  6. Flat-field correction: Correct for different sensitivities of each pixel.
 
@@ -35,13 +35,15 @@ dvc pull flat_combine
 dvc pull twodbias_<exptime>
 ```
 
-where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-52.
+where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
 ## Quick Start
 
-The workhorse script for calibrating reaw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed by default, and can be run with `--help` to  see an explanation of the options available.  
+The workhorse script for calibrating raw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed by default, and can be run with `--help` to  see an explanation of the options available.  
 
-An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available, but fundamentally the user inputs the location of the FFIs and the location of the calilbration models:
+An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  A help option is also available. 
+
+The user inputs the location of the FFIs and the location of the calilbration models:
 
 ```
 mkdir tica_outputs
