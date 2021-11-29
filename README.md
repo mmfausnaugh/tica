@@ -27,9 +27,9 @@ Setting up a virtual environement is considered best practice.
 
 Instead, you can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
-2D bias and flat field calibration models are distributed via an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves live in the cloud, currently a Gdrive account associated with MIT.  
+2D bias and flat field calibration models are distributed via an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves live in the cloud, currently a GDrive account associated with MIT.  
 
-First, install DVC following the directions on [the DVC website](https://dvc.org/doc/install).  Then issue the following commands to retrieve the calibration models.
+First, install DVC following the directions on [the DVC website](https://dvc.org/doc/install).  Then issue the following commands and follow the prompts to retrieve the calibration models:
 
 ```
 cd calibration_models
@@ -43,13 +43,13 @@ where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Se
 
 With DVC, you will be able to easily update to the latest calibration models whenever they are available.  You can also revert to old versions if you need to reproduce prior results.  
 
-Move back to the `calibration_models` directory, and run `dvc status` to see where your current models are, or `dvc fetch` to check for updates.  Note that these commands can take a long time to execute the first time that you run them.  You can update with `dvc pull`, if applicable.
+To check for updates, run `git pull.`  If new calibration models are availabel, `.dvc` files in `calibration_models` will be updated.  If this is the case, move to the `calibration_models` directory, and run `dvc pull`.
 
 Reverting to an old model is slightly more complicated.  Roughly speaking, this consists of (1) using `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need, and then (2) running `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch back and forth between different versions of the models.  See the DVC docs for more information and tutorials.
 
-There are directories at the top level of the repo for each calibration mode (30 minute or 10 minute data)  Those directories link back to the data in `calibration_models`; when you run TICA, you specify a single calibration directory which will automatically load in the correct files, assuming you have the write version checked out in `calibration_models`.
+There are directories at the top level of the repo for each calibration mode (30 minute or 10 minute data)  Those directories link back to the data in `calibration_models`; when you run TICA, you specify a single calibration directory, which will load in the correct models assuming you have the desired version checked out in `calibration_models`.
 
-Models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported.
+Calibration models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported at this time.
 
 ## Quick Start
 
