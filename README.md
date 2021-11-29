@@ -14,7 +14,7 @@ There are currently six steps:
 
 ## Installation
 
-You will need to clone this repository to get the calibration files, so you may as well install from there:
+You will need to clone this repository to get the calibration files, so you should install from there:
 
   ```
   git clone https://tessgit.mit.edu/tica/tica.git
