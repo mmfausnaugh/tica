@@ -12,6 +12,9 @@ from wcs_build.step2_mkwcs import fit_wcs_in_imgdir
 calibration = Calibration(calibration_dir =
                           os.path.join(DIR,'../calibration_10min'))
 
+calibration_wrong = Calibration(calibration_dir =
+                                os.path.join(DIR,'../calibration_30min'))
+
 
 
 inputs = ['input/tess2021041025908-s0035-1-1-0205-s_ffir.fits.gz',
@@ -100,7 +103,11 @@ def check_outputs(check_file_name):
             raise
 
 for ii in range(len(inputs)):
-    ccd1 = CCD_File(inputs[ii], calibration=calibration)
+    #check that calibration time safe gaurds work
+    try:
+        ccd1 = CCD_File(inputs[ii], calibration=calibration_wrong)
+    except AssertionError:
+        ccd1 = CCD_File(inputs[ii], calibration=calibration)
     ccd1.write_calibrate()
 
     cam = int(ccd1.header['CAMERA'])

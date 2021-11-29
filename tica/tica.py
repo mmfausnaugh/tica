@@ -19,13 +19,6 @@
 #OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 #SOFTWARE.
 
-"""
-Some code lifted from Miranda Kephart, ccd_stats.py on tessmp:/usr/local/bin
-
-Most by MMF, Aug/Sept 2017
-
-order is additive then multiplicative, for the expected data (I think)
-"""
 
 import numpy as np
 import os.path
@@ -74,7 +67,7 @@ def median_frames(framelist):
 
 class Sector(object):
     """
-    Keep track of individual CCD channels, i.e., sectors
+    Keep track of individual CCD output channels, i.e., sectors
     """
     def __init__(self, underclock, science, overclock):
         self.underclock = underclock.astype(float)
@@ -129,6 +122,16 @@ class Calibration(object):
             top_level_path=os.path.abspath(os.path.dirname(__file__))
             calibration_dir = os.path.abspath(os.path.join(top_level_path, "../calibration/"))
         
+        int_time_key = calibration_dir.split('_')[-1]
+        if int_time_key == '30min':
+            self.int_time = 1800
+        elif int_time_key == '10min':
+            self.int_time = 600
+        elif int_time_key == '02min':
+            self.int_time = 120
+        elif int_time_key == '20sec':
+            self.int_time = 20
+
         twodbias_dir = os.path.join(calibration_dir, 'twodbias/')
         twodbias_files = {'cam1':{'ccd1':'cam1_ccd1_twoDcorrect.fits',
                                     'ccd2':'cam1_ccd2_twoDcorrect.fits',
@@ -165,7 +168,6 @@ class Calibration(object):
                                     'ccd3':'cam4_ccd3_image.fits',
                                     'ccd4':'cam4_ccd4_image.fits'} }
         
-        # FIXME: do we need to handle all at least once in a run? or should it be semi-on-demand?
         # reconstruct similar dictionaries except that we use fits to load file
         self.twodbias = {camera: {ccd: self._set_calibration_data(calfile, twodbias_dir, self.logger) for ccd, calfile in outervalue.items()}
                            for camera, outervalue in twodbias_files.items()}
@@ -180,9 +182,9 @@ class Calibration(object):
         return self.flatfields['cam' + str(camuse)]['ccd' + str(ccduse)]
         
 class CCD(object):
-    """Splits a CCD into its sectors. If the CCD is passed in inverted (this
-    is the case for CCDs 1 and 2), un-inverts it (i.e. rotates it 180 degrees)
-    before proceeding).
+    """Splits a CCD into its sectors. If the CCD is passed in inverted
+    (this is the case for CCDs 1 and 2), rotates it by 180 degrees
+    before proceeding.
 
     self.sectors --- a list of Sector objects (ABCD)
 
@@ -190,6 +192,7 @@ class CCD(object):
     get_image():  return concat. column with science part of sectors
     get_overclock():  return concat. column with overclock part of sectors
     get_frame():  return concat. columns of all pixels
+
     """
     def __init__(self, arr, calibration=None, inverted=False):
         # get logger
@@ -273,7 +276,6 @@ class CCD(object):
         if self.camnum == None:
             raise Exception("Must specify camera number to calibrate!")
 
-
         #here, it's a CCD object
         out = CCD(self.get_frame())
 
@@ -293,8 +295,10 @@ class CCD(object):
         out = self.convert_to_electrons(out)
         #linearity correction
         #still a CCD object
+
         #JPD version
         #out = self.linearity_correct(out)
+
         #in the spoc version, there is an object that stores the
         #coefficients and knows how to do the math
         out = self.spoc_linearity_correct(out)
@@ -337,19 +341,12 @@ class CCD(object):
         return out - smear
     
     def overclock_correct(self):
-        # FIXME: decide on subsection of virtual columns,
-
-        # I see in the report that some CCDs have a weak trend along
-        # rows.  For now, we will just take out a constant (quick look
-        # pipeline, afterall), with pains to avoid start of row ringing and associated curvature.
-
-        # each CCD has a different patter for the trend along columns.
-        # It is known that the first few columns are suspect.
-        # Something in the middle seems "safe", and as long as that
-        # comes out ot zero after 1D correection.  some confusion
-        # about what happens at the last few columns
-
+        #first few columns can be affected by scattered light
         mask_col = slice(3,  None)
+        #first few hundred rows can be affected by start of 
+        #frame ringing not that the 2D bias model is slightly different than
+        #the observed fram rining---overall, there is a small residual
+        #at low row relative to the SPOC FFIs.
         mask_row = slice(750,None)
 
         cal = CCD(np.zeros((2078,2136)))
@@ -361,16 +358,15 @@ class CCD(object):
         return cal
     
     def convert_to_electrons(self, out):
-        """default is gain == 1, less it is CCD file with cam/ccd info in the
+        """default is gain == 1, unless it is CCD file with cam/ccd info in the
         header
         
         Note that the self.gains is applied on input data.  So the
         class knows about the correct value, but never applies it
 
 
-        For now, this does the calculation on the original data
-        struct!  Orginal idea was a functional kind of thing, so that
-        you can't be bit by state changes....  consider changing
+        For now, this does the calculation in place!  The functional
+        aspect is handled in CCD.calibrate()
 
         """
         guse = np.asarray([self.gains['A'], self.gains['B'], self.gains['C'], self.gains['D'] ])
@@ -396,8 +392,7 @@ class CCD(object):
         Do not apply to under/over clocks
 
         For now, this does the calculation on the original data
-        struct!  Orginal idea was a functional kind of thing, so that
-        you can't be bit by state changes....  consider changing
+        struct!  The functional aspect is handled in CCD.calibrate()
 
         """
         gplus  = np.asarray([self.gplus['A'],  self.gplus['B'],  self.gplus['C'],  self.gplus['D'] ])
@@ -414,8 +409,7 @@ class CCD(object):
         Do not apply to under/over clocks
 
         For now, this does the calculation on the original data
-        struct!  Orginal idea was a functional kind of thing, so that
-        you can't be bit by state changes....  consider changing
+        struct!  The functional aspect is handled in CCD.calibrate()
 
         """
         labels = ['A','B','C','D']
@@ -578,9 +572,28 @@ class CCD_File(CCD):
             raise IOError("must be a TSO or SPOC FFI")
 
 
+            
+        try:
+            #check that the calibration model matches the exposure time of the data.
+            #SPOC keyword
+            assert np.isclose(calibration.int_time,
+                              self.header['EXPOSURE']*86400/0.8/0.99), \
+                "It appears you are trying to calibrate {:4.0f} second "\
+            "data with {} second models".format(
+                self.header['EXPOSURE']*86400/0.8/0.99,
+                calibration.int_time)
+        except KeyError:
+            #TSO keyword
+            assert calibration.int_time == self.header['INT_TIME'], \
+                "It appears you are trying to calibrate {:4.0f} second "\
+            "data with {} second models".format(
+                self.header['INT_TIME'],
+                calibration.int_time)
+
         super(CCD_File, self).__init__(image, calibration=calibration)
 
-        #error here on the defaul for SPOC, since 'CAM' is 'CAMERA' in their files
+        #SPOC uses 'CAMERA' insstead of 'CAM' and 'CCDNUM' instead of 'CCD'
+        #header.get returns None as a backup if it can't match the keyword
         self.ccdnum  = self.header.get('CCD')
         self.camnum = self.header.get('CAM')
         if self.camnum is None:
@@ -600,9 +613,12 @@ class CCD_File(CCD):
         self.gminus = LinearityModel.gain_loss['cam' + str(self.camnum)]['ccd' + str(self.ccdnum)]
 
         try:
+            #SPOC keword
             self.coadds = self.header['NREADOUT']
         except:
+            #TSO keyword
             self.coadds = self.header['INT_TIME']*0.8/2
+
 
         try:
             self.calibrated_frame = self.calibrate()
@@ -672,8 +688,6 @@ class FFI(object):
 
     self.CCDs:  list of ccds, counterclockwise order from top left
 
-    methods:
-    restore (to fix if modified data are wronge, e.g., after applying calibration, etc.)
     """
     def __init__(self, full_image, calibration=None):
         self.full_image  = full_image
@@ -798,8 +812,6 @@ class FFI_File(FFI):
 
     self.CCDs:  list of ccds, counterclockwise order from top left
 
-    methods:
-    restore (to fix if modified data are wronge, e.g., after applying calibration, etc.)
     """
     def __init__(self, fname, calibration, outdir):
         self.fname = fname
@@ -808,6 +820,22 @@ class FFI_File(FFI):
         self.hdu = fits.open(fname, mode='readonly')
         self.header = self.hdu[0].header
         im  = self.hdu[0].data
+
+        try:
+            #SPOC keyword
+            assert np.isclose(calibration.int_time,
+                              self.header['EXPOSURE']*86400/0.8/0.99), \
+                "It appears you are trying to calibrate {} second"
+            "data with models for {} second data".format(
+                self.header['EXPOSURE']*86400/0.8/0.99,
+                calibration.int_time)
+        except KeyError:
+            #TSO keyword
+            assert calibration.int_time == self.header['INT_TIME'], \
+                "It appears you are trying to calibrate {} second"
+            "data with models for {} second data".format(
+                self.header['INT_TIME'],
+                calibration.int_time)
 
         super(FFI_File, self).__init__(im, calibration=calibration)
         self.camnum = self.header['CAM']
