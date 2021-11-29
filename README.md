@@ -39,20 +39,6 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
-## Updating Calibration Files
-
-With DVC, you will be able to easily update to the latest calibration models whenever they are available.  You can also revert to old versions if you need to reproduce prior results.  
-
-To check for updates, run `git pull.`  If new calibration models are availabel, then the `.dvc` files in `calibration_models` will be updated.  If this is the case, move to the `calibration_models` directory and run `dvc pull`.  
-
-Calibration models will be updated no more than once per year, and we expect that updates will be much less frequent than that.
-
-Reverting to an old model is slightly more complicated.  Roughly speaking, this consists of (1) using `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need, and then (2) running `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch back and forth between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
-
-There are directories at the top level of the repo for each calibration mode (30 minute or 10 minute data).  Those directories link back to the data in `calibration_models`; when you run TICA, you specify a single calibration directory, which will load in the correct models, assuming that you have the desired version checked out in `calibration_models`.
-
-Calibration models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported at this time.
-
 ## Quick Start
 
 The workhorse script for calibrating raw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed by default, and can be run with `--help` to  see an explanation of the options available.  
@@ -76,6 +62,20 @@ Note that several other scripts are also installed by default---these are used t
 ### Setting the calibration directory
 
 ***Users must point to the appropriate calibration directory when running `tica-calibrate-spoc`.   The code will stop you if the exposure time in the data files does not match the calibration directory that you specified.***
+
+## Updating Calibration Files
+
+With DVC, you will be able to easily update to the latest calibration models whenever they are available.  You can also revert to old versions if you need to reproduce prior results.  
+
+To check for updates, run `git pull.`  If new calibration models are availabel, then the `.dvc` files in `calibration_models` will be updated.  If this is the case, move to the `calibration_models` directory and run `dvc pull`.  
+
+Calibration models will be updated no more than once per year, and we expect that updates will be much less frequent than that.
+
+Reverting to an old model is slightly more complicated.  Roughly speaking, this consists of (1) using `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need, and then (2) running `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch back and forth between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
+
+There are directories at the top level of the repo for each calibration mode (30 minute or 10 minute data).  Those directories link back to the data in `calibration_models`; when you run TICA, you specify a single calibration directory, which will load in the correct models, assuming that you have the desired version checked out in `calibration_models`.
+
+Calibration models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported at this time.
 
 ## Data Structures and Calibration Algorithms
 
