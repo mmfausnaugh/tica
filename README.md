@@ -1,20 +1,20 @@
 # TESS Image CAlibration (TICA)
 
-The TESS Image Calibration (TICA) is a Python module for removing instrumental effects from raw TESS images.
+The TESS Image Calibration (TICA) module is a python module for removing instrumental effects from raw TESS images.
 
 There are currently six steps:
 
  1. 2d bias correction: Remove fixed-pattern noise.
  2. Scalar bias correction: Remove the time-dependent amplifier pedestal.
- 3. Gain and Linearity: Convert from ADU to photoelectrons.
+ 3. Gain: Convert from ADU to photoelectrons.
  4. Linearity: Correct the non-linear response.
- 5. Smear correction:  Remove small contamination from shutterless transfer to the frame-store.
- 6. Flat-field correction: Correct for different sensitivities of each pixel.
+ 5. Smear correction:  Remove small contamination from the shutterless transfer to the frame-store.
+ 6. Flat-field correction: Correct for the non-uniform response of each pixel.
 
 
 ## Installation
 
-You will need to clone this repository to get the calibration files, so you should install from there:
+You will need to clone this repository to get the calibration files, so you should install from here:
 
   ```
   git clone https://tessgit.mit.edu/tica/tica.git
@@ -23,11 +23,11 @@ You will need to clone this repository to get the calibration files, so you shou
   pip3 install -e .
   ```
 
-(Setting up a virtual environement is considered best practice.)
+Setting up a virtual environement is considered best practice.
 
 Instead, you can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
-2D bias and flat field calibration models are distributed via an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves live in the cloud, currently a Gdrive account associated with MIT.  With DVC, you will be able to easily update to the latest calibration models whenever they are available, or revert to old versions if you need to reproduce prior results.
+2D bias and flat field calibration models are distributed via an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves live in the cloud, currently a Gdrive account associated with MIT.  
 
 First, install DVC following directions on their [website](https://dvc.org/doc/install).  Then issue the following commands to retrieve the calibration models.
 
@@ -39,7 +39,17 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
-There are directories at the top level of the repo for each calibration mode (30 minute or 10 minute data---models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported).  Those directories link back to the data in `calibration_models`; when you run tica, you specify a single calibration directory which will automatically load in the correct files.
+## Updating Calibration Files
+
+With DVC, you will be able to easily update to the latest calibration models whenever they are available.  You can also revert to old versions if you need to reproduce prior results.  
+
+Move back to the `calibration_models` directory, and run `dvc status` to see where your current models are, or `dvc fetch` to check for updates.  You can update with `dvc pull`, if applicable.
+
+Reverting to an old model is slightly more complicated, but essentially consists of (1) using `git checkout` to get the version of the `.dvc` that corresponds to the model that you want, and then (2) running `dvc checkout`.  See the DVC docs for more information and tutorials.
+
+There are directories at the top level of the repo for each calibration mode (30 minute or 10 minute data)  Those directories link back to the data in `calibration_models`; when you run tica, you specify a single calibration directory which will automatically load in the correct files.
+
+Models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported.
 
 ## Quick Start
 
