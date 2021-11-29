@@ -25,9 +25,11 @@ You will need to clone this repository to get the calibration files, so you shou
 
 (Setting up a virtual environement is considered best practice.)
 
-Instead, You can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
+Instead, you can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
-2D bias and flat field calibration models are distributed via an application called [DVC](htpps://www.dvc.org) (Data Version Control).  To retrieve the model, install DVC on your system, and use 
+2D bias and flat field calibration models are distributed via an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves live in the cloud, currently a Gdrive account associated with MIT.  With DVC, you will be able to easily update to the latest calibration models whenever they are available, or revert to old versions if you need to reproduce prior results.
+
+First, install DVC following directions on their [website](https://dvc.org/doc/install).  Then issue the following commands to retrieve the calibration models.
 
 ```
 cd calibration_models
@@ -36,6 +38,8 @@ dvc pull twodbias_<exptime>
 ```
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
+
+There are directories at the top level of the repo for each calibration mode (30 minute or 10 minute data---models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported).  Those directories link back to the data in `calibration_models`; when you run tica, you specify a single calibration directory which will automatically load in the correct files.
 
 ## Quick Start
 
