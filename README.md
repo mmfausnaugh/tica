@@ -84,6 +84,10 @@ Algorithms used for the calibration can be found in `tica/tica.py`.  In particul
 Ambituous users may find the data structures in `tica.py` useful for their own scripts.  We would recommend that they use `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for using the TICA data structures.
 
 
+## Regression Tests
+
+## World Coordinate Solutions
+
 ## To Do
 
 1. Check install and that it runs.
