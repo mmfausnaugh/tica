@@ -23,6 +23,7 @@ setup(
              'bin/tica-calibrate-tso',
              'bin/tica-wcs-step1-allcam-allccd',
              'bin/tica-wcs-step2-allcam-allccd',
+             'bin/tica-wcs-spoc',
 
              'wcs_build/step1_get_refimg_ctrlpts.py',
              'wcs_build/step2_mkwcs.py',
