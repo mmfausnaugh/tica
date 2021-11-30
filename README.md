@@ -86,31 +86,31 @@ Some users may find the data structures in `tica.py` useful for their own script
 
 ## Regression Tests
 
-There is a regression test in `tica/reg_test` thatcan be used to test any changes to the TICA code.  To run the regression test:
+There is a regression test in `tica/reg_test` that can be used to test any changes to the TICA code.  To run the regression test:
 
 ```
 cd tica/reg_test
 python run_reg_test.py
 ```
 
-This script will take SPOC `*ffir*` files in `reg_test/input` and apply calibrations and WCS solutions.  The results of those calibrations are checked against the contents of `reg_test/output_checks`---the test will fail if there are any changes.
+This script will take SPOC `*ffir*` files in `reg_test/input` and apply calibrations and WCSs.  The results of those calibrations are checked against the contents of `reg_test/output_checks`---the test will fail if there are any changes.
 
 To run `run_reg_test.py`, it is necessary to pull the input data, output checks, and tables of WCS stars from the GDrive cloud.  DVC is used to retrieve these data in the same way as for the calibration models.  The regression test uses data from Sector 35 and 10 minute calibration models.  
 
 In very rare cases, `output_checks` will be updated if we implement changes that improve the TICA calibration or WCSs.  Changes to the output checks are under version control with the `reg_test/output_checks.dvc` file, and can be updated in the same way as the calibration models.
 
-Note that the regression test does not check `tica/wcs_build/step1_get_refimg_ctrlpts.py`, which generates the table of stars used for WCSs fitting.  
+Note that the regression test does not check `tica/wcs_build/step1_get_refimg_ctrlpts.py`, which generates the table of stars used for WCS fitting.  
 
 ## World Coordinate Solutions
 
-There are two WCS solutions available to end-users; SPOC WCSs in the `*ffir*` and `*ffic*` files, and TICA WCSs in the HLSPs.  There are small systematic differences between the SPOC and TICA WCSs, which may be important for users with high requirements on their astrometry.
+There are two WCSs available to end-users; SPOC WCSs in the `*ffir*`/`*ffic*` files, and TICA WCSs in the HLSPs.  There are small systematic differences between the SPOC and TICA WCSs, which may be important for users with high requirements on their astrometry.
 
-These differences can be analyzed by comparing the transforms of stars using the two WCSs.  Astrometric residuals of the fitted stars to the WCSs are also given in a binary table extension for every TICA FFI.
+The WCS differences can be analyzed by comparing the transforms of stars using the two WCSs.  Astrometric residuals of the fitted stars to the WCSs are also given in a binary table extension for every TICA FFI.
 
 We recommend that users employ the existing WCSs in the data products/HLSPs to test their astrometry.  However, as a programatic example, we have also provided a bash script that refits the TICA WCSs and overwrites the WCS keywords in the SPOC `*ffir*` files.  This script is `bin/tica-wcs-spoc`.  This bash script is installed in the user's environment and has a help menu (use `--help` or call with no arguments).
 
 
-Again, we do not recommend using this procedure for scientific analysis, because it erases the SPOC WCS information while the same WCS has already been computed in the TICA HLSPs. 
+Again, we do not recommend refitting the TICA WCSs for scientific analysis, because it erases the SPOC WCS information while the same WCS has already been computed in the TICA HLSPs. 
 
 
 ## To Do
