@@ -107,10 +107,7 @@ There are two WCSs available to end-users; SPOC WCSs in the `*ffir*`/`*ffic*` fi
 
 The WCS differences can be analyzed by comparing the transforms of stars using the two WCSs.  Astrometric residuals of the fitted stars to the WCSs are also given in a binary table extension for every TICA FFI.
 
-We recommend that users employ the existing WCSs in the data products/HLSPs to test their astrometry.  However, as a programatic example, we have also provided a bash script that refits the TICA WCSs and overwrites the WCS keywords in the SPOC `*ffir*` files.  This script is `bin/tica-wcs-spoc`.  This bash script is installed in the user's environment and has a help menu (use `--help` or call with no arguments).
-
-
-Again, we do not recommend refitting the TICA WCSs for scientific analysis, because it erases the SPOC WCS information while the same WCS has already been computed in the TICA HLSPs. 
+We recommend that users employ the existing WCSs in the data products/HLSPs to analyze these astrometric differences.  However, as a programatic example, we have also provided a bash script that refits the TICA WCSs and overwrites the WCS keywords in the SPOC `*ffir*` files.  This script is `bin/tica-wcs-spoc`.  This bash script is installed in the user's environment and has a help menu (use `--help` or call with no arguments).
 
 
 ## To Do
