@@ -1,0 +1,84 @@
+#!/usr/bin/env bash
+
+
+#SECTOR=27
+#REFFIN=00116500
+SECTOR=''
+REFFIN=''
+#dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
+#this is the output directory
+dstem=''
+
+
+USAGE="
+  Usage: tica-wcs-step1-allcam-allccd SECTOR=<sector> REFIN=<ffi_name> dstem=<data_dir_path> 
+
+  This script sets up directories and runs
+  step1_get_refimg_ctrlpts.py.  step1_get_refimg_ctrlpts.py is a
+  python script that runs astroquery and writes .h5 files.  The .h5
+  files contains a list of stars with RA and DEC values that can be
+  used to fit the WCS.
+
+  <SECTOR> is a two digit integer.  It is used in calls to the
+  tess-point python package, in order to convert row/col to ra/dec.
+
+  <REFIN> is a reference cadence, either FIN or TIN for TSO format
+  FFIs.  The corresponding FFI for this epoch should be free from
+  scattered light because suitable stars for the WCS are identified in
+  this reference image. This script assumes the FIN or TIN is in the
+  file name, as for TSO format FITS files.
+
+  <data_dir_path> is the directory where the FFIs are saved.
+  Currently, this script assumes that 16 directories exist, with
+  naming convention /data_dir_path/cam\$i_ccd\$j/.  This script will
+  make a directory /data_dir_path/refout, and saves the .h5 files
+  there.
+
+"
+[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    *)         eval $1 ;;
+  esac
+  shift
+done
+
+
+#check that all variables are set
+[[ $SECTOR == '' ]] && { echo "$USAGE" ; echo "set sector to a two digit integer : SECTOR=<\d\d>" ; exit ; }
+[[ $REFFIN == '' ]] && { echo "$USAGE" ; echo "set reffin to an FFI_INDEX, which appears in the FFI file's name: reffin=<\d\d\d\d\d\d>" ; exit ; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
+
+
+# TICA
+#REF_IMG_TEMPLATE="
+#/pdo/users/faus/test_tica_wcs/s27/tso/cam!_ccd%/tess2020201040111-00116500-!-crm-ffi_ccd%.cal.fits"
+# OUTPUT_REFS will also use the replacement construct
+if [ -d "$dstem""/refout" ]; then
+   echo "refout exists"
+else
+    mkdir "$dstem""/refout"
+fi
+
+
+DEBUGIT=2
+
+for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
+  for ((jCcd = 1; jCcd <=4 ; jCcd++)); do
+      USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)
+      USE_OUT="$dstem""refout/reftica_s$SECTOR""_$iCam""-$jCcd"".h5"
+
+      echo ${USE_REF}
+      echo ${USE_OUT}
+      
+      if [ -e $USE_OUT ]; then
+	  echo "skipping $USE_OUT; already exists"
+	  continue
+      fi
+
+      #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
+      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT}
+  done
+done

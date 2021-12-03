@@ -1,0 +1,66 @@
+#!/usr/bin/env bash
+
+#as an example:  /pdo/spoc-data/sector-${sector}/ffis/
+
+input_dir=''
+CALDIR=''
+USAGE="
+  Usage: tica-calibrate-spoc input_dir=<data_dir_path>  CALDIR=<calibration_dir_path>
+
+  This script sets up directories for output of tica-cal-ccd2ccd, and
+   runs tica-cal-ccd2ccd.  tica-cal-ccd2ccd is a python script.  This
+   file (bash script) tells the python script where the data are
+   stored and what calibration model to use.
+
+
+   <data_dir_path> is the directory where the FITS files are saved.
+     This script assumes that all the FFIs of interest are in that
+     directory, regardless of camera or CCD.  This script doesn't care
+     about the sector, so you can calibrate FFIs from different
+     sectors all at once.  However, this is not considered best
+     practice, because the calibration model might change between
+     sectors.
+
+   <CALDIR> is a directory with calibration models, which are
+     distributed with the git repository and DVC. For example, one
+     might set this variable to CALIDR=~/python/tica/caliration_10min
+
+"
+[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    *)         eval $1 ;;
+  esac
+  shift
+done
+
+#check that all variables are set
+[[ $input_dir == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit
+ ; }
+[[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>
+" ; exit ; }
+
+
+input_dir_use=$(realpath $1)
+#make in list for tica
+for i in 1 2 3 4; do
+    for j in 1 2 3 4; do
+	mkdir cam${i}_ccd${j}
+	cd cam${i}_ccd${j}
+	ls ${input_dir_use}/tess*-${i}-${j}-*ffir*fits* > inlist
+	cd ..
+    done
+done
+
+
+#run tica
+for i in 1 2 3 4; do    
+    for j in 1 2 3 4; do
+	cd cam${i}_ccd${j}
+	tica-cal-ccd2ccd inlist --outdir . --caldir $CALDIR  --log ../tica.log
+	cd ..
+    done
+done
+

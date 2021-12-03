@@ -7,6 +7,7 @@ Created on Mon Sep 28 14:15:43 2020
 """
 
 import numpy as np
+
 import h5py
 import matplotlib.pyplot as plt
 from astropy.wcs import WCS
@@ -27,9 +28,9 @@ from btjd.btjd_correction import btjd_correction
 ephemeris_file = os.path.join( DIR,'../btjd/tess_ephem.txt')
 ephemeris_data = np.genfromtxt(os.path.join(ephemeris_file))
 
-from step1_get_refimg_ctrlpts import gdPRF_calc, idx_filter, ring_background
+from wcs_build.step1_get_refimg_ctrlpts import gdPRF_calc, idx_filter, ring_background, flux_weighted_centroid
 
-import photutils.centroids as cent
+#import photutils.centroids as cent
 
 from tess_stars2px import tess_stars2px_reverse_function_entry
 
@@ -41,7 +42,9 @@ from astropy import coordinates as coord
 import warnings
 import argparse
 
-from statsmodels import robust
+def calc_MAD(x):
+    abs_res = abs(x - np.median(x))
+    return np.median(abs_res)/0.6744897501960817  #0.67449
 
 
 def add_btjd_info(time, ra, dec, ephem_data):
@@ -83,7 +86,7 @@ def binmedian(xdata, ydata, nBins=30, xmin=None, xmax=None, showDetail=False):
             medata[i] = np.median(ydata[iuse])
             mndata[i] = np.mean(ydata[iuse])
             stddata[i] = np.std(ydata[iuse])
-            maddata[i] = robust.mad(ydata[iuse])
+            maddata[i] = calc_MAD(ydata[iuse])
             ndata[i] = len(ydata[iuse])
         elif len(iuse) > 0 and len(iuse) < 3:
             medata[i] = np.median(ydata[iuse])
@@ -189,10 +192,11 @@ def inverse_wcs_transform(hdr, ras, decs):
 
     
 def fit_wcs(ras, decs, cols, rows, tmags, \
+            SECTOR_WANT,CAMERA_WANT, CCD_WANT,
             blkidxs=None, NCOL=None, \
             fitDegree=5, noClip=False, DEBUG_LEVEL=0, MAKE_FIGS=None):
     # Use gwcs to fit a WCS and look at residuals if debugging
-    
+
     REFPIXCOL = 1024.0+45.0
     REFPIXROW = 1024.0
     PIX2DEG = 21.0/3600.0 # Turn pixels to degrees roughly
@@ -217,13 +221,35 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     raproj, decproj, scinfo = tess_stars2px_reverse_function_entry(\
                          SECTOR_WANT, CAMERA_WANT, CCD_WANT, REFPIXCOL, REFPIXROW)
     proj_point = SkyCoord(raproj, decproj, frame = 'icrs', unit=(u.deg, u.deg))
+
+    #print('proj_point1', proj_point)
     #  Reference subtracted pixel coordinates
     sclObsCols = (cols - REFPIXCOL) * PIX2DEG
     sclObsRows = (rows - REFPIXROW) * PIX2DEG
         
     xy = (sclObsCols, sclObsRows)
+    #print(np.c_[sclObsCols, sclObsRows, ras,decs][0:10])
     radec = (ras, decs)
+
+    #print('len of xy and radec on fit 1',
+    #      len(sclObsCols),
+    #      len(sclObsRows),
+    #      len(ras),
+    #      len(decs))
+
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
+    cx = gwcs_obj.forward_transform[1]
+    # polynomial fit object in y (row)
+    cy = gwcs_obj.forward_transform[2]
+    #c11 = cx.c1_0.value
+    #print(c11)
+    #c12 = cx.c0_1.value
+    #print(c12)
+    #c21 = cy.c1_0.value
+    #print(c21 )
+    #c22 = cy.c0_1.value
+    #print(c22 )
+
     gdResids = np.ones_like(cols, dtype=bool)
     # Look for outliers to trim
     gwcs_pred_ras, gwcs_pred_decs = gwcs_obj(sclObsCols, sclObsRows)
@@ -234,6 +260,8 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     # First trim out ones that deviate by absolute amount
     idxbd = np.where(deltaSeps >= OUTLIER_TRIM)[0]
     gdResids[idxbd] = False
+    #print('gdResids1',len(gdResids[gdResids == True]))
+
     # Next trim out ones that deviate by sigma based on tmag residual
     #  I use tmag residual in order to not remove stars based on 
     #  position that maybe didn't fit well the first time
@@ -246,6 +274,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         idxclp = np.where(cury >= OUTLIER_SIGMA*maddata[curi-1])[0]
         #print('{0:d} badn: {1:d}'.format(curi, len(idxclp)))
         gdResids[idxcur[idxclp]] = False
+    #print('gdResids2',len(gdResids[gdResids == True]))
     meddata, midx, mndata, stddata, maddata, iargs, ndata = binmedian(tmags, \
                                         deltaDecs)        
     unarg = np.sort(np.unique(iargs))
@@ -255,13 +284,27 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         idxclp = np.where(cury >= OUTLIER_SIGMA*maddata[curi-1])[0]
         #print('{0:d} badn: {1:d}'.format(curi, len(idxclp)))
         gdResids[idxcur[idxclp]] = False
-    
+    #print('gdResids3',len(gdResids[gdResids == True]))
     idxgd = np.where(gdResids)[0]
     idxbd = np.where(np.logical_not(gdResids))[0]
-    # refit
+
+    # refit with clipped data
     xy = (sclObsCols[idxgd], sclObsRows[idxgd])
     radec = (ras[idxgd], decs[idxgd])
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
+    cx = gwcs_obj.forward_transform[1]
+    # polynomial fit object in y (row)
+    #check if it changes after clipping data
+    #print("check after clipping data")
+    cy = gwcs_obj.forward_transform[2]
+    #c11 = cx.c1_0.value
+    #print(c11 )
+    #c12 = cx.c0_1.value
+    #print(c12 )
+    #c21 = cy.c1_0.value
+    #print(c21 )
+    #c22 = cy.c0_1.value
+    #print(c22 )
         
     # Iterate to find a better reference ra and dec
     #  such that there is no constant term in the polynomial fit
@@ -274,8 +317,22 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     raproj = newrefra
     decproj = newrefdec
     proj_point = SkyCoord(raproj, decproj, frame = 'icrs', unit=(u.deg, u.deg))
+    #print('proj_point2', proj_point)
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
-    
+    #cx = gwcs_obj.forward_transform[1]
+    #check if it changes with improved proj_point
+    # polynomial fit object in y (row)
+    #print("check improved proj_point")
+    #cy = gwcs_obj.forward_transform[2]
+    #c11 = cx.c1_0.value
+    #print(c11 * PIX2DEG)
+    #c12 = cx.c0_1.value
+    #print(c12 * PIX2DEG)
+    #c21 = cy.c1_0.value
+    #print(c21 * PIX2DEG)
+    #c22 = cy.c0_1.value
+    #print(c22 * PIX2DEG)
+
     # We have the wcs in polynomial form
     # now we need to convert it to SIP form
     # Start a header
@@ -539,8 +596,9 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
             mad1 = 0.0
             mad2 = 0.0
         else:
-            mad1 = robust.mad(deltaRas[idxAll])
-            mad2 = robust.mad(deltaDecs[idxAll])
+            mad1 = calc_MAD(deltaRas[idxAll])
+            mad2 = calc_MAD(deltaDecs[idxAll])            
+
         if np.isfinite(mad1) and np.isfinite(mad2):
             exResids[i]= np.sqrt(mad1*mad1+mad2*mad2)*c1
         else:
@@ -600,6 +658,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         plt.axhline(0.0, ls='--', color='r')
         #plt.ylim([-21.0, 21.0])
         if MAKE_FIGS and MAKE_FIGS.strip():
+            print(MAKE_FIGS)
             plt.title(MAKE_FIGS)
             plt.savefig('{0}_TmagVRaDiff.png'.format(MAKE_FIGS), dpi=300)
         if DEBUG_LEVEL <= 2:
@@ -875,7 +934,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
     # Main loop over images 
     for curImg in inputImgList:
         #if DEBUG_LEVEL>0:           
-        print('{0:d} of {1:d} {2}'.format(iImg, nImg, curImg))
+#        print('{0:d} of {1:d} {2}'.format(iImg, nImg, curImg))
         # open image
         hdulistCal = fits.open(curImg)
         if len(hdulistCal) == 2:
@@ -893,6 +952,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                 timeKey = 'TSTART'
                 dataKey = 1
             gotTimeStamp = True
+        if 'cal' in curImg:
+            dataKey = 0
         # Always initialize to the reference image coordinates
         lstGdCols = np.copy(obscols)
         lstGdRows = np.copy(obsrows)
@@ -929,7 +990,12 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                 midRow = int(round(curLstGdRows[jj]))
                 colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
                 rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
-                sciImgCal = hdulistCal[dataKey].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
+#                print(midRow-blkHlf-1,  midRow+blkHlf, midCol-blkHlf-1, midCol+blkHlf)
+#                print(dataKey, len(hdulistCal))
+#                print('type',type(hdulistCal[dataKey].data))
+#                print('shape',np.shape(hdulistCal[dataKey].data))
+                sciImgCal = hdulistCal[dataKey].data[midRow-blkHlf-1: midRow+blkHlf,
+                                                     midCol-blkHlf-1: midCol+blkHlf]
                 # Check if target is isolated
                 try:
                     gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
@@ -939,7 +1005,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                 if gdPRF:
                     # Determine background from 2 pixel ring around box
                     bkgLev = ring_background(sciImgCal)
-                    centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    centOut = flux_weighted_centroid(sciImgCal-bkgLev)
                     # centroid_com produces 0-based coordinates
                     newCol = centOut[0]+colX[0]
                     newRow = centOut[1]+rowY[0]
@@ -989,7 +1056,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                     rowY = np.arange(midRow-blkHlfCent, midRow+blkHlfCent+1)
                     # analysis region around target
                     sciImgCal = hdulistCal[0].data[midRow-blkHlfCent-1: midRow+blkHlfCent, midCol-blkHlfCent-1: midCol+blkHlfCent]
-                    centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                    centOut = flux_weighted_centroid(sciImgCal-bkgLev)
+
                     # Once in blue moon centroids go nutsy check for it
                     idx = np.where((centOut<-1.0) | (centOut>blkHlfCent*2+2))[0]
                     if len(idx) == 0:
@@ -1035,6 +1104,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         for curibad in idx_badregion:
             idx = np.where(blkidxs == curibad)[0]
             # pick three random ones in this subregion
+            np.random.seed(1010101)
             idxUse = np.random.choice(idx, (3,), replace=False)
             gdPrfs[idxUse] = -1 # record these random added for plotting and diagnostics
             idxgd = np.append(idxgd, idxUse)
@@ -1053,13 +1123,17 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
 
         # Write out FIGOUTEVERY image
         FIGOUTPREFIX = None
-        if np.mod(iImg, FIGOUTEVERY) == 0:
-            fileBase = os.path.splitext(os.path.basename(curImg))[0]
-            FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
+        if saveDiag == True:
+            if np.mod(iImg, FIGOUTEVERY) == 0:
+                fileBase = os.path.splitext(os.path.basename(curImg))[0]
+
+                FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
         newhdr, allStd, brightStd, faintStd, allStdPix, \
                 brightStdPix, faintStdPix, gdResids, exResids = fit_wcs(ras[idxgd], decs[idxgd], \
                                                 newCols[idxgd], newRows[idxgd], \
-                                                tmags[idxgd], blkidxs[idxgd], CTRL_PER_COL,\
+                                                tmags[idxgd], \
+                                                SECTOR_WANT, CAMERA_WANT, CCD_WANT,\
+                                                blkidxs[idxgd], CTRL_PER_COL,\
                                                 useFitDegree, useNoClipping, DEBUG_LEVEL,\
                                                 FIGOUTPREFIX)
         # Add the outliers to gdPrfs
@@ -1086,20 +1160,37 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         hdulistCal[0].header['TELESCOP'] = "TESS"
         hdulistCal[0].header['FILTER'] = "TESS" 
 
-        hdulistCal[0].header['MJD-BEG'] = hdulistCal[0].header['STARTTJD'] +\
-                                          hdulistCal[0].header['TJD_ZERO'] - 2400000.5
-        hdulistCal[0].header['MJD-END'] = hdulistCal[0].header['ENDTJD'] +\
-                                          hdulistCal[0].header['TJD_ZERO'] - 2400000.5
+        try:
+            hdulistCal[0].header['MJD-BEG'] = hdulistCal[0].header['STARTTJD'] +\
+                                              hdulistCal[0].header['TJD_ZERO'] - 2400000.5
+            hdulistCal[0].header['MJD-END'] = hdulistCal[0].header['ENDTJD'] +\
+                                              hdulistCal[0].header['TJD_ZERO'] - 2400000.5
+        except:
+            #for spoc origin???
+            hdulistCal[0].header['MJD-BEG'] = hdulistCal[0].header['TSTART'] +\
+                                              hdulistCal[0].header['BJDREFI'] - 2400000.5
+            hdulistCal[0].header['MJD-END'] = hdulistCal[0].header['TSTOP'] +\
+                                              hdulistCal[0].header['BJDREFI'] - 2400000.5
         
-#        print(  (hdulistCal[0].header['MJD-BEG'] - hdulistCal[0].header['MJD-END']) , 600.0/86400 )
-        assert (hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG']  -  600.0/86400 ) < 1.e-10
+            #        print(  (hdulistCal[0].header['MJD-BEG'] - hdulistCal[0].header['MJD-END']) , 600.0/86400 )
+        try:
+            assert (hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG']  -  600.0/86400 ) < 1.e-10
+        except KeyError:
+            #no key in SPOC, just continue for now
+            pass
+
         # Save header and control point data to fits file
         #  separate file for now.  Not touching input data
         # Add the wcsfit diagnostics to header
-        hdulistCal[0].header.extend( add_btjd_info(hdulistCal[0].header['MIDTJD'], 
-                                                   newhdr['CRVAL1'], 
-                                                   newhdr['CRVAL2'],
-                                                   ephemeris_data)  )
+
+        try:
+            hdulistCal[0].header.extend( add_btjd_info(hdulistCal[0].header['MIDTJD'], 
+                                                       newhdr['CRVAL1'], 
+                                                       newhdr['CRVAL2'],
+                                                       ephemeris_data)  )
+        except KeyError:
+            #no key in SPOC, just continue for now
+            pass
 
         #added by Scott Flemmings request for MAST archive
         newhdr['RA_TARG']   = newhdr['CRVAL1']
@@ -1279,7 +1370,7 @@ if __name__ == '__main__':
     if args.savediaginfo:
         saveDiag = True
         saveDir = os.path.join(outputDir,'wcs_diags2')
-        if not os.path.exists(saveDir):
+        if not os.path.isdir(saveDir):
             os.mkdir(saveDir)
     DEBUG_LEVEL = args.debug
     

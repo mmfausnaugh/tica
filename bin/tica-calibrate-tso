@@ -1,0 +1,112 @@
+#!/usr/bin/env bash
+
+# sets up directories for output of tica-cal-ffi2ccds.  
+#     The user sets the location of the data, which should be
+#     uncalibrated FFIs from the full camera.  Currently, these 
+#     are not public, and so this is closely set to the structure 
+#    of the POC filesystem.
+#  
+#    User also should set the calibration directory, either in an 
+#    environment variable or as a command line argument.
+
+
+o1=''
+o2=''
+#directory where data are; assume that subdirs are
+#orbit-${o1}/ffi_fits and same for o2
+dstem=''
+#~/python/tica/calibration_10min
+#consider logic like this for setting CALDIR
+#[[ -z "${DEPLOY_ENV}" ]] && MyVar='default' || MyVar="${DEPLOY_ENV}"
+CALDIR=''
+
+USAGE="
+  Usage: tica-calibrate-tso o1=<orbit1> o2=<orbit2> dstem=<data_dir_path> CALDIR=<calibration_dir_path>
+
+   This script sets up directories and runs tica-cal-ffi2ccds.
+     tica-cal-ffi2ccds is a python script.
+
+   <orbit1> and <orbit2> must be integer numbers or the string 'None',
+     which will skip either orbit 1 or orbit 2, as needed.
+
+   <data_dir_path> is the directory in which the POC keeps the orbit
+     directories.  This script assumes that the raw ffis in FITS format
+     are in '\$dstem'/orbits-'\$o1'/ffi_fits/.  These FITS files
+     correspond to TSO format, which is not publicly available at this
+     time.
+
+   <CALDIR> is a directory with calibration models, which are
+     distributed with the git repository and DVC. For example, one
+     might set this variable to CALIDR=~/python/tica/caliration_10min
+
+"
+
+[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+while [ $# -gt 0 ] ; do
+  case $1 in
+    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    *)         eval $1 ;;
+  esac
+  shift
+done
+
+#check that all variables are set
+[[ $o1 == '' ]] && { echo "$USAGE" ; echo "set orbit 1 to an integer (or 'None'): o1=<\d\d>" ; exit ; }
+[[ $o2 == '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
+[[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit ; }
+
+#[ -z $verbose ] || v=yes
+
+
+for i in 1 2 3 4; do
+    for j in 1 2 3 4; do
+	mkdir cam${i}_ccd${j}
+    done
+done
+
+#make in list for tica
+for i in 1 2 3 4; do
+    cd cam${i}_ccd1
+
+    if [ -e inlist ]; then
+	rm -f inlist
+    fi
+
+    if [ $o1 != "None" ]; then
+	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits* > inlist
+    fi
+
+    if [ $o2 != "None" ]; then
+	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits* >> inlist
+    fi
+
+#    rm -f inlist
+
+#new pdo disk
+#    ls /data/tess1/pdodata2/poc-data/orbits/orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits* > inlist
+#    ls /data/tess1/pdodata2/poc-data/orbits/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits* >> inlist
+    cd ..
+done
+
+#run tica
+for i in 1 2 3 4; do    
+    cd cam${i}_ccd1
+#    python ~/python/tica/bin/tica-cal-ffi2ccds inlist --outdir . --caldir ~/python/tica/calibration --parallel --log ../tica.log
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel --log ../tica.log
+    for j in 2 3 4; do
+	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
+    done
+    cd ..
+done
+
+for i in 1 2 3 4; do
+   for j in 1 2 3 4; do
+       cd "cam$i""_ccd$j"
+       gunzip *gz &
+       cd ..
+   done
+done
+wait
+
