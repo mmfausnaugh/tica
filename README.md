@@ -1,4 +1,4 @@
-# TESS Image CAlibration (TICA)
+ TESS Image CAlibration (TICA)
 
 The TESS Image Calibration (TICA) module is a python module for removing instrumental effects from raw TESS images.
 
@@ -14,9 +14,9 @@ There are currently six steps:
 
 ## Installation
 
-First of all, setting up a virtual environement is considered best practice.
+First of all, setting up a virtual environment for the TICA installation is considered best practice.
 
-You will need to clone this repository to get the calibration files, so you should install from here:
+Next, you will need to clone this repository to get the calibration files, so you should install from here:
 
   ```
   git clone https://tessgit.mit.edu/tica/tica.git
@@ -45,7 +45,7 @@ The workhorse script for calibrating raw TESS data is `bin/tica-cal-ccd2ccd`.  T
 
 An example bash script to run TICA on raw FFIs downloaded from MAST is `bin/tica-calibrate-spoc`.  This script is also installed in your working environment and a help option is  available (run with `--help` or with no arguments). 
 
-The user gives the bash script the location of the FFIs and the location of the calilbration models:
+The user gives the bash script the location of the FFIs and the location of the calibration models:
 
 ```
 mkdir tica_outputs
@@ -55,7 +55,7 @@ tica-calibrate-spoc input_dir=/absolute/path/to/raw/data CALDIR=~/python/tica/ca
 
 The script will make directories that organize the calibrated files by camera and CCD in the current directory.  The "raw data" are SPOC `*ffir*` files, available on MAST (https://archive.stsci.edu/tess/bulk_downloads.html).
 
-`bin/tica-calibrate-spoc` likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd`, or they can run `tica-cal-ccd2ccd` directly from the comamnd line.
+`bin/tica-calibrate-spoc` likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd`, or they can run `tica-cal-ccd2ccd` directly from the command line.
 
 Several other scripts are also installed by default---these are used to calibrate FFIs for MIT's [Quick Look Pipeline](https://archive.stsci.edu/hlsp/qlp) at the Payload Operations Center/TESS Science Office (POC/TSO).  Note that the POC/TSO FFIs are formatted differently than archival data products available at MAST.
 
@@ -67,13 +67,13 @@ Several other scripts are also installed by default---these are used to calibrat
 
 With DVC, you can easily update to the latest calibration models.  You can also revert to old versions of the models if you need to reproduce prior results.  
 
-To check for updates, run `git pull` in the top-level `tica` directory.  If new calibration models are availabel, then the `calibration_models/*.dvc` files will be updated.  If this is the case, `cd` to the `calibration_models` directory and run `dvc pull`.  
+To check for updates, run `git pull` in the top-level `tica` directory.  If new calibration models are available, then the `calibration_models/*.dvc` files will be updated.  If this is the case, `cd` to the `calibration_models` directory and run `dvc pull`.  
 
 Calibration models will be updated no more than once per year, and probably much less frequently.
 
-To reverting to an old model, first use `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need.  Then run `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
+To revert to an old model, first use `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need.  Then run `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
 
-There are directories at the top level of the repo for each calibration model (30 minute or 10 minute data).  Those directories link to the data in `calibration_models`. When you run TICA, you specify a single calibration directory, which will load all of the models that you need to run the code (based on what is checked out in `calibration_models`).
+There are directories at the top level of the repository for each calibration model (30 minute or 10 minute data).  Those directories link to the data in `calibration_models`. When you run TICA, you specify a single calibration directory, which will load all of the models that you need to run the code (based on what is checked out in `calibration_models`).
 
 Calibration models also exist for 20-second and 2-minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported at this time.
 
@@ -105,9 +105,9 @@ Note that the regression test does not check `tica/wcs_build/step1_get_refimg_ct
 
 There are two WCSs available to end-users: SPOC WCSs in the `*ffir*`/`*ffic*` files, and TICA WCSs in the [High Level Science Products on MAST](https://archive.stsci.edu/hlsp/tica).  There are small systematic differences between the SPOC and TICA WCSs that may be important for users with high astrometric requirements.
 
-The WCS differences can be analyzed by comparing the transforms of stars using the two WCSs.  For TICA, astrometric residuals of the fitted stars to the WCSs are also given in a binary table extension for every FFI.
+The WCS differences can be analyzed by comparing the transforms of stars using the two WCSs.  For TICA, astrometric residuals from the WCSs of the fitted stars are also given in a binary table extension for every FFI.
 
-We recommend that users employ the existing WCSs to analyze these astrometric differences.  However, as a programatic example, we have also provided a bash script that refits the TICA WCSs and overwrites the WCS keywords in the SPOC `*ffir*` files.  This script is `bin/tica-wcs-spoc`.  This bash script is installed in the user's environment and has a help menu (use `--help` or call with no arguments).
+We recommend that users employ the existing WCSs to analyze these astrometric differences.  However, as a scripting example, we have also provided a bash script that refits the TICA WCSs and overwrites the WCS keywords in the SPOC `*ffir*` files.  This script is `bin/tica-wcs-spoc`.  This bash script is installed in the user's environment and has a help menu (use `--help` or call with no arguments).
 
 
 ## To Do
