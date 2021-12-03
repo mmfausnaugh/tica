@@ -14,6 +14,8 @@ There are currently six steps:
 
 ## Installation
 
+First of all, setting up a virtual environement is considered best practice.
+
 You will need to clone this repository to get the calibration files, so you should install from here:
 
   ```
@@ -22,8 +24,6 @@ You will need to clone this repository to get the calibration files, so you shou
   python setup.py sdist
   pip3 install -e .
   ```
-
-Setting up a virtual environement is considered best practice.
 
 Instead, you can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
