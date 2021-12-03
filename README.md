@@ -45,7 +45,7 @@ The workhorse script for calibrating raw TESS data is `bin/tica-cal-ccd2ccd`.  T
 
 An example bash script to run TICA on raw FFIs downloaded from MAST is `bin/tica-calibrate-spoc`.  This script is also installed in your working environment and a help option is  available (run with `--help` or with no arguments). 
 
-The user gives the bash script the location of the FFIs and the location of the calilbration models to:
+The user gives the bash script the location of the FFIs and the location of the calilbration models:
 
 ```
 mkdir tica_outputs
@@ -61,7 +61,7 @@ Several other scripts are also installed by default---these are used to calibrat
 
 ### Setting the calibration directory
 
-***Users must point to the appropriate calibration directory when running `tica-calibrate-spoc`.   The code will raise an error if the exposure time in the data files does not match the specified calibration directory.***
+***Users must point to the appropriate calibration directory when running `tica-calibrate-spoc` or `tica-cal-ccd2ccd`.   The code will raise an error if the exposure time in the data files does not match the specified calibration directory.***
 
 ## Updating and Reverting Calibration Models
 
@@ -69,9 +69,9 @@ With DVC, you can easily update to the latest calibration models.  You can also 
 
 To check for updates, run `git pull` in the top-level `tica` directory.  If new calibration models are availabel, then the `calibration_models/*.dvc` files will be updated.  If this is the case, `cd` to the `calibration_models` directory and run `dvc pull`.  
 
-Calibration models will be updated no more than once per year, and probably much less frequently than that.
+Calibration models will be updated no more than once per year, and probably much less frequently.
 
-Reverting to an old model is slightly more complicated.  Roughly speaking, this consists of (1) using `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need, and then (2) running `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
+To reverting to an old model, first use `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need.  Then run `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
 
 There are directories at the top level of the repo for each calibration model (30 minute or 10 minute data).  Those directories link to the data in `calibration_models`. When you run TICA, you specify a single calibration directory, which will load all of the models that you need to run the code (based on what is checked out in `calibration_models`).
 
@@ -81,7 +81,7 @@ Calibration models also exist for 20-second and 2-minute data, but calibrating r
 
 Algorithms used for pixel calibrations can be found in `tica/tica/tica.py`.  In particular, `CCD.calibrate` is the function that actually produces the calibrated data.  
 
-Some users may find the data structures in `tica.py` useful for their own scripts.  We would recommend that they use `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for scripting with TICA data structures.
+Some users may find the data structures in `tica.py` useful for their own scripts.  We would recommend using `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for scripting with TICA data structures.
 
 
 ## Regression Tests
@@ -95,7 +95,7 @@ python run_reg_test.py
 
 This script will take SPOC `*ffir*` files in `reg_test/input` and apply calibrations and WCSs.  The results of those calibrations are checked against the contents of `reg_test/output_checks`---the test will fail if there are any changes.
 
-To run `run_reg_test.py`, it is necessary to pull the input data, output checks, and tables of WCS stars from the GDrive cloud.  DVC is used to retrieve these data in the same way as for the calibration models.  The regression test uses data from Sector 35 and 10 minute calibration models.  
+To run `run_reg_test.py`, it is necessary to pull the input data, output checks, and tables of WCS stars from the TICA GDrive storage.  DVC is used to retrieve these data in the same way as for the calibration models.  The regression test uses data from Sector 35 and 10 minute calibration models.  
 
 In very rare cases, `output_checks` will be updated if we implement changes that improve the TICA calibration or WCSs.  Changes to the output checks are under version control with the `reg_test/output_checks.dvc` file, and can be updated in the same way as the calibration models.
 
@@ -103,11 +103,11 @@ Note that the regression test does not check `tica/wcs_build/step1_get_refimg_ct
 
 ## World Coordinate Solutions
 
-There are two WCSs available to end-users; SPOC WCSs in the `*ffir*`/`*ffic*` files, and TICA WCSs in the HLSPs.  There are small systematic differences between the SPOC and TICA WCSs, which may be important for users with high requirements on their astrometry.
+There are two WCSs available to end-users: SPOC WCSs in the `*ffir*`/`*ffic*` files, and TICA WCSs in the [High Level Science Products on MAST](https://archive.stsci.edu/hlsp/tica).  There are small systematic differences between the SPOC and TICA WCSs that may be important for users with high astrometric requirements.
 
-The WCS differences can be analyzed by comparing the transforms of stars using the two WCSs.  Astrometric residuals of the fitted stars to the WCSs are also given in a binary table extension for every TICA FFI.
+The WCS differences can be analyzed by comparing the transforms of stars using the two WCSs.  For TICA, astrometric residuals of the fitted stars to the WCSs are also given in a binary table extension for every FFI.
 
-We recommend that users employ the existing WCSs in the data products/HLSPs to analyze these astrometric differences.  However, as a programatic example, we have also provided a bash script that refits the TICA WCSs and overwrites the WCS keywords in the SPOC `*ffir*` files.  This script is `bin/tica-wcs-spoc`.  This bash script is installed in the user's environment and has a help menu (use `--help` or call with no arguments).
+We recommend that users employ the existing WCSs to analyze these astrometric differences.  However, as a programatic example, we have also provided a bash script that refits the TICA WCSs and overwrites the WCS keywords in the SPOC `*ffir*` files.  This script is `bin/tica-wcs-spoc`.  This bash script is installed in the user's environment and has a help menu (use `--help` or call with no arguments).
 
 
 ## To Do
