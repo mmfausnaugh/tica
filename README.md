@@ -7,7 +7,7 @@ There are currently six steps:
  1. 2d bias correction: Remove fixed-pattern noise.
  2. Scalar bias correction: Remove the time-dependent amplifier pedestal.
  3. Gain: Convert from ADU to photoelectrons.
- 4. Linearity: Correct the non-linear response.
+ 4. Linearity: Correct the non-linear detector response.
  5. Smear correction:  Remove contamination from the shutterless transfer to the frame-store.
  6. Flat-field correction: Correct for the non-uniform response of each pixel.
 
@@ -41,11 +41,11 @@ where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Se
 
 ## Quick Start
 
-The workhorse script for calibrating raw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed in your working environment and can be run with `--help` to  see an explanation of the options available.  
+The workhorse script for calibrating raw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed in your working environment and can be run with `--help` to  see an explanation of the available options.  
 
-An example bash script to run tica on raw FFIs downloaded from MAST is in `bin/tica-calibrate-spoc`.  This script is also installed in your working environment and a help option is  available (run with `--help` or with no arguments). 
+An example bash script to run TICA on raw FFIs downloaded from MAST is `bin/tica-calibrate-spoc`.  This script is also installed in your working environment and a help option is  available (run with `--help` or with no arguments). 
 
-The user inputs the location of the FFIs and the location of the calilbration models to the bash script:
+The user gives the bash script the location of the FFIs and the location of the calilbration models to:
 
 ```
 mkdir tica_outputs
@@ -57,31 +57,31 @@ The script will make directories that organize the calibrated files by camera an
 
 `bin/tica-calibrate-spoc` likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd`, or they can run `tica-cal-ccd2ccd` directly from the comamnd line.
 
-Several other scripts are also installed by default---these are used to calibrate FFIs for MIT's [Quick Look Pipeline](https://archive.stsci.edu/hlsp/qlp) at the Payload Operations Center/TESS Science Office.  Note that the format of these FFIs are different than archival data products available at MAST.
+Several other scripts are also installed by default---these are used to calibrate FFIs for MIT's [Quick Look Pipeline](https://archive.stsci.edu/hlsp/qlp) at the Payload Operations Center/TESS Science Office (POC/TSO).  Note that the POC/TSO FFIs are formatted differently than archival data products available at MAST.
 
 ### Setting the calibration directory
 
-***Users must point to the appropriate calibration directory when running `tica-calibrate-spoc`.   The code will raise an error if the exposure time in the data files does not match the calibration directory that you specified.***
+***Users must point to the appropriate calibration directory when running `tica-calibrate-spoc`.   The code will raise an error if the exposure time in the data files does not match the specified calibration directory.***
 
 ## Updating and Reverting Calibration Models
 
-With DVC, you can easily update to the latest calibration models whenever they are available.  You can also revert to old versions of the models if you need to reproduce prior results.  
+With DVC, you can easily update to the latest calibration models.  You can also revert to old versions of the models if you need to reproduce prior results.  
 
 To check for updates, run `git pull` in the top-level `tica` directory.  If new calibration models are availabel, then the `calibration_models/*.dvc` files will be updated.  If this is the case, `cd` to the `calibration_models` directory and run `dvc pull`.  
 
-Calibration models will be updated no more than once per year, and probably much less frequent than that.
+Calibration models will be updated no more than once per year, and probably much less frequently than that.
 
-Reverting to an old model is slightly more complicated.  Roughly speaking, this consists of (1) using `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need, and then (2) running `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch back and forth between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
+Reverting to an old model is slightly more complicated.  Roughly speaking, this consists of (1) using `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need, and then (2) running `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
 
-There are directories at the top level of the repo for each calibration model (30 minute or 10 minute data).  Those directories link back to the data in `calibration_models`. When you run TICA, you specify a single calibration directory, which will load all of the models that you need.
+There are directories at the top level of the repo for each calibration model (30 minute or 10 minute data).  Those directories link to the data in `calibration_models`. When you run TICA, you specify a single calibration directory, which will load all of the models that you need to run the code (based on what is checked out in `calibration_models`).
 
-Calibration models also exist for 20 second and 2 minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported at this time.
+Calibration models also exist for 20-second and 2-minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported at this time.
 
 ## Data Structures and Calibration Algorithms
 
-Algorithms used for pixel calibrations can be found in `tica/tica.py`.  In particular, `CCD.calibrate` is the function that actually produces the calibrated data.  
+Algorithms used for pixel calibrations can be found in `tica/tica/tica.py`.  In particular, `CCD.calibrate` is the function that actually produces the calibrated data.  
 
-Some users may find the data structures in `tica.py` useful for their own scripts.  We would recommend that they use `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for using the TICA data structures.
+Some users may find the data structures in `tica.py` useful for their own scripts.  We would recommend that they use `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for scripting with TICA data structures.
 
 
 ## Regression Tests
