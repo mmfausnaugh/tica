@@ -36,6 +36,7 @@ setup(
         'matplotlib',
         'logging',
         'h5py',
+        'tess-point',
         'gwcs'
         ]
 
