@@ -14,7 +14,7 @@ There are currently six steps:
 
 ## Installation
 
-First of all, setting up a virtual environment for the TICA installation is considered best practice.
+First, setting up a virtual environment for the TICA installation is considered best practice.
 
 Next, you will need to clone this repository to get the calibration files, so you should install from here:
 
@@ -41,9 +41,10 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
-***If you install `dvc` using `python` or `pip`, also be sure to install the packages necessary for accessing GDrive:***
+***If you install `dvc` using `python` or `pip`, you also need to install the packages necessary for accessing GDrive.  This can be accomplished as follows:***
 
 ```
+pip3 install dvc
 pip3 install dvc[gdrive]
 ```
 
