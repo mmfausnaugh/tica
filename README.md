@@ -41,7 +41,7 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
-***If you install `dvc` using `python` or `pip`, also be sure to install the packages necessary for accessing GDrive: ***
+***If you install `dvc` using `python` or `pip`, also be sure to install the packages necessary for accessing GDrive:***
 
 ```
 pip3 install dvc[gdrive]
