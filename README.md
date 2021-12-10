@@ -11,7 +11,7 @@ There are currently six steps:
  5. Smear correction:  Remove contamination from the shutterless transfer to the frame-store.
  6. Flat-field correction: Correct for the non-uniform response of each pixel.
 
-TICA also includes a module to find bright, relatively isolated stars in TESS FFIs, measure their centroids, and derive World Coordination Solutions.  
+TICA also includes a module to find bright, relatively isolated stars in TESS FFIs, measure their centroids, and derive World Coordinate Solutions.  
 
 ## Installation
 
@@ -67,7 +67,7 @@ The script will make directories that organize the calibrated files by camera an
 
 `bin/tica-calibrate-spoc` likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd`, or they can run `tica-cal-ccd2ccd` directly from the command line.
 
-Several other scripts are also installed by default---these are used to calibrate FFIs for MIT's [Quick Look Pipeline](https://archive.stsci.edu/hlsp/qlp) at the Payload Operations Center/TESS Science Office (POC/TSO).  Note that the POC/TSO FFIs are formatted differently than archival data products available at MAST.
+Several other scripts are also installed by default.  These scripts are used to calibrate FFIs for MIT's [Quick Look Pipeline](https://archive.stsci.edu/hlsp/qlp) at the Payload Operations Center/TESS Science Office (POC/TSO).  Note that the POC/TSO FFIs are formatted differently than archival data products available at MAST.
 
 ### Setting the calibration directory
 
@@ -91,7 +91,7 @@ Calibration models also exist for 20-second and 2-minute data, but calibrating r
 
 Algorithms used for pixel calibrations can be found in `tica/tica/tica.py`.  In particular, `CCD.calibrate` is the function that actually produces the calibrated data.  
 
-Some users may find the data structures in `tica.py` useful for their own scripts.  We would recommend using `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for scripting with TICA data structures.
+Some users may find the data structures in `tica.py` useful for their own scripts.  We recommend using `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for scripting with TICA data structures.
 
 
 ## Regression Tests
@@ -103,7 +103,7 @@ cd tica/reg_test
 python run_reg_test.py
 ```
 
-This script will take SPOC `*ffir*` files in `reg_test/input` and apply calibrations and WCSs.  The results of those calibrations are checked against the contents of `reg_test/output_checks`---the test will fail if there are any changes.
+This script will take SPOC `*ffir*` files in `reg_test/input` and apply calibrations and WCSs.  The results of those calibrations are checked against the contents of `reg_test/output_checks`; the test will fail if there are any changes.
 
 To run `run_reg_test.py`, it is necessary to pull the input data, output checks, and tables of WCS stars from the TICA GDrive storage.  DVC is used to retrieve these data in the same way as for the calibration models.  The regression test uses data from Sector 35 and 10 minute calibration models.  
 
