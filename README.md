@@ -27,6 +27,8 @@ Next, you will need to clone this repository to get the calibration files, so yo
 
 Instead, you can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
+See the `requirements.txt` file for a list of required packages.  Besides typical scientific computing packages (`numpy`, `scipy`, `matplotlib`, and `astropy`), TICA requires `gwcs` (https://github.com/spacetelescope/gwcs) and `tess-point` (https://github.com/christopherburke/tess-point).  The `setup.py` file should install any missing packages.
+
 2D bias and flat field calibration models are distributed by an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves are currently stored in a GDrive account associated with MIT.  
 
 To retrieve the calibration models, first install DVC using the directions on [the DVC website](https://dvc.org/doc/install).  Then run the following commands and follow the prompts:
@@ -38,6 +40,12 @@ dvc pull twodbias_<exptime>
 ```
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
+
+***If you install `dvc` using `python` or `pip`, also be sure to install the packages necessary for accessing GDrive: ***
+
+```
+pip3 install dvc[gdrive]
+```
 
 ## Quick Start
 
