@@ -120,6 +120,5 @@ We recommend that users employ the existing WCSs to analyze these astrometric di
 
 ## To Do
 
-1. Check install and that it runs.
-2. Need some method for time dependent twodbias corrections (as of April 2021)
-3. Configuration control, for example, when modifying goodPRF parameters in wcs_step2.
+1. Need some method for time dependent twodbias corrections (as of April 2021)
+2. Configuration control, for example, when modifying goodPRF parameters in wcs_step2.
