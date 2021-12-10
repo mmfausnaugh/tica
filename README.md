@@ -1,4 +1,4 @@
- TESS Image CAlibration (TICA)
+# TESS Image CAlibration (TICA)
 
 The TESS Image Calibration (TICA) module is a python module for removing instrumental effects from raw TESS images.
 
