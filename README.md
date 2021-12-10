@@ -11,6 +11,7 @@ There are currently six steps:
  5. Smear correction:  Remove contamination from the shutterless transfer to the frame-store.
  6. Flat-field correction: Correct for the non-uniform response of each pixel.
 
+TICA also includes a module to find bright, relatively isolated stars in TESS FFIs, measure their centroids, and derive World Coordination Solutions.  
 
 ## Installation
 
