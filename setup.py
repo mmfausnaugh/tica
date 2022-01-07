@@ -34,10 +34,9 @@ setup(
         'scipy>=1.5.2',
         'astropy>=4.2',
         'matplotlib>=3.3.2',
-        'logging>=0.4.9.6',
         'h5py>=2.10.0',
-        'tess-point>=0.6.0',
-        'gwcs>=0.15.0'
+        'tess-point>=0.6.2',
+        'gwcs==0.15.0'
         ]
 
 )    
