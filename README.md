@@ -36,7 +36,7 @@ To retrieve the calibration models, first install DVC using the directions on [t
 
 ```
 cd calibration_models
-dvc pull flat_combine
+dvc pull flat_combine/780nm
 dvc pull twodbias_<exptime>
 ```
 

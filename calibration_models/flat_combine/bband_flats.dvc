@@ -1,0 +1,5 @@
+outs:
+- md5: 5e7420903707d0045391ab6e510ee5e8.dir
+  size: 284175360
+  nfiles: 16
+  path: bband_flats
