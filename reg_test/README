@@ -30,7 +30,7 @@ after updating to python 3.9 with these dependencies:
 
 There are also smaller changes found between Intel and Apple M1 chips.  
 
-To deal with these, we force the header keywords to ahve a relative tolerance of 1.e-10; differences below this print a warning to stdout, and larger differences raise an Assertion error.  The current dependecies are for python 3.10:
+To deal with these, we force the header keywords to ahve a relative tolerance of 1.e-8; differences below this print a warning to stdout, and larger differences raise an Assertion error.  The current dependecies are for python 3.10:
         'numpy>=1.22.1',
         'scipy>=1.7.3',
         'astropy>=5.0',

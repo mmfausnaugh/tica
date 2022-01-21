@@ -94,7 +94,7 @@ def check_outputs(check_file_name):
             print('gold file {} = {}'.format(key, gold_f[0].header[key]))
             print('test file {} = {}'.format(key, test_f[0].header[key]))
             r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
-                     gold_f[0].haeder[key]
+                     gold_f[0].header[key]
             print('relative difference is {:3.2e}'.format(r_diff))
             if r_diff < 1.e-8:
                 continue
@@ -115,7 +115,7 @@ def check_outputs(check_file_name):
             #print('gold file {} = {}'.format(key, gold_f[0].header[key]))
             #print('test file {} = {}'.format(key, test_f[0].header[key]))
             r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
-                     gold_f[0].haeder[key]
+                     gold_f[0].header[key]
             if r_diff < 1.e-8:
                 continue
             else:
