@@ -54,7 +54,7 @@ def flux_weighted_centroid(flux_stamp):
     #centroid_col = centroid_col - np.shape(flux_stamp)[1]/2.0 + 0.5
     return np.array([centroid_col, centroid_row])
 
-def gdPRF_calc(img, blkHlf, wingFAC=0.90, contrastFAC=3.5):
+def gdPRF_calc(img, blkHlf, wingFAC=0.9, contrastFAC=3.5):
     rowSum = np.sum(img, axis=1)
     colSum = np.sum(img, axis=0)
     # check to make sure middle is higher than both wings 
