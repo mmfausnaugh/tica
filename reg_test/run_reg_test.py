@@ -78,7 +78,7 @@ def check_outputs(check_file_name):
     #header keywords can be different in the WCS for Intel vs. M1 chips,
     #as well as different versions of numpy
 
-    #we raise a warning if they differ by less then 1 part in 10^10
+    #we raise a warning if they differ by less then 1 part in 10^8
     #and we raise an error if they differ by more
     for key in gold_f[0].header.keys():
         if key == 'COMMENT':
@@ -95,7 +95,8 @@ def check_outputs(check_file_name):
             print('test file {} = {}'.format(key, test_f[0].header[key]))
             r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
                      gold_f[0].haeder[key]
-            if r_diff < 1.e-10:
+            print('relative difference is {:3.2e}'.format(r_diff))
+            if r_diff < 1.e-8:
                 continue
             else:
                 raise
@@ -115,7 +116,7 @@ def check_outputs(check_file_name):
             #print('test file {} = {}'.format(key, test_f[0].header[key]))
             r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
                      gold_f[0].haeder[key]
-            if r_diff < 1.e-10:
+            if r_diff < 1.e-8:
                 continue
             else:
                 raise
