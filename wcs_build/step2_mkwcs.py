@@ -24,7 +24,6 @@ import sys
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join( DIR,'..'))
 from btjd.btjd_correction import btjd_correction
-#not happy about the global variables
 ephemeris_file = os.path.join( DIR,'../btjd/tess_ephem.txt')
 ephemeris_data = np.genfromtxt(os.path.join(ephemeris_file))
 
@@ -52,12 +51,8 @@ def add_btjd_info(time, ra, dec, ephem_data):
     #print(time, ra,dec, ephem_data[-10:, 0] )
     btjd_mid, tess_position = btjd_correction(time, ra, dec, ephem_data)
     #print(btjd_mid, tess_position)
-    #this does not yet seem reliable---I think the equation and
-    #geometry I'm using is wrong, can't easily reproduce spoc
-    #leaving out htis keyword, for now
     #header['BTJDMID'] = (btjd_mid, 'Barycentric TJD, mid-exposure, center of frame')
 
-    #do I know that I got X and Y right?  Possible they were mixed up?
     header['TESS_X']  = (float('{:>13.2f}'.format(tess_position[0])), 'Spacecraft X coord, J2000 (km from barycenter)')
     header['TESS_Y']  = (float('{:>13.2f}'.format(tess_position[1])), 'Spacecraft Y coord, J2000 (km from barycenter)')
     header['TESS_Z']  = (float('{:>13.2f}'.format(tess_position[2])), 'Spacecraft Z coord, J2000 (km from barycenter)')
@@ -1182,7 +1177,6 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         # Save header and control point data to fits file
         #  separate file for now.  Not touching input data
         # Add the wcsfit diagnostics to header
-
         try:
             hdulistCal[0].header.extend( add_btjd_info(hdulistCal[0].header['MIDTJD'], 
                                                        newhdr['CRVAL1'], 
