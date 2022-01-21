@@ -1,8 +1,7 @@
-numpy >= 1.19.2
-scipy >= 1.5.2
-astropy >= 4.2
-matplotlib >= 3.3.2
-logging >= 0.4.9.6
-h5py >= 2.10.0
-tess-point >= 0.6.2
-gwcs >= 0.15.0
+numpy >= 1.22.1
+scipy >= 1.7.3
+astropy >= 5.0
+matplotlib >= 3.5.1
+h5py >= 3.6.0
+tess-point >= 0.6.3
+gwcs == 0.15.0

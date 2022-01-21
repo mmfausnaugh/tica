@@ -75,6 +75,11 @@ def check_outputs(check_file_name):
     
     assert (gold_f[0].data == test_f[0].data).all()
 
+    #header keywords can be different in the WCS for Intel vs. M1 chips,
+    #as well as different versions of numpy
+
+    #we raise a warning if they differ by less then 1 part in 10^10
+    #and we raise an error if they differ by more
     for key in gold_f[0].header.keys():
         if key == 'COMMENT':
             if 'calibration applied at' in gold_f[0].header[key][0]:
@@ -84,9 +89,16 @@ def check_outputs(check_file_name):
         try:
             assert gold_f[0].header[key] == test_f[0].header[key]
         except AssertionError:
+
+            print('WARNING!!!')
             print('gold file {} = {}'.format(key, gold_f[0].header[key]))
             print('test file {} = {}'.format(key, test_f[0].header[key]))
-            raise
+            r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
+                     gold_f[0].haeder[key]
+            if r_diff < 1.e-10:
+                continue
+            else:
+                raise
 
     #also, check that there are not new keywords in test_f
     for key in test_f[0].header.keys():
@@ -98,9 +110,16 @@ def check_outputs(check_file_name):
         try:
             assert gold_f[0].header[key] == test_f[0].header[key]
         except AssertionError:
-            print('gold file {} = {}'.format(key, gold_f[0].header[key]))
-            print('test file {} = {}'.format(key, test_f[0].header[key]))
-            raise
+            #print('WARNING')
+            #print('gold file {} = {}'.format(key, gold_f[0].header[key]))
+            #print('test file {} = {}'.format(key, test_f[0].header[key]))
+            r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
+                     gold_f[0].haeder[key]
+            if r_diff < 1.e-10:
+                continue
+            else:
+                raise
+
 
 for ii in range(len(inputs)):
     #check that calibration time safe gaurds work

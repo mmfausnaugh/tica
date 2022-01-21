@@ -123,13 +123,13 @@ class Calibration(object):
             calibration_dir = os.path.abspath(os.path.join(top_level_path, "../calibration/"))
         
         int_time_key = calibration_dir.split('_')[-1]
-        if int_time_key == '30min':
+        if '30min' in int_time_key:
             self.int_time = 1800
-        elif int_time_key == '10min':
+        elif '10min' in int_time_key:
             self.int_time = 600
-        elif int_time_key == '02min':
+        elif '02min' in int_time_key:
             self.int_time = 120
-        elif int_time_key == '20sec':
+        elif '20sec' in int_time_key:
             self.int_time = 20
 
         twodbias_dir = os.path.join(calibration_dir, 'twodbias/')

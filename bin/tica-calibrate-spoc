@@ -37,13 +37,12 @@ while [ $# -gt 0 ] ; do
 done
 
 #check that all variables are set
-[[ $input_dir == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit
- ; }
+[[ $input_dir == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit  ; }
 [[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>
 " ; exit ; }
 
 
-input_dir_use=$(realpath $1)
+input_dir_use=$(realpath $input_dir)
 #make in list for tica
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
