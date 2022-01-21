@@ -1,0 +1,41 @@
+
+TICA 1.0 was originally developyed and tested on python 3.6, with the
+following dependencies:
+
+        'scipy>=1.5.2',
+        'astropy>=4.2',
+        'matplotlib>=3.3.2',
+        'logging>=0.4.9.6',
+        'h5py>=2.10.0',
+        'tess-point>=0.6.0',
+        'gwcs>=0.15.0'
+        'tess-point>=0.6.2',
+        'gwcs==0.15.0'
+
+Note that tess-point s46 pointings changed in 0.6.2, so *do not* use
+older versions.  Also note that gwcs function calls changed in
+versions >0.15.0, so this version is pinned.
+
+
+There are some changes in the WCS keywords from the regression test
+after updating to python 3.9 with these dependencies:
+
+        'numpy==1.21.4',
+        'scipy==1.7.0',
+        'astropy==5.0',
+        'matplotlib==3.5.0',
+        'h5py==3.6.0',
+        'gwcs==0.15.0',
+        'tess-point==0.6.2',
+
+There are also smaller changes found between Intel and Apple M1 chips.  
+
+To deal with these, we force the header keywords to ahve a relative tolerance of 1.e-10; differences below this print a warning to stdout, and larger differences raise an Assertion error.  The current dependecies are for python 3.10:
+        'numpy>=1.22.1',
+        'scipy>=1.7.3',
+        'astropy>=5.0',
+        'matplotlib>=3.5.1',
+        'h5py>=3.6.0',
+        'tess-point>=0.6.3',
+        'gwcs==0.15.0'
+
