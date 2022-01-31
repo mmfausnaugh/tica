@@ -624,7 +624,6 @@ class CCD_File(CCD):
             self.calibrated_frame = self.calibrate()
         except:
             print('calibration failed')
-            raise
 
     def write_calibrate(self):      
         hdu_out = fits.PrimaryHDU(self.calibrated_frame.get_frame().astype(np.float32))
