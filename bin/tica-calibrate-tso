@@ -24,20 +24,33 @@ USAGE="
   Usage: tica-calibrate-tso o1=<orbit1> o2=<orbit2> dstem=<data_dir_path> CALDIR=<calibration_dir_path>
 
    This script sets up directories and runs tica-cal-ffi2ccds.
-     tica-cal-ffi2ccds is a python script.
+     tica-cal-ffi2ccds is a python script that reads TESS Science
+     Office (TSO) camera FFIs, removes instrumental effects from the
+     raw data, and writes TICA calibrated FFIs broken up by CCD.  
 
-   <orbit1> and <orbit2> must be integer numbers or the string 'None',
-     which will skip either orbit 1 or orbit 2, as needed.
+   This script assumes that all FFIs are saved under TSO formats and
+     naming conventions.  
+
+   TSO format FFI files are not publicly available at this time. See
+     tica-calibrate-spoc for the script that runs TICA on publicly
+     available SPOC FFIs.
+
+   <orbit1> and <orbit2> must be integer numbers or the string 'None'.
+     In some cases we need to run both orbit 1 and 2, or skip either
+     orbit 1 or orbit 2.  In general, orbits should be paired to match
+     a single sector (i.e., o1=101 o2=102), though this is not
+     required.
 
    <data_dir_path> is the directory in which the POC keeps the orbit
      directories.  This script assumes that the raw ffis in FITS format
      are in '\$dstem'/orbits-'\$o1'/ffi_fits/.  These FITS files
-     correspond to TSO format, which is not publicly available at this
+     correspond to TSO format, which are not publicly available at this
      time.
 
    <CALDIR> is a directory with calibration models, which are
      distributed with the git repository and DVC. For example, one
      might set this variable to CALDIR=~/python/tica/caliration_10min
+     Absolute or relative paths are allowed.
 
 "
 

@@ -17,29 +17,33 @@ USAGE="
   Usage: tica-wcs-step2-allcam-allccd SECTOR=<sector> dstem=<data_dir_path> DEBUGIT=<debug_flag>
 
   This script runs step2_mkwcs.py step2_mkwcs.py is a python script
-  that loops over FFIs in a given directory, measures star positions,
-  fits WCS coefficients, and adds the WCSs to the FFI headers.  The
-  python script also adds a binary table extension to the FITS files
-  that stores the measurements of the star centroids.  The FITS files
-  are modified in place.
+    that loops over FFIs in a given directory, measures star
+    positions, fits WCS coefficients, and adds the WCSs to the FFI
+    headers.  The python script also adds a binary table extension to
+    the FITS files that stores the measurements of the star centroids.
+    The FITS files are modified in place.
+
+  This script assumes that all FFIs and .h5 files are saved under TSO
+    formats and naming conventions (see the
+    tica-wcs-step1-allcam-allccd help menu).
+
+  The TSO format files are not publicly available at this time.  See
+    tica-calibrate-spoc and tica-wcs-spoc for the scripts that run
+    TICA on publicly available SPOC FFIs.
 
   <SECTOR> is a two digit integer.  It is used in calls to the
-  tess-point python package, in order to convert row/col to ra/dec.
+    tess-point python package, in order to convert row/col to ra/dec.
 
   <data_dir_path> is the directory where the FFIs are saved.
-  Currently, this script assumes that 16 directories exist in this
-  location, with naming convention /data_dir_path/cam\$i_ccd\$j/.
-  This script also assumes that /data_dir_path/refout exists, and that
-  .h5 files are saved there with the RAs and DECs of good stars for
-  the WCS fit.  The .h5 files are produced with
-  tica-wcs-step1-allcam-allccd.
-
-  This script further assumes that all FFIs and .h5 files are saved
-  under TSO formats and naming conventions.  These files are not
-  publically available at this time.
+    Currently, this script assumes that 16 directories exist in this
+    location, with naming convention /data_dir_path/cam\$i_ccd\$j/.
+    This script also assumes that /data_dir_path/refout exists, and
+    that .h5 files are saved there with the RAs and DECs of good stars
+    for the WCS fit.  The .h5 files are produced with
+    tica-wcs-step1-allcam-allccd.
 
   <debug_flag> is an integer, 0 for no output, 1 to print various
-  debugging statements.  Default is 0.
+    debugging statements.  Default is 0.
 
 "
 [ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
