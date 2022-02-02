@@ -48,14 +48,33 @@ def worker( in_tuple ):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(prog='tica', description="Calibrate FITS files")
-    parser.add_argument("fileinputs", metavar="FILES", help="file containing list of FITS files to process")
+    description_string = """
+
+    This script calibrates raw FFI FITS files.
+
+    The list of FITS files to calibrate should be saved in a plain text
+    file, with one file per line.  The text file is the positional argument for this script.
+
+    The input FITS files need to be saved as individual CCDs, as available in
+    the SPOC raw *ffir*fits files available on MAST
+    (https://archive.stsci.edu/tess/bulk_downloads/bulk_downloads_ffi-tp-lc-dv.html;
+    scroll down to "Uncalibrated FFIs").  
+
+    The calibrated files will be saved as individual CCDs in FITS format, with a
+    `.cal.` string added to the names.
+
+
+    
+    """
+
+    parser = argparse.ArgumentParser(prog='tica', description=description_string)
+    parser.add_argument("fileinputs", metavar="FILE", help="text file containing a list of FITS files to process")
     parser.add_argument("--outdir", metavar="DIRECTORY", help="directory in which to place the results")
     parser.add_argument("--caldir", metavar="DIRECTORY", default=None,
                         help="calibration directory")
-    parser.add_argument("--parallel", action="store_true", help="run files in parallel")
+    parser.add_argument("--parallel", action="store_true", help="run calibration in parallel")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
-    parser.add_argument("-l", "--log", metavar="LOG_FILE", help="log file")
+    parser.add_argument("-l", "--log", metavar="LOG_FILE", help="save logging output to this file")
 
     args = parser.parse_args()
 

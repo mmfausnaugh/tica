@@ -7,11 +7,11 @@ CALDIR=''
 USAGE="
   Usage: tica-calibrate-spoc input_dir=<data_dir_path>  CALDIR=<calibration_dir_path>
 
-  This script sets up directories for output of tica-cal-ccd2ccd and
-   runs tica-cal-ccd2ccd.  tica-cal-ccd2ccd is a python script that
-   removes instrumental effects from raw data and writes TICA
-   calibrated FFIs.  This file (bash script) tells the python script
-   where the data are stored and what calibration model to use.
+  This script runs tica-cal-ccd2ccd on a collection of raw FFIs.
+   tica-cal-ccd2ccd is a python script that removes instrumental
+   effects from raw data and writes TICA calibrated FFIs.  This file
+   (bash script) tells the python script where the data are stored and
+   what calibration model to use.
 
   This script works exclusively on raw SPOC FFIs (*ffir*fits files).
     *ffir*fits files can be downloaded from
@@ -25,7 +25,7 @@ USAGE="
      practice because the calibration model might change between
      sectors.
 
-   <CALDIR> is a directory with calibration models, which are
+   <CALDIR> is the directory with calibration models, which are
      distributed with the git repository and DVC. For example, one
      might set this variable to CALDIR=~/python/tica/caliration_10min
      Absolute or relative paths are allowed.
@@ -49,7 +49,7 @@ done
 
 input_dir_use=$(realpath $input_dir)
 #make in list for tica
-#one could corganize by cam/CCD by looping in the following way
+#one could organize by cam/CCD by looping in the following way
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
 #	mkdir cam${i}_ccd${j}
@@ -61,7 +61,7 @@ done
 
 
 #run tica
-#one could corganize by cam/CCD by looping in the following way
+#one could organize by cam and CCD by looping in the following way
 #for i in 1 2 3 4; do    
 #    for j in 1 2 3 4; do
 tica-cal-ccd2ccd inlist --outdir . --caldir $CALDIR  --log ../tica.log

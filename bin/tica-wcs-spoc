@@ -29,17 +29,18 @@ USAGE="
   This script and step2_mkwcs.py require a reference file that
     contains the RAs and DECs of suitable stars for fitting the WCS.
     You need to download these reference files from MAST
-    (https://archive.stsci.edu/hlsp/tica; click on `Ref. Star` for the
-    sector that matches <SECTOR>).  The reference files are saved in
-    .h5 format, and this script assumes that the reference files are
-    saved in <data_dir_path>/ref_stars.
+    (https://archive.stsci.edu/hlsp/tica; click on the `Ref. Star`
+    hyperlink for the sector that matches <SECTOR>).  The reference
+    files are saved in .h5 format, and this script assumes that the
+    reference files are saved in <data_dir_path>/ref_stars.
 
   <SECTOR> is a two digit integer.  It is used in calls to the
     tess-point python package, in order to convert row/col to ra/dec.
 
   <data_dir_path> is the directory where the FFIs are saved.  This
      script assumes that all the FFIs of interest are in that
-     directory, regardless of camera or CCD.
+     directory, regardless of camera or CCD.  The reference .h5 files
+     must be saved in <data_dir_path>/ref_stars.
 
   <debug_flag> is an integer, 0 for no output, 1 to print various
     debugging statements.  The default is 0.
