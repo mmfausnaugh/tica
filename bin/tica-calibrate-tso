@@ -37,7 +37,7 @@ USAGE="
 
    <CALDIR> is a directory with calibration models, which are
      distributed with the git repository and DVC. For example, one
-     might set this variable to CALIDR=~/python/tica/caliration_10min
+     might set this variable to CALDIR=~/python/tica/caliration_10min
 
 "
 
