@@ -4,6 +4,7 @@ import os
 import sys
 
 DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(DIR, '..'))
 
 from tica.tica import Calibration, CCD_File
 from wcs_build.step2_mkwcs import fit_wcs_in_imgdir
