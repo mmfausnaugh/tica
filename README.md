@@ -2,7 +2,11 @@
 
 The TESS Image Calibration (TICA) module is a python module for removing instrumental effects from raw TESS images.
 
-There are currently six steps:
+TICA calibrated Full Frame Images (FFIs) are publicly available at [MAST as a High Level Science Product](https://archive.stsci.edu/hlsp/tica), typically within 1 week of data downlink. TICA FFIs, calibration steps, and World Coordinate Solutions are described in [Fausnaugh et al. 2020](https://iopscience.iop.org/article/10.3847/2515-5172/abd63a).  More information the MIT/NASA TESS mission can be found https://tess.mit.edu/ and https://heasarc.gsfc.nasa.gov/docs/tess/. 
+
+This git repository holds the codebase used to generate the TICA calibrated images. We encourage users to browse the code base should you have questions regarding the calibration steps. We also provide installation steps, procedure, and test cases for those that would like to customize or enhance the TESS calibrations for their own scientific research. This document assumes that the user is familiar with typical astronomical CCD calibration steps, FITS file storage, python programming, python package management, and linux-based command line os interface.
+
+TICA applies six steps to raw TESS FFIs:
 
  1. 2d bias correction: Remove fixed-pattern noise.
  2. Scalar bias correction: Remove the time-dependent amplifier pedestal.
@@ -14,25 +18,48 @@ There are currently six steps:
 TICA also includes a module to find bright, relatively isolated stars in TESS FFIs, measure their centroids, and derive World Coordinate Solutions.  
 
 ## Installation
+### 1. Environment and Codebase
 
-First, setting up a virtual environment for the TICA installation is considered best practice.
+TICA requires python version 3.9 or higher.  Using a virtual environment for the TICA installation is considered best practice.  With the `conda` environment manager, you can choose the python version for a given environment:
+```
+conda create -n tica_env python=3.10
+conda activate tica_env
+```
 
-Next, you will need to clone this repository to get the calibration files, so you should install from here:
+If you have python 3.9 or higher, you can instead use `virtualenv` or a similar environment manager.
+
+Next, you will need to clone the TICA repository to get the calibration files, so you should install from here:
 
   ```
   git clone https://tessgit.mit.edu/tica/tica.git
   cd tica
   python setup.py sdist
-  pip3 install -e .
+  pip install -e .
   ```
 
-Instead, you can  add the `tica` directory to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
+Instead, you can  add the `tica` repository to you `PYTHONPATH` environment variable and `tica/bin` to your `PATH`.
 
-See the `requirements.txt` file for a list of required packages.  Besides typical scientific computing packages (`numpy`, `scipy`, `matplotlib`, and `astropy`), TICA requires `gwcs` (https://github.com/spacetelescope/gwcs) and `tess-point` (https://github.com/christopherburke/tess-point).  The `setup.py` file should install any missing packages.
+See the `requirements.txt` file for a list of required packages.  Besides typical scientific computing packages (`numpy`, `scipy`, `matplotlib`, and `astropy`), TICA requires `gwcs` (https://github.com/spacetelescope/gwcs) and `tess-point` (https://github.com/christopherburke/tess-point).  The `setup.py` file should install any missing packages.  You can also copy the TICA HLSP production environment with the `tica/environment.yml` file
+```
+conda env create -f environment.yml
+```
+
+### 2. Calibration Models
 
 2D bias and flat field calibration models are distributed by an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves are currently stored in a GDrive account associated with MIT.  
 
-To retrieve the calibration models, first install DVC using the directions on [the DVC website](https://dvc.org/doc/install).  Then run the following commands and follow the prompts:
+##### ***Warning: to use DVC to retrieve the calibration models, you will need to give DVC read/write permissions in a Google account.***  
+The read/write permissions are required because GDrive uses Google accounts to manage access to public folders.  Note that you will only be able to read (pull) from the TICA calibration GDrive folder, you will not be able to write (push) to the calibration folder.  DVC will prompt you to add the Google account permissions using a web browser the first time you use it.  You can manage DVC's permissions at any time under the 'Security' tab in your Google account (under 'Third party apps with account access', see [this google help link](https://support.google.com/accounts/answer/3466521?hl=en) for more information).  
+
+##### We will be moving the calibration models to a server at MAST or MIT in the near future, so that access the calibration files does not require a Google account.
+
+To retrieve the calibration models, first install DVC using the directions on [the DVC website](https://dvc.org/doc/install).  You can use the website's downloadable script, as well as `homebrew`,`conda`, or `pip`.  However, if you use `pip`, note that you also need to install libraries necessary for Gdrive access:
+```
+pip install dvc
+pip install dvc[gdrive]
+```
+
+Then run the following commands and follow the prompts:
 
 ```
 cd calibration_models
@@ -42,28 +69,27 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
-***If you install `dvc` using `python` or `pip`, you also need to install the packages necessary for accessing GDrive.  This can be accomplished as follows:***
-
-```
-pip3 install dvc
-pip3 install dvc[gdrive]
-```
 
 ## Quick Start
 
-The workhorse script for calibrating raw TESS data is `bin/tica-cal-ccd2ccd`.  This script is installed in your working environment and can be run with `--help` to  see an explanation of the available options.  
+During installation, all TICA scripts are installed in the `$PATH` of your working environment and are available from the command line.  The scripts are also located in the `bin/` directory of the repository.
 
-An example bash script to run TICA on raw FFIs downloaded from MAST is `bin/tica-calibrate-spoc`.  This script is also installed in your working environment and a help option is  available (run with `--help` or with no arguments). 
+The workhorse script for calibrating raw TESS data is `tica-cal-ccd2ccd`, and can be run with `--help` to  see an explanation of the available options.  
 
-The user gives the bash script the location of the FFIs and the location of the calibration models:
+An example bash script that runs TICA on raw FFIs downloaded from MAST is `tica-calibrate-spoc`.  This script is also installed in your working environment and a help option is  available (run with `--help` or with no arguments). 
+
+Next, download some raw FFIs from MAST (https://archive.stsci.edu/tess/bulk_downloads/bulk_downloads_ffi-tp-lc-dv.html). From that link, you will be able to access a `.sh` script that downloads 'raw' SPOC FFI files (`*ffir*fits`) using `curl`.  Note that the `.sh` script will download an entire sector of FFIs; you may want to edit the script to download just a few raw FFIs to start.
+
+Once the raw data are downloaded, the user gives `tica-calibrate-spoc` the location of the FFIs and the location of the calibration models:
 
 ```
 mkdir tica_outputs
 cd tica_outputs
-tica-calibrate-spoc input_dir=/absolute/path/to/raw/data CALDIR=~/python/tica/calibration_10min
+tica-calibrate-spoc input_dir=/path/to/raw/data CALDIR=~/python/tica/calibration_10min
 ```
 
-The script will make directories that organize the calibrated files by camera and CCD in the current directory.  The "raw data" are SPOC `*ffir*` files, available on MAST (https://archive.stsci.edu/tess/bulk_downloads.html).
+The script will make directories that organize the calibrated files by camera and CCD in the current directory.  
+
 
 `bin/tica-calibrate-spoc` likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd`, or they can run `tica-cal-ccd2ccd` directly from the command line.
 
@@ -83,13 +109,13 @@ Calibration models will be updated no more than once per year, and probably much
 
 To revert to an old model, first use `git checkout` to get the version of the `.dvc` file that corresponds to the model that you need.  Then run `dvc checkout`.  DVC handles access to the cloud, and caches the downloads so that you can easily switch between different versions of the models.  See the [DVC docs](https://dvc.org/doc/start) for more information and tutorials.
 
-There are directories at the top level of the repository for each calibration model (30 minute or 10 minute data).  Those directories link to the data in `calibration_models`. When you run TICA, you specify a single calibration directory, which will load all of the models that you need to run the code (based on what is checked out in `calibration_models`).
+There are directories at the top level of the repository for each calibration model (30 minute or 10 minute data).  Those directories link to the data in `calibration_models`. When you run TICA, you specify a single calibration directory, which will load all of the models that you need to run the code (based on what DVC has checked out in `calibration_models`).
 
 Calibration models also exist for 20-second and 2-minute data, but calibrating raw pixels from SPOC Target Pixel Files is not supported at this time.
 
 ## Data Structures and Calibration Algorithms
 
-Algorithms used for pixel calibrations can be found in `tica/tica/tica.py`.  In particular, `CCD.calibrate` is the function that actually produces the calibrated data.  
+Algorithms used for pixel calibrations can be found in `tica/tica/tica.py`.  In particular, `CCD.calibrate` is the function that produces the calibrated data.  
 
 Some users may find the data structures in `tica.py` useful for their own scripts.  We recommend using `bin/tica-cal-ccd2ccd` or `bin/tica-cal-ffi2ccds` as a guide for scripting with TICA data structures.
 
@@ -99,13 +125,20 @@ Some users may find the data structures in `tica.py` useful for their own script
 There is a regression test in `tica/reg_test` that can be used to test any changes to the TICA code.  To run the regression test:
 
 ```
-cd tica/reg_test
+cd tica/calibration_models
+dvc pull flat_combine/780nm
+dvc pull twodbias_10min
+dvc pull twodbias_30min
+cd ../reg_test
+dvc pull *dvc
 python run_reg_test.py
 ```
 
-This script will take SPOC `*ffir*` files in `reg_test/input` and apply calibrations and WCSs.  The results of those calibrations are checked against the contents of `reg_test/output_checks`; the test will fail if there are any changes.
+This script will take SPOC `*ffir*` files in `reg_test/input` and apply calibrations and WCSs.  The results of those calibrations are checked against the contents of `reg_test/output_checks`.  
 
-To run `run_reg_test.py`, it is necessary to pull the input data, output checks, and tables of WCS stars from the TICA GDrive storage.  DVC is used to retrieve these data in the same way as for the calibration models.  The regression test uses data from Sector 35 and 10 minute calibration models.  
+The test will fail if there are any changes to the calibrated data, or any header keywords differ by a relative error of more than 1.e-8.  We have found that header keywords (especially WCS parameters) can change by a small amount between python 3.9 and 3.10, as well as processor architecture, and so a warning is raised for relative differences less than 1.e-8.  See `tica/reg_test/README` for more details.
+
+To run `run_reg_test.py`, it is necessary to pull the input data, output checks, and tables of WCS stars from the TICA GDrive storage.  These are stored in the directories `input`, `output_checks`, and `ref_stars`, respectively.  DVC is used to retrieve these data in the same way as for the calibration models, and is handled with the `dvc pull *dvc` command in the example above.  The regression test uses data from Sector 35, 10 minute calibration models, and checks that 30 minute calibration models cannot be used on the test data.
 
 In very rare cases, `output_checks` will be updated if we implement changes that improve the TICA calibration or WCSs.  Changes to the output checks are under version control with the `reg_test/output_checks.dvc` file, and can be updated in the same way as the calibration models.
 
@@ -113,7 +146,7 @@ Note that the regression test does not check `tica/wcs_build/step1_get_refimg_ct
 
 ## World Coordinate Solutions
 
-There are two WCSs available to end-users: SPOC WCSs in the `*ffir*`/`*ffic*` files, and TICA WCSs in the [High Level Science Products on MAST](https://archive.stsci.edu/hlsp/tica).  There are small systematic differences between the SPOC and TICA WCSs that may be important for users with high astrometric requirements.
+There are two WCSs available to end-users: SPOC WCSs in the `*ffir*`/`*ffic*` files from MAST, and TICA WCSs in the [High Level Science Products](https://archive.stsci.edu/hlsp/tica).  There are small systematic differences between the SPOC and TICA WCSs that may be important for users with high astrometric requirements.
 
 The WCS differences can be analyzed by comparing the transforms of stars using the two WCSs.  For TICA, astrometric residuals from the WCSs of the fitted stars are also given in a binary table extension for every FFI.
 
