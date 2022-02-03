@@ -29,7 +29,7 @@ USAGE="
   This script and step2_mkwcs.py require a reference file that
     contains the RAs and DECs of suitable stars for fitting the WCS.
     You need to download these reference files from MAST
-    (https://archive.stsci.edu/hlsp/tica; click on the `Ref. Star`
+    (https://archive.stsci.edu/hlsp/tica; click on the `Ref Star`
     hyperlink for the sector that matches <SECTOR>).  The reference
     files are saved in .h5 format, and this script assumes that the
     reference files are saved in <data_dir_path>/ref_stars.
