@@ -2,6 +2,7 @@ import numpy as np
 from astropy.io import fits
 import os
 import sys
+import argparse
 
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
@@ -81,6 +82,8 @@ def check_outputs(check_file_name):
 
     #we raise a warning if they differ by less then 1 part in 10^8
     #and we raise an error if they differ by more
+    
+    warning_flag = 0.0
     for key in gold_f[0].header.keys():
         if key == 'COMMENT':
             if 'calibration applied at' in gold_f[0].header[key][0]:
@@ -92,12 +95,14 @@ def check_outputs(check_file_name):
         except AssertionError:
 
             print('WARNING!!!')
+            print('Differences in {}'.format(check_file_name))
             print('gold file {} = {}'.format(key, gold_f[0].header[key]))
             print('test file {} = {}'.format(key, test_f[0].header[key]))
             r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
                      gold_f[0].header[key]
             print('relative difference is {:3.2e}'.format(r_diff))
             if r_diff < 1.e-8:
+                warning_flag = 1.0
                 continue
             else:
                 raise
@@ -121,23 +126,50 @@ def check_outputs(check_file_name):
                 continue
             else:
                 raise
+    return warning_flag
 
+if __name__ == "__main__":
 
-for ii in range(len(inputs)):
-    #check that calibration model exptime safe gaurds work
-    try:
-        ccd1 = CCD_File(inputs[ii], calibration=calibration_wrong)
-    except AssertionError:
-        ccd1 = CCD_File(inputs[ii], calibration=calibration)
-    ccd1.write_calibrate()
+    description_string = """
 
-    cam = int(ccd1.header['CAMERA'])
-    ccd = int(ccd1.header['CCD'])
-    ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
-    run_wcs_fit( 35, cam, ccd, ref_file, [os.path.basename( output_checks[ii] )] )
+    Run TICA calibration and WCS on raw SPOC files in `input`
+    directory, and check for changes against standards in
+    `output_checks` directory.
 
-    check_outputs(output_checks[ii])
+    """
 
-    os.remove(os.path.basename( output_checks[ii] ))
+    parser = argparse.ArgumentParser(description=description_string)
+    parser.add_argument('--verbose', action='store_true',
+                        help="Print warnings.  Warnings are raised for"
+                        " keywords that differ by less than 1 part in 10^8."
+                        " Larger differences will cause the test to fail.")
 
-print('Check complete! No assertion errors')
+    args = parser.parse_args()
+    warning_flag = 0
+    for ii in range(len(inputs)):
+        #check that calibration model exptime safe gaurds work
+        try:
+            ccd1 = CCD_File(inputs[ii], calibration=calibration_wrong)
+        except AssertionError:
+            ccd1 = CCD_File(inputs[ii], calibration=calibration)
+        ccd1.write_calibrate()
+
+        cam = int(ccd1.header['CAMERA'])
+        ccd = int(ccd1.header['CCD'])
+        ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
+        run_wcs_fit( 35, cam, ccd, ref_file, [os.path.basename( output_checks[ii] )] )
+
+        warning_flag += check_outputs(output_checks[ii])
+
+        os.remove(os.path.basename( output_checks[ii] ))
+
+    if warning_flag == 0:
+        print('Check complete! No assertion errors')
+    elif warning_flag > 0 and args.verbose == False:
+        print('Check complete! No assertion errors\n\n'
+              'Some warnings were detected:  These are Header Keywords that'
+              ' differ from the output_checks by less than 1 part in 10^8.\n\n'
+              'Consider rerunning the test with "--verbose".')
+    else:
+        print('Check complete! No assertion errors')
+    
