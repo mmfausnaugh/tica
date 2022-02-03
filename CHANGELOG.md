@@ -29,10 +29,10 @@ Initial release on public github.  Primarily based on branch `faus_fix_requireme
 Refactored code to install TICA as a python package.  Added regression tests.  Primarily based on branch `faus_setup_dist`.
 ### Changed
 - `setup.py` now resolves dependencies.
-- The user can now install TICA libraries a python package and access scripts in `tica/bin` from the command line.
+- The user can now install TICA libraries as a python package and access scripts in `tica/bin` from the command line.
 - The bash scripts in `bin/` now have help functions.
 ### Added
-- `tica/tica/tica.py` now Enforces calibration of 30min/10min FFIs with appropriate 2D bias model.
-- Binary data in this repository are now tracked with dvc.
-- Added `reg_test`, which includes a python script to run regression test in order to test for changes caused by algorithms or updates to dependencies.
+- `tica/tica/tica.py` now enforces calibration of 30min/10min FFIs with the appropriate 2D bias model.
+- Binary data in this repository are now tracked with DVC.
+- Added the `reg_test` directory, which includes a python script to run regression test in order to test for changes in TICA data products.	
 ### Removed
