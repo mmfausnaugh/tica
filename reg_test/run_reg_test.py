@@ -67,7 +67,7 @@ def run_wcs_fit(sector, cam, ccd, refdata, imglist):
                       outdir, fitdeg,
                       save, debug)
 
-def check_outputs(check_file_name):
+def check_outputs(check_file_name, verbose=False):
     gold_f = fits.open(check_file_name)
 
     #assumes test files were written to reg_test directory, which is
@@ -93,14 +93,14 @@ def check_outputs(check_file_name):
         try:
             assert gold_f[0].header[key] == test_f[0].header[key]
         except AssertionError:
-
-            print('WARNING!!!')
-            print('Differences in {}'.format(check_file_name))
-            print('gold file {} = {}'.format(key, gold_f[0].header[key]))
-            print('test file {} = {}'.format(key, test_f[0].header[key]))
             r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
                      gold_f[0].header[key]
-            print('relative difference is {:3.2e}'.format(r_diff))
+            if verbose:
+                print('WARNING!!!')
+                print('Differences in gold file {}'.format(check_file_name))
+                print('gold file {} = {}'.format(key, gold_f[0].header[key]))
+                print('test file {} = {}'.format(key, test_f[0].header[key]))
+                print('relative difference is {:3.2e}'.format(r_diff))
             if r_diff < 1.e-8:
                 warning_flag = 1.0
                 continue
@@ -159,17 +159,25 @@ if __name__ == "__main__":
         ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
         run_wcs_fit( 35, cam, ccd, ref_file, [os.path.basename( output_checks[ii] )] )
 
-        warning_flag += check_outputs(output_checks[ii])
+        warning_flag += check_outputs(output_checks[ii], verbose=args.verbose)
 
         os.remove(os.path.basename( output_checks[ii] ))
 
     if warning_flag == 0:
-        print('Check complete! No assertion errors')
+        print('\n\nCheck complete! No assertion errors\n\n')
     elif warning_flag > 0 and args.verbose == False:
-        print('Check complete! No assertion errors\n\n'
-              'Some warnings were detected:  These are Header Keywords that'
-              ' differ from the output_checks by less than 1 part in 10^8.\n\n'
-              'Consider rerunning the test with "--verbose".')
+        print('\n\nCheck complete! No assertion errors\n\n'
+              'Some warnings were detected.  Warnings are raised\n'
+              ' for Header Keywords that differ from the output_checks\n'
+              ' by less than 1 part in 10^8.  We do not consider \n'
+              ' these differences significant and so consider the\n'
+              ' regression test to have passed.\n\n'
+              'Consider rerunning this test with "--verbose".')
     else:
-        print('Check complete! No assertion errors')
+        print('\n\nCheck complete! No assertion errors\n\n'
+              'Some warnings were detected.  This might be do due to\n'
+              ' different versions of python or Intel vs. Apple processors.\n'
+              ' We do not consider these differences significant\n'
+              ' and so consider the regression test to have passed.\n\n'
+              'See tica/reg_test/README for details.')
     
