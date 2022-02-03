@@ -217,33 +217,18 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
                          SECTOR_WANT, CAMERA_WANT, CCD_WANT, REFPIXCOL, REFPIXROW)
     proj_point = SkyCoord(raproj, decproj, frame = 'icrs', unit=(u.deg, u.deg))
 
-    #print('proj_point1', proj_point)
     #  Reference subtracted pixel coordinates
     sclObsCols = (cols - REFPIXCOL) * PIX2DEG
     sclObsRows = (rows - REFPIXROW) * PIX2DEG
         
     xy = (sclObsCols, sclObsRows)
-    #print(np.c_[sclObsCols, sclObsRows, ras,decs][0:10])
     radec = (ras, decs)
 
-    #print('len of xy and radec on fit 1',
-    #      len(sclObsCols),
-    #      len(sclObsRows),
-    #      len(ras),
-    #      len(decs))
 
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
     cx = gwcs_obj.forward_transform[1]
     # polynomial fit object in y (row)
     cy = gwcs_obj.forward_transform[2]
-    #c11 = cx.c1_0.value
-    #print(c11)
-    #c12 = cx.c0_1.value
-    #print(c12)
-    #c21 = cy.c1_0.value
-    #print(c21 )
-    #c22 = cy.c0_1.value
-    #print(c22 )
 
     gdResids = np.ones_like(cols, dtype=bool)
     # Look for outliers to trim
@@ -289,17 +274,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
     cx = gwcs_obj.forward_transform[1]
     # polynomial fit object in y (row)
-    #check if it changes after clipping data
-    #print("check after clipping data")
     cy = gwcs_obj.forward_transform[2]
-    #c11 = cx.c1_0.value
-    #print(c11 )
-    #c12 = cx.c0_1.value
-    #print(c12 )
-    #c21 = cy.c1_0.value
-    #print(c21 )
-    #c22 = cy.c0_1.value
-    #print(c22 )
         
     # Iterate to find a better reference ra and dec
     #  such that there is no constant term in the polynomial fit
@@ -312,21 +287,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     raproj = newrefra
     decproj = newrefdec
     proj_point = SkyCoord(raproj, decproj, frame = 'icrs', unit=(u.deg, u.deg))
-    #print('proj_point2', proj_point)
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
-    #cx = gwcs_obj.forward_transform[1]
-    #check if it changes with improved proj_point
-    # polynomial fit object in y (row)
-    #print("check improved proj_point")
-    #cy = gwcs_obj.forward_transform[2]
-    #c11 = cx.c1_0.value
-    #print(c11 * PIX2DEG)
-    #c12 = cx.c0_1.value
-    #print(c12 * PIX2DEG)
-    #c21 = cy.c1_0.value
-    #print(c21 * PIX2DEG)
-    #c22 = cy.c0_1.value
-    #print(c22 * PIX2DEG)
 
     # We have the wcs in polynomial form
     # now we need to convert it to SIP form
@@ -1354,7 +1315,7 @@ if __name__ == '__main__':
     IMG_LIST_STR = args.imgfiles
 #    print(IMG_LIST_STR)
     # We need to remove quotes if they exist in IMG_LIST_STR
-    # Using GNUparallel to run this command Ihad to add the quotes
+    # Using GNUparallel to run this command I had to add the quotes
     #  to avoid the files to be expanded on command line
     #IMG_LIST_STR= IMG_LIST_STR.replace('"','')
     # output directory is same as input directory

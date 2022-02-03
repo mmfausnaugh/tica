@@ -255,7 +255,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     # Specify cone search radius
     radSearch = np.max([delCol, delRow])*np.sqrt(2.0)/2.0 * pixScl
     # Here is the main work loop where over each sub image region
-    #  query TICto get stars
+    #  query TIC to get stars
     #  go over stars and make sure they have well behaved PRFs for isloated stars
     for i, curRa in enumerate(raCtrl2D_flat):
         curDec = decCtrl2D_flat[i]
@@ -340,7 +340,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
         outColPix = outColPix + corCol
         outRowPix = outRowPix + corRow
         
-        # Armed with the translation offset from prediction estiamte
+        # Armed with the translation offset from prediction estimate
         #  Now loop over all potential targets to find the control points that 
         #  pass gdPRF
         for j, curCol in enumerate(outColPix):

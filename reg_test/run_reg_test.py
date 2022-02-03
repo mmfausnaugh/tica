@@ -124,7 +124,7 @@ def check_outputs(check_file_name):
 
 
 for ii in range(len(inputs)):
-    #check that calibration time safe gaurds work
+    #check that calibration model exptime safe gaurds work
     try:
         ccd1 = CCD_File(inputs[ii], calibration=calibration_wrong)
     except AssertionError:

@@ -102,13 +102,18 @@ class Sector(object):
 
 
 class Calibration(object):
-    """Class to handle initialization of calibrations so it is performed just once
+    """Class to handle initialization of calibration models so it is
+    performed just once
+
     """
 
     @staticmethod
     def _set_calibration_data(cal_file, cal_dir, logger):
-        """given calibration files and directory return the FITs data structure
-        or else return none if no file exists to allow for placeholder"""
+        """given calibration files and directory return the FITs data
+        structure or else return none if no file exists to allow for
+        placeholder
+
+        """
         fits_file = os.path.join(cal_dir, cal_file)
         if os.path.exists(fits_file):
             with fits.open(fits_file) as fits_handle:
@@ -207,7 +212,6 @@ class CCD(object):
         else:
             self.calibration = Calibration()
             
-        #should probably have these attributes, since all calibration is tied to them...
         self.ccdnum = None
         self.camnum = None
 
@@ -299,7 +303,7 @@ class CCD(object):
         #linearity correction
         #still a CCD object
 
-        #JPD version
+        #version of POC model
         #out = self.linearity_correct(out)
 
         #in the spoc version, there is an object that stores the
@@ -347,7 +351,7 @@ class CCD(object):
         #first few columns can be affected by scattered light
         mask_col = slice(3,  None)
         #first few hundred rows can be affected by start of 
-        #frame ringing not that the 2D bias model is slightly different than
+        #frame ringing. note that the 2D bias model is slightly different than
         #the observed fram rining---overall, there is a small residual
         #at low row relative to the SPOC FFIs.
         mask_row = slice(750,None)
@@ -380,7 +384,7 @@ class CCD(object):
         return out
 
     def linearity_correct(self, out):
-        """Uses John Doty's model, which is a kind of sigmoid.
+        """Uses POC model, which is a kind of sigmoid.
        
         See IH, 6.4.2:
 
@@ -395,7 +399,7 @@ class CCD(object):
         Do not apply to under/over clocks
 
         For now, this does the calculation on the original data
-        struct!  The functional aspect is handled in CCD.calibrate()
+        structure!  The functional aspect is handled in CCD.calibrate()
 
         """
         gplus  = np.asarray([self.gplus['A'],  self.gplus['B'],  self.gplus['C'],  self.gplus['D'] ])
@@ -406,8 +410,10 @@ class CCD(object):
         return out
 
     def spoc_linearity_correct(self, out):
-        """Uses spoc parameterization, which is stored in a class.  Assign the
-        class in this object's __init__
+        """Uses spoc parameterization, which is stored in a class
+        LinearityModels.SpocLinearity. 
+
+        Assign the class in this object's __init__
 
         Do not apply to under/over clocks
 
@@ -643,7 +649,6 @@ class CCD_File(CCD):
 
         
         # here, the gain is the electron per ADU.
-        #in the FFI version, it looks this up in the output calibrated CCD, which has this property stored as 1.0---see line 311
         hdu_out.header.set('GAIN_A', self.gains['A'], 'e/ADU for CCD Sector A')
         hdu_out.header.set('GAIN_B', self.gains['B'], 'e/ADU for CCD Sector B')
         hdu_out.header.set('GAIN_C', self.gains['C'], 'e/ADU for CCD Sector C')
@@ -674,7 +679,6 @@ class CCD_File(CCD):
             hdupath = os.path.join(self.outdir, inbasename + '.cal' + inext)  # generate new path
 
             
-        # FIXME: should we have a forced override option?
         try:
             self.logger.info("generating output calibration file: {}".format( hdupath ) )
             hdulist.writeto(hdupath)
@@ -742,8 +746,8 @@ class FFI(object):
             C = ccd.sectors[2]
             D = ccd.sectors[3]
             out.append( np.c_[  A.underclock, B.underclock, C.underclock, D.underclock,
-                                            A.science, B.science, C.science, D.science,
-                                            A.overclock,   B.overclock,    C.overclock,   D.overclock   ])
+                                A.science, B.science, C.science, D.science,
+                                A.overclock,   B.overclock,    C.overclock,   D.overclock   ])
             
         return np.r_[
             np.c_[  out[2], out[3] ],
@@ -981,7 +985,7 @@ class FFI_File(FFI):
 
 
 
-    #These hand the API of the scripts in tica/bin
+    #These handle the API of the scripts in tica/bin
     def write_raw_CCDs(self):
         self.write_CCD_files(self.CCDs,'.raw',calibrated=False)
 
