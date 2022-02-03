@@ -1,6 +1,6 @@
 # TESS Image CAlibration (TICA)
 
-The TESS Image Calibration (TICA) module is a python module for removing instrumental effects from raw TESS images.
+The TESS Image Calibration (TICA) module is a python package for removing instrumental effects from raw TESS images.
 
 TICA calibrated Full Frame Images (FFIs) are publicly available at [MAST as a High Level Science Product](https://archive.stsci.edu/hlsp/tica), typically within 1 week of data downlink. TICA FFIs, calibration steps, and World Coordinate Solutions are described in [Fausnaugh et al. 2020](https://iopscience.iop.org/article/10.3847/2515-5172/abd63a).  More information about TESS can be found at https://tess.mit.edu/ and https://heasarc.gsfc.nasa.gov/docs/tess/. 
 
