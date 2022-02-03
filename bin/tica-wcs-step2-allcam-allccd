@@ -1,15 +1,9 @@
 #!/usr/bin/env bash
 
-# This uses GNU parallel to parallelize over the 16 camera ccd cameras
-#  ***THIS modifies the input images to add WCS and a WCS target centroids fits extension
-#SECTOR=27
-#DEBUGIT=0
 
 SECTOR=''
 DEBUGIT=0
 
-#dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
-#dstem="/data/tess1/image_sub/""sector$SECTOR""/"
 dstem=''
 
 
@@ -62,16 +56,6 @@ done
 
 
 
-# Example calling format
-# python step2_mkwcs.py -s 29 -ca 1 -cd 1 -rd refout/ref_S29_Orbit66_11.h5 -if '/pdo/qlp-data/orbit-66/ffi/cam1/ccd1/FITS/*' -fd 5 --savediaginfo -dbg 0
-
-# In this parallel commmand there are two inputs given after :::
-#  This will execute 16 jobs where {1} {2} are replaced by the inputs
-#   in a {1}=1 {2}=1, {1}=1 {2}=2, ... {1}=4 {2}=3, {1}=4 {2}=4. 
-#   The quote at the end for the third input {3} is the only way I could
-#    get a single quote in the command so the wild card is not expanded on the
-#    command line by the shell before calling python
-
 
 for i in 1 2 3 4; do 
     for j in 1 2 3 4; do
@@ -80,5 +64,13 @@ for i in 1 2 3 4; do
 done
 
 wait
+
+
+# In this parallel commmand there are two inputs given after :::
+#  This will execute 16 jobs where {1} {2} are replaced by the inputs
+#   in a {1}=1 {2}=1, {1}=1 {2}=2, ... {1}=4 {2}=3, {1}=4 {2}=4. 
+#   The quote at the end for the third input {3} is the only way I could
+#    get a single quote in the command so the wild card is not expanded on the
+#    command line by the shell before calling python
 
 #parallel --results mkwcs python step2_mkwcs.py -s ${SECTOR} -ca {1} -cd {2} -rd /pdo/users/faus/test_tica_wcs/s27/tso/refout/reftica_S27_O1_{1}{2}.h5 -if {3}/pdo/users/faus/test_tica_wcs/s27/tso/cam{1}_ccd{2}/tess\*-{1}-crm-ffi_ccd{2}.cal.fits{3} -fd 6 --savediaginfo -dbg ${DEBUGIT} ::: 1 2 3 4 ::: 1 2 3 4 ::: "\""

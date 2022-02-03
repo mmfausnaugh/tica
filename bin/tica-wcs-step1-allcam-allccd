@@ -1,12 +1,8 @@
 #!/usr/bin/env bash
 
 
-#SECTOR=27
-#REFFIN=00116500
 SECTOR=''
 REFFIN=''
-#dstem="/pdo/users/faus/test_tica_wcs/""s$SECTOR""/"
-#this is the output directory
 dstem=''
 
 
@@ -64,9 +60,6 @@ done
 
 
 # TICA
-#REF_IMG_TEMPLATE="
-#/pdo/users/faus/test_tica_wcs/s27/tso/cam!_ccd%/tess2020201040111-00116500-!-crm-ffi_ccd%.cal.fits"
-# OUTPUT_REFS will also use the replacement construct
 if [ -d "$dstem""/refout" ]; then
    echo "refout exists"
 else

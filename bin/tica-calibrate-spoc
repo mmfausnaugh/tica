@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-#as an example:  /pdo/spoc-data/sector-${sector}/ffis/
 
 input_dir=''
 CALDIR=''
@@ -65,8 +64,9 @@ done
 #for i in 1 2 3 4; do    
 #    for j in 1 2 3 4; do
 tica-cal-ccd2ccd inlist --outdir . --caldir $CALDIR  --log ../tica.log
-	#to parallelize calibration across CCDs
-	#tica-cal-ccd2ccd inlist --parallel --outdir . --caldir $CALDIR  #--log ../tica.log
+#to parallelize calibration across CCDs
+#tica-cal-ccd2ccd inlist --parallel --outdir . --caldir $CALDIR  #--log ../tica.log
+
 #    done
 #done
 
