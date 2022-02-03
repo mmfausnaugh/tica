@@ -22,4 +22,4 @@
     - An explanation of the proposed changes.
     - Evidence that the changes make a substantial differences to the TICA products. 
     - An explanation of why the change would be valuable for the scientific community as a whole.
-If we feel that the proposed changes are exceptionally useful or warranted, we will invite yout to submit a pull request.
+- If we feel that the proposed changes are exceptionally useful or warranted, we will invite yout to submit a pull request.
