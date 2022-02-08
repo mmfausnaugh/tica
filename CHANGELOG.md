@@ -23,6 +23,7 @@ Initial release on public github.  Primarily based on branch `faus_fix_requireme
 - Regression test directory now has a README to  log previous tests.
 - Regression test now includes a verbose mode, to either display or silience warnings.
 ### Added
+- Added MIT server to DVC remote, and set to default.
 ### Removed
 
 
@@ -35,5 +36,5 @@ Refactored code to install TICA as a python package.  Added regression tests.  P
 ### Added
 - `tica/tica/tica.py` now enforces calibration of 30min/10min FFIs with the appropriate 2D bias model.
 - Binary data in this repository are now tracked with DVC.
-- Added the `reg_test` directory, which includes a python script to run regression test in order to test for changes in TICA data products.	
+- Added the `reg_test` directory, which includes a python script to run regression test in order to test for changes in TICA data products.
 ### Removed
