@@ -19,7 +19,7 @@ TICA applies six steps to raw TESS FFIs:
 
 More information about the TESS instrument and detectors can be found in the [TESS Instrument Handbook](https://archive.stsci.edu/files/live/sites/mast/files/home/missions-and-data/active-missions/tess/_documents/TESS_Instrument_Handbook_v0.1.pdf).
 
-If you have questions or are having trouble, feel free to contact the project owner Michael Fausnaugh at faus@mit.edu. Questions about TICA or TESS, including bug reports, should be submitted to the TESS help desk (tesshelp@bigbang.gsfc.nasa.gov).
+If you have questions or are having trouble, feel free to contact the project owner Michael Fausnaugh at faus@mit.edu. Questions about TICA or TESS, including bug reports, should be submitted to the TESS help desk at tesshelp@bigbang.gsfc.nasa.gov.
 
 
 
@@ -74,12 +74,12 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
-You can also pull all of the calibration models at once, if you are at the top level `tica` directory and run
+You can also pull all of the calibration models if you are at the top level `tica` directory and run
 
 ```
 dvc pull
 ```
-Note that this is 21G of data total, most of which is not usually needed to run the code.
+Note that there are 21G of total data in all of the calibration models, most of which are not needed to run the code, so we do not recommend this option.
 
 ## Quick Start
 
