@@ -19,7 +19,7 @@ TICA applies six steps to raw TESS FFIs:
 
 More information about the TESS instrument and detectors can be found in the [TESS Instrument Handbook](https://archive.stsci.edu/files/live/sites/mast/files/home/missions-and-data/active-missions/tess/_documents/TESS_Instrument_Handbook_v0.1.pdf).
 
-If you are having trouble or having questions feel free to contact the project owner Michael Fausnaugh at faus@mit.edu. Questions about TICA or TESS, including bug reports, should be submitted to the TESS help desk (tesshelp@bigbang.gsfc.nasa.gov).
+If you have questions or are having trouble, feel free to contact the project owner Michael Fausnaugh at faus@mit.edu. Questions about TICA or TESS, including bug reports, should be submitted to the TESS help desk (tesshelp@bigbang.gsfc.nasa.gov).
 
 
 
@@ -57,12 +57,13 @@ conda env create -n tica_env -f environment.yml
 
 2D-bias and flatfield calibration models are distributed by an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models are stored on a server at MIT, which DVC pulls with https requests.
 
-To retrieve the calibration models, first install DVC using the directions on [the DVC website](https://dvc.org/doc/install).  You can use the website's downloadable script, or you can use `conda`, `pip`, or `homebrew` on macOS.  If you use `pip`, note that you need to install additional libraries necessary for Gdrive access:
+To retrieve the calibration models, first install DVC using the directions on [the DVC website](https://dvc.org/doc/install).  You can use the website's downloadable script, or you can use `conda`, `pip`, or `homebrew` on macOS.
+<!---If you use `pip`, note that you need to install additional libraries necessary for Gdrive access:
 ```
 pip install dvc
 pip install dvc[gdrive]
 ```
-
+-->
 Then run the following commands and follow the prompts:
 
 ```
@@ -73,11 +74,16 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
+You can also pull all of the calibration models at once, if you are at the top level `tica` directory and run
 
+```
+dvc pull
+```
+Note that this is 21G of data total, most of which is not usually needed to run the code.
 
 ## Quick Start
 
-During installation, all TICA scripts are installed in the `$PATH` of your working environment and are available from the command line.  The scripts are also located in the `bin/` directory of this repository.
+During installation, all TICA scripts are installed in the `$PATH` of your working environment and are available from the command line.  The scripts are also located in the `bin/` directory.
 
 The workhorse script for calibrating raw TESS data is `tica-cal-ccd2ccd`, and can be run with `--help` to  see an explanation of the available options.  
 

@@ -21,7 +21,7 @@ Initial release on public github.  Primarily based on branch `faus_fix_requireme
 - Regression tests updated to match python version 3.10 and associated dependencies.
 - Regression test Header Keywords now have a 1.e-8 relative tolerance, in order to accomodate differences in Intel and M1 processors.
 - Regression test directory now has a README to  log previous tests.
-- Regression test now includes a verbose mode, to either display or silience warnings.
+- Regression test now includes a verbose mode, to either display or silence warnings.
 ### Added
 - Added MIT server to DVC remote, and set to default.
 ### Removed
