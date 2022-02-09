@@ -6,8 +6,7 @@
     - We will also check for changes based on updates to python and core packages such as `numpy`, `astropy`, `tess-point`, etc.  In most cases, we will pin TICA to old versions of these packages rather than make updates to the TICA code.
 - MF is responsible for the calibration algorithms and structure of the python package and scripts.  CB is responsible for the WCS implementation.
 - TICA uses semantic versioning, with the initial release being v1.0.2.  
-    - The first minor version increment (to 1.1.0) will be an update to the cloud storage of the calibration models, so that a Google Account is not required to run TICA.  This change is expected in the first half of 2022.
-    - The second minor release will include calibration models for 200 second FFIs.  This change is expected in the second half of 2022. 
+    - The only planned minor release (v1.1.0) will include calibration models for 200 second FFIs.  This change is expected in the second half of 2022. 
 - Questions, issues, and bug reports should be sent to tesshelp@bigbang.gsfc.nasa.gov.
 - TESSHELP automatically logs the email in the TESSHELP JIRA project, along with responses from TESS team members.
 - TESSHELP is hosted by MIT, but team members at GSFC and MAST also have access.

@@ -19,6 +19,9 @@ TICA applies six steps to raw TESS FFIs:
 
 More information about the TESS instrument and detectors can be found in the [TESS Instrument Handbook](https://archive.stsci.edu/files/live/sites/mast/files/home/missions-and-data/active-missions/tess/_documents/TESS_Instrument_Handbook_v0.1.pdf).
 
+If you have questions or are having trouble, feel free to contact the project owner Michael Fausnaugh at faus@mit.edu. Questions about TICA or TESS, including bug reports, should be submitted to the TESS help desk at tesshelp@bigbang.gsfc.nasa.gov.
+
+
 
 ## Installation
 ### 1. Environment and Codebase
@@ -52,21 +55,15 @@ conda env create -n tica_env -f environment.yml
 
 ### 2. Calibration Models
 
-2D-bias and flatfield calibration models are distributed by an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models themselves are currently stored in a GDrive account associated with MIT.  
+2D-bias and flatfield calibration models are distributed by an application called [DVC](https://www.dvc.org) (Data Version Control).  DVC uses metadata files in the TICA git repository to track different versions of the calibration models.  The calibration models are stored on a server at MIT, which DVC pulls with https requests.
 
-##### ***Please Note: to use DVC to retrieve the calibration models, you will need to give DVC read/write permissions to a Google account.***  
-The read/write permissions are required because GDrive uses Google accounts to manage access to public folders in the cloud.  DVC does not directly access or collect user data used by Google Auth; details about [DVC's privacy policy for Google APIs is available on the DVC webiste](https://dvc.org/doc/user-guide/privacy).  
-
-Note that you will only be able to read (pull) from the TICA calibration GDrive folder; you will not be able to write (push) to the TICA calibration folder.  DVC will prompt you to add the necessary Google account permissions the first time you try to pull TICA calibration models.  You can manage DVC's permissions at any time under the 'Security' tab in your Google account (under 'Third party apps with account access', see [this google help link](https://support.google.com/accounts/answer/3466521?hl=en) for more information).  
-
-##### We will be moving the calibration models to a server at MAST or MIT in the near future so that access the calibration files does not require a Google account.
-
-To retrieve the calibration models, first install DVC using the directions on [the DVC website](https://dvc.org/doc/install).  You can use the website's downloadable script, or you can use `conda`, `pip`, or `homebrew` on macOS.  If you use `pip`, note that you need to install additional libraries necessary for Gdrive access:
+To retrieve the calibration models, first install DVC using the directions on [the DVC website](https://dvc.org/doc/install).  You can use the website's downloadable script, or you can use `conda`, `pip`, or `homebrew` on macOS.
+<!---If you use `pip`, note that you need to install additional libraries necessary for Gdrive access:
 ```
 pip install dvc
 pip install dvc[gdrive]
 ```
-
+-->
 Then run the following commands and follow the prompts:
 
 ```
@@ -77,11 +74,16 @@ dvc pull twodbias_<exptime>
 
 where `<exptime>` corresponds to whatever exposure your FFIs are, `30min` for Sectors 1-26, `10min` for Sectors 37-55.
 
+You can also pull all of the calibration models if you are at the top level `tica` directory and run
 
+```
+dvc pull
+```
+Note that there are 21G of total data in all of the calibration models, most of which are not needed to run the code, so we do not recommend this option.
 
 ## Quick Start
 
-During installation, all TICA scripts are installed in the `$PATH` of your working environment and are available from the command line.  The scripts are also located in the `bin/` directory of this repository.
+During installation, all TICA scripts are installed in the `$PATH` of your working environment and are available from the command line.  The scripts are also located in the `bin/` directory.
 
 The workhorse script for calibrating raw TESS data is `tica-cal-ccd2ccd`, and can be run with `--help` to  see an explanation of the available options.  
 
@@ -99,7 +101,7 @@ tica-calibrate-spoc input_dir=/path/to/raw/data CALDIR=~/python/tica/calibration
 
 `bin/tica-calibrate-spoc` likely covers 99% of use cases.  Users can also write their own scripts to call `tica-cal-ccd2ccd`, or they can run `tica-cal-ccd2ccd` directly from the command line.
 
-Several other scripts are also installed by default.  These scripts are used to calibrate FFIs for MIT's [Quick Look Pipeline](https://archive.stsci.edu/hlsp/qlp) at the Payload Operations Center/TESS Science Office (POC/TSO).  Note that the POC/TSO FFIs are formatted differently than the SPOC `*ffir*fits` files available at MAST.  However, the POC/TSO FFIs are nut publicly available at this time.
+Several other scripts are also installed by default.  These scripts are used to calibrate FFIs for MIT's [Quick Look Pipeline](https://archive.stsci.edu/hlsp/qlp) at the Payload Operations Center/TESS Science Office (POC/TSO).  Note that the POC/TSO FFIs are formatted differently than the SPOC `*ffir*fits` files available at MAST.  However, the POC/TSO FFIs are not publicly available at this time.
 
 ### Setting the calibration directory
 
