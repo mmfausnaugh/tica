@@ -34,7 +34,7 @@ If you have python 3.9 or higher, you can instead use `virtualenv` or a similar 
 Next, you will need to clone the TICA repository to get the calibration models, so you should install from here:
 
   ```
-  git clone https://tessgit.mit.edu/tica/tica.git
+  git clone https://github.com/mmfausnaugh/tica.git
   cd tica
   python setup.py sdist
   pip install -e .
