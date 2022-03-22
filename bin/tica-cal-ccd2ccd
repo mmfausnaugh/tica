@@ -1,24 +1,28 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2017 - Massachusetts Institute of Technology (MIT)
+#Copyright (c) 2021 Michael Fausnaugh
 #
-# This program is free software: you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation, either version 3 of the License, or
-# (at your option) any later version.
+#Permission is hereby granted, free of charge, to any person obtaining a copy
+#of this software and associated documentation files (the Software), to deal
+#in the Software without restriction, including without limitation the rights
+#to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+#copies of the Software, and to permit persons to whom the Software is
+#furnished to do so, subject to the following conditions:
 #
-# This program is distributed in the hope that it will be useful,
-# but WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-# GNU General Public License for more details.
+#The above copyright notice and this permission notice shall be included in all
+#copies or substantial portions of the Software.
 #
-# You should have received a copy of the GNU General Public License
-# along with this program.  If not, see <http://www.gnu.org/licenses/>.
-#
+#THE SOFTWARE IS PROVIDED AS IS, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+#IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+#FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+#AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+#LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+#OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+#SOFTWARE.
 
 import sys
 import os.path
-import scipy as sp
+import numpy as np
 import matplotlib.pyplot as plt
 import argparse
 import logging
@@ -28,8 +32,6 @@ from time import time
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
 
-import scipy as sp
-import matplotlib.pyplot as plt
 
 import tica
 from tica.tica import Calibration, Sector, CCD, CCD_File
@@ -46,15 +48,33 @@ def worker( in_tuple ):
 
 if __name__ == "__main__":
 
-    parser = argparse.ArgumentParser(prog='tica', description="Calibrate FITS files")
-    parser.add_argument("fileinputs", metavar="FILES", help="file containing list of FITS files to process")
+    description_string = """
+
+    This script calibrates raw FFI FITS files.
+
+    The list of FITS files to calibrate should be saved in a plain text
+    file, with one file per line.  The text file is the positional argument for this script.
+
+    The input FITS files need to be saved as individual CCDs, as available in
+    the SPOC raw *ffir*fits files available on MAST
+    (https://archive.stsci.edu/tess/bulk_downloads/bulk_downloads_ffi-tp-lc-dv.html;
+    scroll down to "Uncalibrated FFIs").  
+
+    The calibrated files will be saved as individual CCDs in FITS format, with a
+    `.cal.` string added to the names.
+
+
+    
+    """
+
+    parser = argparse.ArgumentParser(prog='tica', description=description_string)
+    parser.add_argument("fileinputs", metavar="FILE", help="text file containing a list of FITS files to process")
     parser.add_argument("--outdir", metavar="DIRECTORY", help="directory in which to place the results")
     parser.add_argument("--caldir", metavar="DIRECTORY", default=None,
                         help="calibration directory")
-    parser.add_argument("--version", action="version", version="tica %s" % tica.__version__)
-    parser.add_argument("--parallel", action="store_true", help="run files in parallel")
+    parser.add_argument("--parallel", action="store_true", help="run calibration in parallel")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
-    parser.add_argument("-l", "--log", metavar="LOG_FILE", help="log file")
+    parser.add_argument("-l", "--log", metavar="LOG_FILE", help="save logging output to this file")
 
     args = parser.parse_args()
 
@@ -68,11 +88,16 @@ if __name__ == "__main__":
         outdir="."  # if outdir is not set, default to current directory
 
     try:
-        inlist = sp.genfromtxt(args.fileinputs, dtype=str)
+        inlist = np.genfromtxt(args.fileinputs, dtype=str)
+        #silly numpy issue if there is only one entry in inlist
+        if inlist.size == 1:
+            inlist = inlist.reshape(1)
+
     except IOError:
-        logger.error("input file not found: %s" % args.fileinputs)
+        logger.error("input file not found: {}".format( args.fileinputs) )
         sys.exit(1)
 
+    
     # setup calibration object before processing files so it is done just once
     if args.caldir:
         calibration = Calibration(calibration_dir=args.caldir)

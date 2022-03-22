@@ -28,8 +28,8 @@ from gwcs.wcs import WCS as WCS_gwcs
 from gwcs.coordinate_frames import *
 import os
 import glob
-from step1_get_refimg_ctrlpts import gdPRF_calc, idx_filter, ring_background
-import photutils.centroids as cent
+from step1_get_refimg_ctrlpts import gdPRF_calc, idx_filter, ring_background, flux_weighted_centroid
+#import photutils.centroids as cent
 from tess_stars2px import tess_stars2px_reverse_function_entry
 
 

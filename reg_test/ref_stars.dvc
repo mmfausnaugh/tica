@@ -1,0 +1,5 @@
+outs:
+- md5: 6b244f3eaf4c9650bc245d371d6ff727.dir
+  size: 1454628
+  nfiles: 16
+  path: ref_stars

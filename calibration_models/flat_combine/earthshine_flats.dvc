@@ -1,0 +1,5 @@
+outs:
+- md5: a088e1a9024235e109d4eef17bdc0a2c.dir
+  size: 568304640
+  nfiles: 32
+  path: earthshine_flats

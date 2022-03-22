@@ -1,4 +1,6 @@
 [core]
-    remote = gdrive
+    remote = tess_science
 ['remote "gdrive"']
     url = gdrive://15pKJOuc3_pZg5btLmPMLEOPLpWim1kGo
+['remote "tess_science"']
+    url = https://tess.mit.edu:/public/tica/

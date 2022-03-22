@@ -1,1 +1,0 @@
-../wcs_build/step2_allcam_allccd.sh
