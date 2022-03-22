@@ -90,6 +90,14 @@ def check_outputs(check_file_name, verbose=False):
                 continue
         if 'CHECKSUM' in key:
             continue
+        if 'TICAVER' in key:
+            #assert that the major.minor versions
+            #are the same.  OK if Patches are different,
+            gold_ver = gold_f[0].header[key].split('.')
+            test_ver = test_f[0].header[key].split('.')
+            assert gold_ver[0] == test_ver[0]
+            assert gold_ver[1] == test_ver[1]
+            continue
         try:
             assert gold_f[0].header[key] == test_f[0].header[key]
         except AssertionError:
@@ -113,6 +121,8 @@ def check_outputs(check_file_name, verbose=False):
             if 'calibration applied at' in test_f[0].header[key][0]:
                 continue
         if 'CHECKSUM' in key:
+            continue
+        if 'TICAVER' in key:
             continue
         try:
             assert gold_f[0].header[key] == test_f[0].header[key]

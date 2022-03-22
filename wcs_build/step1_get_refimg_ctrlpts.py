@@ -65,7 +65,14 @@ def gdPRF_calc(img, blkHlf, wingFAC=0.9, contrastFAC=3.5):
     delLowPk = midPk - lowPk
     delHghPk = midPk - hghPk
     maxDelPk = np.max([delLowPk, delHghPk])
+    #this bounds the symmetry of the PSF:
+    #the maxDelPk corresponds to the minimum of the wings, so
+    #this always fails if wingFAC = 1.0
+    #if wingFAC is smaller, there is space between 
+    #the minimum of the wings and some fraction of the peak
+    #in which the other wing can fit
     trigLev = midPk - maxDelPk*wingFAC
+    
     if lowPk > trigLev or hghPk > trigLev or maxDelPk < 10.0:
         gdPRF = False
     # Check to make sure contrast of middle is higher than wings
@@ -153,7 +160,9 @@ def apply_proper_motion(ras, decs, pmras, pmdecs, delyr):
     
     return ccat_cur.ra.degree, ccat_cur.dec.degree    
 
-def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile, DEBUG_LEVEL=0):
+def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile, 
+                       DEBUG_LEVEL=0,
+                       wingFAC = 0.9, contrastFAC=3.5):
         
     # Use DS9 if it exists and debug level is high
     DEBUG_DS9 = True
@@ -315,7 +324,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                     sciImgCal = hdulistCal[0].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
                     
                     # Check if target is isolated
-                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
+                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                                 wingFAC = wingFAC, 
+                                                                 contrastFAC=contrastFAC)
                     if gdPRF:                    # Determine background from 2 pixel ring around box
                         bkgLev = ring_background(sciImgCal)
                         #centOut = cent.centroid_com(sciImgCal-bkgLev)
@@ -368,7 +379,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                     #sciImgCal[4, 5] = 1000.0
                     
                     # Check if target is isolated
-                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
+                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                                 wingFAC = wingFAC, 
+                                                                 contrastFAC=contrastFAC)
 
                     # Determine background from 2 pixel ring around box
                     bkgLev = ring_background(sciImgCal)
@@ -519,6 +532,8 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
 
     # Save data reference image results
     fout = h5py.File(outputFile, 'w')
+
+
     tmp = fout.create_dataset('tics', data=kpTics, compression='gzip')
     tmp = fout.create_dataset('ras', data=kpRas, compression='gzip')
     tmp = fout.create_dataset('decs', data=kpDecs, compression='gzip')
@@ -529,7 +544,18 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     tmp = fout.create_dataset('obscols', data=kpObsCols, compression='gzip')
     tmp = fout.create_dataset('obsrows', data=kpObsRows, compression='gzip')
     tmp = fout.create_dataset('contrastcols', data=kpContrastCols, compression='gzip')
+
+    #example REF_IMAGE: tess2022072133152-00204040-1-crm-ffi_ccd1.cal.fits
+    #would like to get something more robust
+    tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
+    tmp.attrs['wingFAC']     = wingFAC
+    tmp.attrs['contrastFAC'] = contrastFAC
     tmp = fout.create_dataset('contrastrows', data=kpContrastRows, compression='gzip')
+    tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
+    tmp.attrs['wingFAC']     = wingFAC
+    tmp.attrs['contrastFAC'] = contrastFAC
+
+#save the 
     fout.close()
 
     # Fit a wcs after trimming to report the residuals
@@ -650,7 +676,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
             colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
             rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
             sciImgCal = hdulistCal[0].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
-            gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
+            gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                         wingFAC = wingFAC, 
+                                                         contrastFAC=contrastFAC)
             print('Col: {0:d} {1:5.3f} Row: {2:d} {3:5.3f} PixValue: {4} Tic: {5:d} Good? {6:b} Tmag: {7:f}'.format(\
                   midCol, curcol, midRow, currow, hdulistCal[0].data[midRow-1,midCol-1], curTic, gdPRF, tmpTmags[iaa]))
             dispDS9.set('frame 1')
@@ -683,6 +711,16 @@ if __name__ == '__main__':
                         help="Control point data storeage filename with path")
     parser.add_argument("-dbg", "--debug", type=int, \
                         help="Debug level; integer higher has more output")
+    paraser.add_argument("-w","--wing", type=float, default = 0.9,
+                         help="For a candidate WCS star, this sets a bound on the "
+                         "symmetry of the PSF; the highest wing cannot be closer to the "
+                         "core of the PSF than this fraction of the smallest wing.")
+    paraser.add_argument("-c","--contrast", type=float, default=3.5,
+                         help = "For candidate WCS star, this sets minimum ratio of the core "
+                         "of the PSF to the maximum in the wings.  Crowded stars will "
+                         "tend to have a smaller ratio.")
+    
+
     args = parser.parse_args()
 
 # DEBUG BLOCK for hard coding input parameters and testing
@@ -717,4 +755,7 @@ if __name__ == '__main__':
     #  bright isolated stars on a reference image
     #  that will be used on all images for a sector camera ccd 
     #  to determine a wcs solution
-    get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile, DEBUG_LEVEL)
+    get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, 
+                       REF_IMAGE, 
+                       outputFile, DEBUG_LEVEL, 
+                       args.wing, args.contrast)
