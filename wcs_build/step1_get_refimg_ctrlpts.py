@@ -118,8 +118,8 @@ def getRoughTranslation(col, row, cam, ccd, img, region, limits, cam_want, ccd_w
                     (cam == cam_want) & (ccd == ccd_want))
     colUse = midCols[idx]
     rowUse = midRows[idx]
-    track_cols = np.array([], dtype=np.int)
-    track_rows = np.array([], dtype=np.int)
+    track_cols = np.array([], dtype=np.int32)
+    track_rows = np.array([], dtype=np.int32)
     for i in range(len(colUse)):
         curCol = colUse[i]
         curRow = rowUse[i]
@@ -243,7 +243,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
             print('{0:f} {1:f} {2:f} {3:f}'.format(curCol, curRow, raCtrl2D_flat[i], decCtrl2D_flat[i]))
 
     # In each control point grid keep track of how many are valid 
-    numKept = np.zeros((nCtrl,), dtype=np.int)
+    numKept = np.zeros((nCtrl,), dtype=np.int32)
     # Keep track of how many were tried
     numBlk = np.zeros_like(numKept)
     
@@ -253,7 +253,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     kpRas = np.array([], dtype=np.double)
     kpDecs = np.array([], dtype=np.double)
     kpTmags = np.array([], dtype=np.double)
-    kpCtrlIdxs = np.array([], dtype=np.int)
+    kpCtrlIdxs = np.array([], dtype=np.int32)
     kpPredCols = np.array([], dtype=np.double)
     kpPredRows = np.array([], dtype=np.double)
     kpObsCols = np.array([], dtype=np.double)
@@ -544,17 +544,18 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     tmp = fout.create_dataset('obscols', data=kpObsCols, compression='gzip')
     tmp = fout.create_dataset('obsrows', data=kpObsRows, compression='gzip')
     tmp = fout.create_dataset('contrastcols', data=kpContrastCols, compression='gzip')
-
     #example REF_IMAGE: tess2022072133152-00204040-1-crm-ffi_ccd1.cal.fits
     #would like to get something more robust
-    tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
-    tmp.attrs['wingFAC']     = wingFAC
-    tmp.attrs['contrastFAC'] = contrastFAC
+    #tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
+    #tmp.attrs['wingFAC']     = wingFAC
+    #tmp.attrs['contrastFAC'] = contrastFAC
     tmp = fout.create_dataset('contrastrows', data=kpContrastRows, compression='gzip')
-    tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
-    tmp.attrs['wingFAC']     = wingFAC
-    tmp.attrs['contrastFAC'] = contrastFAC
-
+    #tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
+    #tmp.attrs['wingFAC']     = wingFAC
+    #tmp.attrs['contrastFAC'] = contrastFAC
+    fout.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
+    fout.attrs['wingFAC']     = wingFAC
+    fout.attrs['contrastFAC'] = contrastFAC
 #save the 
     fout.close()
 
@@ -705,17 +706,18 @@ if __name__ == '__main__':
                         help="Camera Number [1-4]")
     parser.add_argument("-cd", "--ccd", type=int, choices=range(1,5), \
                         help="CCD Number [1-4]")
-    parser.add_argument("-ri", "--refimage", type=argparse.FileType('rb'), \
+    parser.add_argument("-ri", "--refimage", type=str, \
                         help="Reference Image FITS Filename With Path")
     parser.add_argument("-o", "--outputfile", type=argparse.FileType('w'),\
                         help="Control point data storeage filename with path")
     parser.add_argument("-dbg", "--debug", type=int, \
                         help="Debug level; integer higher has more output")
-    paraser.add_argument("-w","--wing", type=float, default = 0.9,
+    parser.add_argument("-w","--wing", type=float, default = 0.9,
                          help="For a candidate WCS star, this sets a bound on the "
-                         "symmetry of the PSF; the highest wing cannot be closer to the "
-                         "core of the PSF than this fraction of the smallest wing.")
-    paraser.add_argument("-c","--contrast", type=float, default=3.5,
+                         "symmetry of the PSF; the drop in flux from the core to the "
+                        "brighter PSF wing cannot be smaller than this fraction "
+                        "of the drop in flux form the core to the fainter PSF wing.")
+    parser.add_argument("-c","--contrast", type=float, default=3.5,
                          help = "For candidate WCS star, this sets minimum ratio of the core "
                          "of the PSF to the maximum in the wings.  Crowded stars will "
                          "tend to have a smaller ratio.")
