@@ -3,8 +3,10 @@
 
 input_dir=''
 CALDIR=''
+NCORES=''
+
 USAGE="
-  Usage: tica-calibrate-spoc input_dir=<data_dir_path>  CALDIR=<calibration_dir_path>
+  Usage: tica-calibrate-spoc input_dir=<data_dir_path>  CALDIR=<calibration_dir_path> NCORES=<int>
 
   This script runs tica-cal-ccd2ccd on a collection of raw FFIs.
    tica-cal-ccd2ccd is a python script that removes instrumental
@@ -24,10 +26,12 @@ USAGE="
      practice because the calibration model might change between
      sectors.
 
-   <CALDIR> is the directory with calibration models, which are
+   <calibration_dir_path> is the directory with calibration models, which are
      distributed with the git repository and DVC. For example, one
      might set this variable to CALDIR=~/python/tica/caliration_10min
      Absolute or relative paths are allowed.
+
+   <int> is the number of cores to use for parallel processing.  Defaults to 1.
 
 "
 [ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
@@ -45,6 +49,7 @@ done
 [[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>
 " ; exit ; }
 
+[[ $NCORES == '' ]] && let NCORES=1
 
 input_dir_use=$(realpath $input_dir)
 #make in list for tica
@@ -63,7 +68,7 @@ done
 #one could organize by cam and CCD by looping in the following way
 #for i in 1 2 3 4; do    
 #    for j in 1 2 3 4; do
-tica-cal-ccd2ccd inlist --outdir . --caldir $CALDIR  --log ../tica.log
+tica-cal-ccd2ccd inlist --outdir . --caldir $CALDIR  --log ../tica.log --parallel $NCORES
 #to parallelize calibration across CCDs
 #tica-cal-ccd2ccd inlist --parallel --outdir . --caldir $CALDIR  #--log ../tica.log
 

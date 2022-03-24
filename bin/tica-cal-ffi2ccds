@@ -129,7 +129,5 @@ if __name__ == "__main__":
     runtime = time() - starttime
 
     print("Runtime: {0:.2f}sec".format(runtime), "N Pools = {}".format( args.parallel ) )
-    logger.info("Runtime: {0:.2f}sec".format(runtime) )
     logger.info("N Pools = {}".format( args.parallel ) )
     logger.info("Runtime: {0:.2f}sec".format(runtime) )
-

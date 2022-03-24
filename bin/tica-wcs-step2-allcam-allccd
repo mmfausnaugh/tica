@@ -59,7 +59,7 @@ done
 
 for i in 1 2 3 4; do 
     for j in 1 2 3 4; do
-	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT &
+	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT --log tica_wcs_step2_cam"$i"_ccd"$j".log &
     done
 done
 

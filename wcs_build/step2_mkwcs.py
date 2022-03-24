@@ -41,6 +41,10 @@ from astropy import coordinates as coord
 import warnings
 import argparse
 
+import tica
+from time import time
+import logging
+
 def calc_MAD(x):
     abs_res = abs(x - np.median(x))
     return np.median(abs_res)/0.6744897501960817  #0.67449
@@ -100,8 +104,9 @@ def binmedian(xdata, ydata, nBins=30, xmin=None, xmax=None, showDetail=False):
         for i in np.arange(0,nBins):
             errmn = stddata[i]/np.sqrt(ndata[i])
             sigmn = mndata[i] / errmn
-            print('i: {0:d} med: {1:f} mn: {2:f} n: {3:f} errmn: {4:f} sigdif: {5:f} midx: {6:f}'.format(\
-                  i, medata[i], mndata[i], ndata[i], errmn, sigmn, midx[i]))
+            print('i: {0:d} med: {1:f} mn: {2:f} n: {3:f} '
+                  'errmn: {4:f} sigdif: {5:f} midx: {6:f}'.format(
+                      i, medata[i], mndata[i], ndata[i], errmn, sigmn, midx[i]))
         
         
         
@@ -282,7 +287,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     if DEBUG_LEVEL>0:
         diffra = (raproj-newrefra)*3600.0
         diffdec = (decproj-newrefdec)*3600.0
-        print('Old RA: {0:9.5f} NewRA: {1:9.5f} DelRa: {2:9.4f} OldDec: {3:9.5f} NewDec: {4:9.5f} DelDec: {5:9.4f}'.format(\
+        logging.debug('Old RA: {0:9.5f} NewRA: {1:9.5f} DelRa: {2:9.4f} OldDec: {3:9.5f} NewDec: {4:9.5f} DelDec: {5:9.4f}'.format(\
               raproj, newrefra, np.sqrt(diffra*diffra), decproj, newrefdec, np.sqrt(diffdec*diffdec)))
     raproj = newrefra
     decproj = newrefdec
@@ -325,7 +330,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     bc = b*c
     onembc = 1.0 - bc
     if np.isclose(onembc, 0.0, rtol=1e-10, atol=1e-12):
-        print('Warning SIP polynomial conversion is ill behaved')
+        logging.warning('Warning SIP polynomial conversion is ill behaved')
     ac = atmp*c
     ACoeffs = np.zeros((fitDegree+1,fitDegree+1), dtype=np.double)
     BCoeffs = np.zeros((fitDegree+1,fitDegree+1), dtype=np.double)
@@ -560,9 +565,9 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         else:
             exResids[i] = 0.0
     
-    #if DEBUG_LEVEL>0:
-    print('world_coord resid: {0:f} {1:f} {2:f}'.format(brightstd, allstd, faintstd))
-    print('Pixel_coord resid:{0:f} {1:f} {2:f}'.format(brightstdpix, allstdpix, faintstdpix))
+    if DEBUG_LEVEL>0:
+        logging.debug('world_coord resid: {0:f} {1:f} {2:f}'.format(brightstd, allstd, faintstd))
+        logging.debug('Pixel_coord resid:{0:f} {1:f} {2:f}'.format(brightstdpix, allstdpix, faintstdpix))
                 
     if DEBUG_LEVEL>2 or (MAKE_FIGS and MAKE_FIGS.strip()):
         showDetailBool=False
@@ -614,7 +619,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         plt.axhline(0.0, ls='--', color='r')
         #plt.ylim([-21.0, 21.0])
         if MAKE_FIGS and MAKE_FIGS.strip():
-            print(MAKE_FIGS)
+            #print(MAKE_FIGS)
             plt.title(MAKE_FIGS)
             plt.savefig('{0}_TmagVRaDiff.png'.format(MAKE_FIGS), dpi=300)
         if DEBUG_LEVEL <= 2:
@@ -894,7 +899,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         # open image
         hdulistCal = fits.open(curImg)
         if len(hdulistCal) == 2:
-            print('skipping,  already has WCS'.format(curImg))
+            logging.info('skipping,  already has WCS'.format(curImg))
             continue
         imgNames = np.append(imgNames, os.path.basename(curImg))
         if not gotTimeStamp:
@@ -972,7 +977,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                 jj = jj+1
             if (gotN < nTry):
                 if DEBUG_LEVEL>0:
-                    print('Too few targets for initial pixel position correction on Block {0:d}'.format(ii))
+                    logging.debug('Too few targets for initial pixel position correction on Block {0:d}'.format(ii))
                 delCols = np.array([0.0, 0.0])
                 delRows = np.array([0.0, 0.0])
             else:
@@ -984,7 +989,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                 dccolsum = dccolsum + corCol
                 dcrowsum = dcrowsum + corRow
             if DEBUG_LEVEL>0:
-                print('Predicted Position Tweaks Col: {0:f} Row: {1:f} Blk: {2:d}'.format(corCol, corRow, ii))
+                logging.info('Predicted Position Tweaks Col: {0:f} Row: {1:f} Blk: {2:d}'.format(corCol, corRow, ii))
             outColPix = curLstGdCols + corCol
             outRowPix = curLstGdRows + corRow
 
@@ -1043,7 +1048,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         nGd = len(np.where(gdPrfs==1)[0])
         gdFracs[iImg] = float(nGd)/float(len(gdPrfs))
         #if DEBUG_LEVEL>0:
-        print('GdFrac:{0:f}'.format(gdFracs[iImg]))
+        logging.info('GdFrac:{0:f}'.format(gdFracs[iImg]))
         #  Now we determine wcss
         # We need to reject bad prfs from wcs fit
         idxgd = np.where(gdPrfs == 1)[0]
@@ -1075,7 +1080,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         if np.sum(isGdRegion) == 0:
             useFitDegree = np.min([4, fitDegree])
             useNoClipping = True
-            print('All regions bad, using {0:d} fit degree'.format(useFitDegree))
+            logging.info('All regions bad, using {0:d} fit degree'.format(useFitDegree))
 
         # Write out FIGOUTEVERY image
         FIGOUTPREFIX = None
@@ -1287,6 +1292,9 @@ if __name__ == '__main__':
                         help="Save diagnostic info and figures")
     parser.add_argument("-dbg", "--debug", type=int, \
                         help="Debug level; integer higher has more output")
+
+    parser.add_argument("-l", "--log", metavar="LOG_FILE",
+                        help="save logging output to thiss file")
     args = parser.parse_args()
 
 # DEBUG BLOCK for hard coding input parameters and testing
@@ -1328,9 +1336,18 @@ if __name__ == '__main__':
         if not os.path.isdir(saveDir):
             os.mkdir(saveDir)
     DEBUG_LEVEL = args.debug
+
+    tica.setup_logging(filename=args.log)
+    info_lines = tica.platform_info()
+    for info_line in info_lines:
+        logging.info(info_line)
+    logging.info('python environment:  {}'.format(  os.getenv('CONDA_DEFAULT_ENV') )  )
+    starttime = time()
     
     fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                     IMG_LIST_STR, outputDir, fitDegree, saveDiag, DEBUG_LEVEL)
         
-    print('Done Sector {0:d} Camera {1:d} CCD: {2:d}'.format(SECTOR_WANT, \
-                    CAMERA_WANT, CCD_WANT))
+    runtime = time() - starttime
+    logging.info("Runtime: {0:.2f}sec".format(runtime) )
+    #print('Done Sector {0:d} Camera {1:d} CCD: {2:d}'.format(SECTOR_WANT, \
+    #                CAMERA_WANT, CCD_WANT))

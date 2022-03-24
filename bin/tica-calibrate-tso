@@ -46,12 +46,12 @@ USAGE="
      correspond to TSO format, which are not publicly available at this
      time.
 
-   <CALDIR> is a directory with calibration models, which are
+   <calibration_dir_path> is a directory with calibration models, which are
      distributed with the git repository and DVC. For example, one
      might set this variable to CALDIR=~/python/tica/caliration_10min
      Absolute or relative paths are allowed.
 
-   <NCORES> is the number of cores to use for parallel processing.  Defaults to 1.
+   <int> is the number of cores to use for parallel processing.  Defaults to 1.
 
 "
 
