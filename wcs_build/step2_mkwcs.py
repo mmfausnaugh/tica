@@ -215,7 +215,7 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     residSZ = 3
     #  With 5x5 grid these are corner subregions
     useRR = [[0,1,5], [3,4,9], [15,20,21], [23,24,19]]
-    exResids = np.zeros((nResids,), dtype=np.float)
+    exResids = np.zeros((nResids,), dtype=np.float64)
     
     # From reference pixel coordinates get the estimated ra and dec of this point
     raproj, decproj, scinfo = tess_stars2px_reverse_function_entry(\
@@ -874,8 +874,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
     # The following arrays will keep the 
     #  the diagnostic information about quality of wcs fit    
     nImg = len(inputImgList)
-    imgNames = np.array([], dtype=np.str)
-    allStds = np.zeros((nImg,), dtype=np.float)
+    imgNames = np.array([], dtype=str)
+    allStds = np.zeros((nImg,), dtype=np.float64)
     brightStds = np.zeros_like(allStds)
     faintStds = np.zeros_like(allStds)
     gdFracs = np.zeros_like(allStds)
@@ -898,10 +898,6 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
 #        print('{0:d} of {1:d} {2}'.format(iImg, nImg, curImg))
         # open image
         hdulistCal = fits.open(curImg)
-        if len(hdulistCal) == 2:
-            logging.info('skipping,  already has WCS'.format(curImg))
-            continue
-        imgNames = np.append(imgNames, os.path.basename(curImg))
         if not gotTimeStamp:
             try:
                 # QLP/TICA has MIDTJD
@@ -915,13 +911,43 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
             gotTimeStamp = True
         if 'cal' in curImg:
             dataKey = 0
+        if len(hdulistCal) == 2:
+            logging.info('skipping {},  already has WCS'.format(curImg))
+
+            allStds[iImg]       = hdulistCal[0].header['RMSA']
+            brightStds[iImg]    = hdulistCal[0].header['RMSB']
+            
+            allPixStds[iImg]    = hdulistCal[0].header['RMSAP']
+            brightPixStds[iImg] = hdulistCal[0].header['RMSBP']
+            #did not have these keywords before tica 1.1.0
+            try:
+                faintStds[iImg]     = hdulistCal[0].header['RMSF']***
+            except KeyError:
+                faintStds[iImg] = 0
+            try:
+                faintPixStds[iImg]  = hdulistCal[0].header['RMSBF']**
+            except KeyError:
+                faintStds[iImg] = 0
+
+            ts[iImg] = hdulistCal[dataKey].header[timeKey]***
+            exStd0s[iImg] = hdulistCal[0].header['RMSX0']
+            exStd1s[iImg] = hdulistCal[0].header['RMSX1']
+            exStd2s[iImg] = hdulistCal[0].header['RMSX2']
+            exStd3s[iImg] = hdulistCal[0].header['RMSX3']
+            gdFracs[iImg] = hdulistCal[0].header['WCSGDF']
+
+            iImg = iImg + 1
+            continue
+
+
+        imgNames = np.append(imgNames, os.path.basename(curImg))
         # Always initialize to the reference image coordinates
         lstGdCols = np.copy(obscols)
         lstGdRows = np.copy(obsrows)
 
         newCols = np.zeros_like(obscols)
         newRows = np.zeros_like(obscols)
-        gdPrfs = np.zeros_like(obscols, dtype=np.int)
+        gdPrfs = np.zeros_like(obscols, dtype=np.int64)
         # these will be used to keep track of average subregion dc offsets
         nDC = 0
         dccolsum = 0.0
@@ -934,7 +960,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
             ia = np.where(blkidxs == ii)[0]
             curLstGdCols = lstGdCols[ia]
             curLstGdRows = lstGdRows[ia]
-            curGdPrfs = np.zeros_like(curLstGdRows, dtype=np.int)
+            curGdPrfs = np.zeros_like(curLstGdRows, dtype=np.int64)
             curNewCols = np.zeros_like(curLstGdRows)
             curNewRows = np.zeros_like(curLstGdRows)
             # In this subregion first get the brightest stars
@@ -1048,7 +1074,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         nGd = len(np.where(gdPrfs==1)[0])
         gdFracs[iImg] = float(nGd)/float(len(gdPrfs))
         #if DEBUG_LEVEL>0:
-        logging.info('GdFrac:{0:f}'.format(gdFracs[iImg]))
+        logging.info('Image {} GdFrac:{0:f}'.format(curImg, gdFracs[iImg]))
         #  Now we determine wcss
         # We need to reject bad prfs from wcs fit
         idxgd = np.where(gdPrfs == 1)[0]
@@ -1159,10 +1185,10 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
 
         newhdr['RMSA'] = (allStd, 'WCS fit resid all targs [arcsec]')
         newhdr['RMSB'] = (brightStd, 'WCS fit resid bright (Tmag<10) targs [arcsec]')
-        #newhdr['RMSF'] = (faintStd, 'WCS fit resid faint (Tmag>10) targs [arcsec]')
+        newhdr['RMSF'] = (faintStd, 'WCS fit resid faint (Tmag>10) targs [arcsec]')
         newhdr['RMSAP'] = (allStdPix, 'WCS fit resid all targs [pixel]')
         newhdr['RMSBP'] = (brightStdPix, 'WCS fit resid bright (Tmag<10) targs [pixel]')
-        #newhdr['RMSBF'] = (faintStdPix, 'WCS fit resid faint (Tmag>10) targs [pixel]')
+        newhdr['RMSBF'] = (faintStdPix, 'WCS fit resid faint (Tmag>10) targs [pixel]')
         newhdr['RMSX0'] = (exResids[0], 'WCS fit resid extra 0 [arcsec]')
         newhdr['RMSX1'] = (exResids[1], 'WCS fit resid extra 1 [arcsec]')
         newhdr['RMSX2'] = (exResids[2], 'WCS fit resid extra 2 [arcsec]')
