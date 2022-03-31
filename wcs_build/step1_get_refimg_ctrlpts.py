@@ -267,7 +267,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     kpObsRows = np.array([], dtype=np.double)
     kpContrastCols = np.array([], dtype=np.double)
     kpContrastRows = np.array([], dtype=np.double)
-    
+    kpApCols = np.array([], dtype=np.int32)
+    kpApRows = np.array([], dtype=np.int32)
+
     # Specify cone search radius
     radSearch = np.max([delCol, delRow])*np.sqrt(2.0)/2.0 * pixScl
     # Here is the main work loop where over each sub image region
@@ -454,6 +456,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                         kpObsRows = np.append(kpObsRows, newRow)
                         kpContrastCols = np.append(kpContrastCols, contrastCol)
                         kpContrastRows = np.append(kpContrastRows, contrastRow)
+                        kpApCols = np.append(kpApCols, int(midCol))
+                        kpApRows = np.append(kpApRows, int(midRow))
+
         if DEBUG_LEVEL>0:
             cur_idx = np.where(kpCtrlIdxs == i)[0]
             #print('Image Coords Col: {0:d} {1:d} '
@@ -506,10 +511,12 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     idx = np.where(keepIt == 1)[0]
     kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs,\
         kpPredCols, kpPredRows, kpObsCols, kpObsRows, \
-        kpContrastCols, kpContrastRows = idx_filter(idx, \
-            kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, \
-            kpPredCols, kpPredRows, kpObsCols, kpObsRows,\
-            kpContrastCols, kpContrastRows)
+        kpContrastCols, kpContrastRows, \
+        kpApCols, kpApRows = idx_filter(idx, 
+                                        kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, 
+                                        kpPredCols, kpPredRows, kpObsCols, kpObsRows,
+                                        kpContrastCols, kpContrastRows,
+                                        kpApCols, kpApRows)
 
 
     # Fit a wcs to see the residuals and trim outliers
@@ -540,10 +547,12 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     # Filter out the outliers 
     kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs,\
         kpPredCols, kpPredRows, kpObsCols, kpObsRows, \
-        kpContrastCols, kpContrastRows = idx_filter(idxgd, \
-            kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, \
-            kpPredCols, kpPredRows, kpObsCols, kpObsRows,\
-            kpContrastCols, kpContrastRows)
+        kpContrastCols, kpContrastRows, \
+        kpApCols, kpApRows  = idx_filter(idxgd, 
+                                         kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, 
+                                         kpPredCols, kpPredRows, kpObsCols, kpObsRows,
+                                         kpContrastCols, kpContrastRows,
+                                         kpApCols, kpApRows)
                     
 
     # Save data reference image results
@@ -560,15 +569,11 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     tmp = fout.create_dataset('obscols', data=kpObsCols, compression='gzip')
     tmp = fout.create_dataset('obsrows', data=kpObsRows, compression='gzip')
     tmp = fout.create_dataset('contrastcols', data=kpContrastCols, compression='gzip')
-    #example REF_IMAGE: tess2022072133152-00204040-1-crm-ffi_ccd1.cal.fits
-    #would like to get something more robust
-    #tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
-    #tmp.attrs['wingFAC']     = wingFAC
-    #tmp.attrs['contrastFAC'] = contrastFAC
     tmp = fout.create_dataset('contrastrows', data=kpContrastRows, compression='gzip')
-    #tmp.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
-    #tmp.attrs['wingFAC']     = wingFAC
-    #tmp.attrs['contrastFAC'] = contrastFAC
+    tmp = fout.create_dataset('aperturecols', data=kpApCols, compression='gzip')
+    tmp = fout.create_dataset('aperturerows', data=kpApRows, compression='gzip')
+
+    #example REF_IMAGE: tess2022072133152-00204040-1-crm-ffi_ccd1.cal.fits
     fout.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
     fout.attrs['wingFAC']     = wingFAC
     fout.attrs['contrastFAC'] = contrastFAC
@@ -777,6 +782,10 @@ if __name__ == '__main__':
     for info_line in info_lines:
         logging.info(info_line)
     logging.info('python environment:  {}'.format(  os.getenv('CONDA_DEFAULT_ENV') )  )
+    logging.info('program: {}'.format( parser.prog ) )
+    logging.info('argument parameters:')
+    for key in vars(args).keys():
+        logging.info('     {} = {}'.format(key, vars(args)[key]) )
     starttime = time()
     
     # Call the main functionality to get

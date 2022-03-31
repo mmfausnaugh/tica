@@ -798,9 +798,11 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     
     return hdr, allstd, brightstd, faintstd, allstdpix, brightstdpix, faintstdpix, gdResids, exResids
 
-def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
-                    IMG_LIST_STR, outputDir, fitDegree=5, saveDiag=False,\
-                    DEBUG_LEVEL=0):
+def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, 
+                      IMG_LIST_STR, outputDir, fitDegree=5, 
+                      fixApertures = True,
+                      saveDiag=False,
+                      DEBUG_LEVEL=0):
     
     # ***These following parameters must match what was used in 
     #  step1 to generate the reference image control points
@@ -825,6 +827,11 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                         # FIGOUTEVERY image
     
     # Load the reference position information
+    if fixApertures:
+        logging.info('Using fixed apertures.')
+    else:
+        logging.info('Using flexible apertures.')
+
     fin = h5py.File(REF_DATA, 'r')    
     tics = np.array(fin['tics'])
     ras = np.array(fin['ras'])
@@ -833,10 +840,42 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
     blkidxs = np.array(fin['blkidxs'])
     obscols = np.array(fin['obscols'])
     obsrows = np.array(fin['obsrows'])
+    try:
+        midcols = np.array(fin['aperturecols'])
+    except KeyError:
+        midcols = np.array([ None for t in range(len(tics)) ])
+        logging.warning('Did not find fixed column position in .h5 '
+                     'reference star file, must be from a version '
+                     'before TICA 1.1.0; reverting to floating aperatures')
+        fixApertures = False
+    try:
+        midrows = np.array(fin['aperturerows'])
+    except KeyError:
+        midrows = np.array([ None for t in range(len(tics)) ])
+        logging.warning('Did not find fixed row position in .h5 '
+                     'reference star file, must be from a version '
+                     'before TICA 1.1.0; reverting to floating aperatures')
+        fixApertures = False
+
+    try:
+        wingFAC     = fin.attrs['wingFAC']
+        contrastFAC = fin.attrs['contrastFAC']
+    except KeyError:
+        wingFAC = 0.9
+        contrastFAC = 3.5
+        logging.warning('Did not find wingFAC or contrastFAC in '
+                        '.h5 reference star file, must be from a version '
+                        'before TICA 1.1.0; reverting to defaults, '
+                        'wingFAC=0.9 and contrastFAC = 3.5')
+
+    logging.info('Using wingFAC={:.4f} and constrastFAC={:.4f}'.format(wingFAC,
+                                                                       contrastFAC))
     # Make sure these are sorted by tmag
     idx = np.argsort(tmags)
-    tics, ras, decs, tmags, blkidxs, obscols, obsrows = idx_filter(idx, \
-                tics, ras, decs, tmags, blkidxs, obscols, obsrows)
+    tics, ras, decs, tmags, blkidxs,\
+        obscols, obsrows, midcols, midrows = idx_filter(idx, 
+                                                        tics, ras, decs, tmags, 
+                                                        blkidxs, obscols, obsrows, midcols, midrows)
 
 
     # The following sets up the analysis subregions there are CTRL_PER_COL x CTRL_PER_Row 
@@ -921,15 +960,15 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
             brightPixStds[iImg] = hdulistCal[0].header['RMSBP']
             #did not have these keywords before tica 1.1.0
             try:
-                faintStds[iImg]     = hdulistCal[0].header['RMSF']***
+                faintStds[iImg]     = hdulistCal[0].header['RMSF']
             except KeyError:
                 faintStds[iImg] = 0
             try:
-                faintPixStds[iImg]  = hdulistCal[0].header['RMSBF']**
+                faintPixStds[iImg]  = hdulistCal[0].header['RMSBF']
             except KeyError:
                 faintStds[iImg] = 0
 
-            ts[iImg] = hdulistCal[dataKey].header[timeKey]***
+            ts[iImg] = hdulistCal[dataKey].header[timeKey]
             exStd0s[iImg] = hdulistCal[0].header['RMSX0']
             exStd1s[iImg] = hdulistCal[0].header['RMSX1']
             exStd2s[iImg] = hdulistCal[0].header['RMSX2']
@@ -960,6 +999,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
             ia = np.where(blkidxs == ii)[0]
             curLstGdCols = lstGdCols[ia]
             curLstGdRows = lstGdRows[ia]
+            curMidCols = midcols[ia]
+            curMidRows = midrows[ia]
             curGdPrfs = np.zeros_like(curLstGdRows, dtype=np.int64)
             curNewCols = np.zeros_like(curLstGdRows)
             curNewRows = np.zeros_like(curLstGdRows)
@@ -975,6 +1016,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
             while (gotN <= nTry and jj<len(curLstGdCols)):
                 midCol = int(round(curLstGdCols[jj]))
                 midRow = int(round(curLstGdRows[jj]))
+                if fixApertures:
+                    midCol = curMidCols[jj]
+                    midRow = curMidRows[jj]
                 colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
                 rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
 #                print(midRow-blkHlf-1,  midRow+blkHlf, midCol-blkHlf-1, midCol+blkHlf)
@@ -985,7 +1029,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                                                      midCol-blkHlf-1: midCol+blkHlf]
                 # Check if target is isolated
                 try:
-                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
+                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                                 wingFAC = wingFAC,
+                                                                 contrastFAC = contrastFAC)
                 except ValueError:
                     break
                     
@@ -1029,7 +1075,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
                         colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
                         rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
                         sciImgCal = hdulistCal[dataKey].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
-                        gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
+                        gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                                     wingFAC = wingFAC,
+                                                                     contrastFAC = contrastFAC)
                     else:
                         gdPRF = False
                 else: # if region did not find any offsets dont measure and done update
@@ -1074,7 +1122,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         nGd = len(np.where(gdPrfs==1)[0])
         gdFracs[iImg] = float(nGd)/float(len(gdPrfs))
         #if DEBUG_LEVEL>0:
-        logging.info('Image {} GdFrac:{0:f}'.format(curImg, gdFracs[iImg]))
+        logging.info('Image {} GdFrac:{:0.3f}'.format(curImg, gdFracs[iImg]))
         #  Now we determine wcss
         # We need to reject bad prfs from wcs fit
         idxgd = np.where(gdPrfs == 1)[0]
@@ -1113,16 +1161,19 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
         if saveDiag == True:
             if np.mod(iImg, FIGOUTEVERY) == 0:
                 fileBase = os.path.splitext(os.path.basename(curImg))[0]
-
                 FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
-        newhdr, allStd, brightStd, faintStd, allStdPix, \
-                brightStdPix, faintStdPix, gdResids, exResids = fit_wcs(ras[idxgd], decs[idxgd], \
-                                                newCols[idxgd], newRows[idxgd], \
-                                                tmags[idxgd], \
-                                                SECTOR_WANT, CAMERA_WANT, CCD_WANT,\
-                                                blkidxs[idxgd], CTRL_PER_COL,\
-                                                useFitDegree, useNoClipping, DEBUG_LEVEL,\
-                                                FIGOUTPREFIX)
+
+        newhdr, allStd, brightStd,\
+            faintStd, allStdPix, \
+            brightStdPix, faintStdPix, \
+            gdResids, exResids = fit_wcs(ras[idxgd], 
+                                         decs[idxgd], 
+                                         newCols[idxgd], newRows[idxgd], 
+                                         tmags[idxgd], 
+                                         SECTOR_WANT, CAMERA_WANT, CCD_WANT,
+                                         blkidxs[idxgd], CTRL_PER_COL,
+                                         useFitDegree, useNoClipping, DEBUG_LEVEL,
+                                         FIGOUTPREFIX)
         # Add the outliers to gdPrfs
         idx = np.where(np.logical_not(gdResids))[0]
         gdPrfs[idxgd[idx]] = -1
@@ -1316,6 +1367,13 @@ if __name__ == '__main__':
                         help="Degree of wcs fit")
     parser.add_argument("--savediaginfo", action="store_true",\
                         help="Save diagnostic info and figures")
+
+    parser.add_argument("--flexibleapertures", default=True, action="store_false", 
+                        help="Allow for centroid analysis region to vary. "
+                        "For most cases pointing is stable (<pixel) "
+                        "in which case do not use this option. "
+                        "This option would be helpful if >1-2 pixel "
+                        "shifts occur.")
     parser.add_argument("-dbg", "--debug", type=int, \
                         help="Debug level; integer higher has more output")
 
@@ -1355,6 +1413,8 @@ if __name__ == '__main__':
     # output directory is same as input directory
     outputDir = os.path.dirname(IMG_LIST_STR[0])
     fitDegree = args.fitdegree
+    fixApertures = args.flexibleapertures
+
     saveDiag = False
     if args.savediaginfo:
         saveDiag = True
@@ -1368,10 +1428,19 @@ if __name__ == '__main__':
     for info_line in info_lines:
         logging.info(info_line)
     logging.info('python environment:  {}'.format(  os.getenv('CONDA_DEFAULT_ENV') )  )
+    logging.info('program: {}'.format( parser.prog ) )
+    logging.info('argument parameters:')
+    for key in vars(args).keys():
+        if key == 'imgfiles':
+            pass
+        else:
+            logging.info('     {} = {}'.format(key, vars(args)[key]) )
     starttime = time()
     
     fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
-                    IMG_LIST_STR, outputDir, fitDegree, saveDiag, DEBUG_LEVEL)
+                    IMG_LIST_STR, outputDir, fitDegree, 
+                      fixApertures,
+                      saveDiag, DEBUG_LEVEL)
         
     runtime = time() - starttime
     logging.info("Runtime: {0:.2f}sec".format(runtime) )

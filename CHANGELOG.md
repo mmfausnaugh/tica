@@ -18,7 +18,7 @@ Improves configuration control, adds a file that tracks HLSP processing by secto
 - Reg test now ignores patch number in image header `TICAVER` keyword.
 - Removed np.int from `step1_get_refimg_ctrlpts.py` and `step1_mkwcs.py`, which was deprecated in numpy 1.20.
 - WCS diagnostic info in the .h5 files now appends from files already with a WCS, rather than skipping those files and leaving the diagnostic info as zero.
-- WCS now uses flexible apertures
+- WCS .h5 star files now saves the Row/Col used in the reference, and forces the same row col when deriving the WCS unless the user disables this at the command line.
 ### Added
 - Header keywords for RMS WCS scatter of faint stars.
 - Script to see if the data in reference star h5 files is the same.  Does not check attrs because old ref_stars do not have this.

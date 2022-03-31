@@ -81,6 +81,7 @@ for i in 1 2 3 4; do
 	mkdir cam${i}_ccd${j}
     done
 done
+mkdir tica_logs
 
 #make inlist for tica
 for i in 1 2 3 4; do
@@ -91,11 +92,11 @@ for i in 1 2 3 4; do
     fi
 
     if [ $o1 != "None" ]; then
-	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits* | head > inlist
+	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits* > inlist
     fi
 
     if [ $o2 != "None" ]; then
-	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits* >> inlist
+	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*  >> inlist
     fi
 
     cd ..
@@ -104,7 +105,7 @@ done
 #run tica
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
-    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log ../tica.log
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log ../tica_logs/tica.log
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done

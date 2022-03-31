@@ -92,6 +92,11 @@ if __name__ == "__main__":
     for info_line in info_lines:
         logger.info(info_line)
     logger.info('python environment:  {}'.format(  os.getenv('CONDA_DEFAULT_ENV') )  )
+    logger.info('program: {}'.format( parser.prog ) )
+    logger.info('working directory {}'.format(os.getcwd() ))
+    logger.info('argument parameters:')
+    for key in vars(args).keys():
+        logging.info('     {} = {}'.format(key, vars(args)[key]) )
 
     if args.outdir:
         outdir=args.outdir

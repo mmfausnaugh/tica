@@ -74,8 +74,8 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
       USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)
       USE_OUT="$dstem""refout/reftica_s$SECTOR""_$iCam""-$jCcd"".h5"
 
-      echo ${USE_REF}
-      echo ${USE_OUT}
+      #echo ${USE_REF}
+      #echo ${USE_OUT}
       
       if [ -e $USE_OUT ]; then
 	  echo "skipping $USE_OUT; already exists"
@@ -83,6 +83,6 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
       fi
 
       #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
-      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_wcs_step1.log
+      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1.log 
   done
 done
