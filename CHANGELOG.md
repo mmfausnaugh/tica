@@ -19,10 +19,11 @@ Improves configuration control, adds a file that tracks HLSP processing by secto
 - Removed np.int from `step1_get_refimg_ctrlpts.py` and `step1_mkwcs.py`, which was deprecated in numpy 1.20.
 - WCS diagnostic info in the .h5 files now appends from files already with a WCS, rather than skipping those files and leaving the diagnostic info as zero.
 - WCS .h5 star files now saves the Row/Col used in the reference, and forces the same row col when deriving the WCS unless the user disables this at the command line.
+- Duplicates in the TIC are filtered out of the MAST query for reference stars.
 ### Added
-- Header keywords for RMS WCS scatter of faint stars.
-- Script to see if the data in reference star h5 files is the same.  Does not check attrs because old ref_stars do not have this.
-
+- Header keywords for RMS scatter of faint stars in WCS fits.
+- Script to see if the data in two reference star h5 files is the same. 
+	
 ## [1.0.2] - 2022-02-04
 Initial release on public github.  Primarily based on branch `faus_fix_requirements`.
 ### Changed

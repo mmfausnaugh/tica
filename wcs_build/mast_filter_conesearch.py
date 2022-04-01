@@ -56,20 +56,19 @@ def mastQuery(request):
 def mast_filter_conesearch(starRa, starDec, radius, minTmag, maxTmag):
     # Do a MAST cone search around the ra and dec to get the nearby stars
     startTime = time.time()
-    request = {'service':'Mast.Catalogs.Filtered.Tic.Position.Rows', \
-                   'params':{'columns':'ID,ra,dec,Tmag,Kmag,GAIAmag,pmRA,pmDEC', \
-                             'filters':[ \
-                                        {'paramName':'Tmag',\
-                                         'values':[{'min':minTmag, 'max':maxTmag}]},\
-                                         {'paramName':'pmRA',\
-                                          'values':[{'min':-100.0, 'max':100.0}]}, \
-                                         {'paramName':'pmDEC',\
-                                          'values':[{'min':-100.0, 'max':100.0}]}], \
-                                        'ra':'{:10.5f}'.format(starRa),\
-                             'dec':'{:10.5f}'.format(starDec),\
-                             'radius':'{:10.7f}'.format(radius/3600.0) \
-                             }, \
-                    'format':'json', 'removenullcolumns':False}
+    request = {'service':'Mast.Catalogs.Filtered.Tic.Position.Rows', 
+               'params':{'columns':'ID,ra,dec,Tmag,Kmag,GAIAmag,pmRA,pmDEC,disposition', 
+                         'filters':[ 
+                             {'paramName':'Tmag',
+                              'values':[{'min':minTmag, 'max':maxTmag}]},
+                             {'paramName':'pmRA',
+                              'values':[{'min':-100.0, 'max':100.0}]}, 
+                             {'paramName':'pmDEC',
+                              'values':[{'min':-100.0, 'max':100.0}]}],
+                         'ra':'{:10.5f}'.format(starRa),
+                         'dec':'{:10.5f}'.format(starDec),
+                         'radius':'{:10.7f}'.format(radius/3600.0) },
+               'format':'json', 'removenullcolumns':False}
     while True:    
         headers, outString = mastQuery(request)
         try:
@@ -83,16 +82,22 @@ def mast_filter_conesearch(starRa, starDec, radius, minTmag, maxTmag):
                 print('Working...')
                 startTime = time.time()
         time.sleep(5)
-    
+
     try:
-        ticList = np.array([x['ID'] for x in outObject['data']], dtype=np.int64)
-        ticRas = np.array([x['ra'] for x in outObject['data']], dtype=np.float)
-        ticDecs = np.array([x['dec'] for x in outObject['data']], dtype=np.float)
-        ticTmags = np.array([x['Tmag'] for x in outObject['data']], dtype=np.float)
-        ticKmags = np.array([x['Kmag'] for x in outObject['data']], dtype=np.float)
-        ticGmags = np.array([x['GAIAmag'] for x in outObject['data']], dtype=np.float)
-        ticpmRA = np.array([x['pmRA'] for x in outObject['data']], dtype=np.float)
-        ticpmDec = np.array([x['pmDEC'] for x in outObject['data']], dtype=np.float)
+        outObject2 = []
+        for x in outObject['data']:
+            if x['disposition'] == 'DUPLICATE' or x['disposition'] == 'SPLIT':
+                continue
+            else:
+                outObject2.append(x)
+        ticList = np.array([x['ID'] for x in outObject2], dtype=np.int64)
+        ticRas = np.array([x['ra'] for x in outObject2], dtype=np.float)
+        ticDecs = np.array([x['dec'] for x in outObject2], dtype=np.float)
+        ticTmags = np.array([x['Tmag'] for x in outObject2], dtype=np.float)
+        ticKmags = np.array([x['Kmag'] for x in outObject2], dtype=np.float)
+        ticGmags = np.array([x['GAIAmag'] for x in outObject2], dtype=np.float)
+        ticpmRA = np.array([x['pmRA'] for x in outObject2], dtype=np.float)
+        ticpmDec = np.array([x['pmDEC'] for x in outObject2], dtype=np.float)
         
     except:
         # Try rerunning search
