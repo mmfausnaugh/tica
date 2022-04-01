@@ -58,13 +58,14 @@ def run_wcs_fit(sector, cam, ccd, refdata, imglist):
 
     outdir='./'
     fitdeg = 6
+    fixApertures=False
     save = False
     debug = 0
-
     #print('in func!', sector, cam, ccd, refdata, imglist)
     fit_wcs_in_imgdir(sector, cam, ccd,
                       refdata, imglist,
                       outdir, fitdeg,
+                      fixApertures,
                       save, debug)
 
 def check_outputs(check_file_name, verbose=False):
@@ -90,7 +91,10 @@ def check_outputs(check_file_name, verbose=False):
                 continue
         if 'CHECKSUM' in key:
             continue
+        if 'RMSF' in key or 'RMSBF' in key:
+            continue
         if 'TICAVER' in key:
+            continue
             #assert that the major.minor versions
             #are the same.  OK if Patches are different,
             gold_ver = gold_f[0].header[key].split('.')
@@ -100,7 +104,7 @@ def check_outputs(check_file_name, verbose=False):
             continue
         try:
             assert gold_f[0].header[key] == test_f[0].header[key]
-        except AssertionError:
+        except AssertionError as e:
             r_diff = abs(gold_f[0].header[key] - test_f[0].header[key])/ \
                      gold_f[0].header[key]
             if verbose:
@@ -113,6 +117,8 @@ def check_outputs(check_file_name, verbose=False):
                 warning_flag = 1.0
                 continue
             else:
+                print(key, gold_f[0].header[key], test_f[0].header[key])
+                print(e)
                 raise
 
     #also, check that there are not new keywords in test_f
@@ -121,6 +127,8 @@ def check_outputs(check_file_name, verbose=False):
             if 'calibration applied at' in test_f[0].header[key][0]:
                 continue
         if 'CHECKSUM' in key:
+            continue
+        if 'RMSF' in key or 'RMSBF' in key:
             continue
         if 'TICAVER' in key:
             continue
@@ -166,7 +174,8 @@ if __name__ == "__main__":
 
         cam = int(ccd1.header['CAMERA'])
         ccd = int(ccd1.header['CCD'])
-        ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
+        #ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
+        ref_file = 'ref_stars_new/reftica_s35_{}-{}.h5'.format(cam,ccd)
         run_wcs_fit( 35, cam, ccd, ref_file, [os.path.basename( output_checks[ii] )] )
 
         warning_flag += check_outputs(output_checks[ii], verbose=args.verbose)
