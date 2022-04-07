@@ -1368,7 +1368,7 @@ if __name__ == '__main__':
     parser.add_argument("--savediaginfo", action="store_true",\
                         help="Save diagnostic info and figures")
 
-    parser.add_argument("--flexibleapertures", default=True, action="store_false", 
+    parser.add_argument("--flexibleapertures", action="store_true", 
                         help="Allow for centroid analysis region to vary. "
                         "For most cases pointing is stable (<pixel) "
                         "in which case do not use this option. "
@@ -1413,7 +1413,10 @@ if __name__ == '__main__':
     # output directory is same as input directory
     outputDir = os.path.dirname(IMG_LIST_STR[0])
     fitDegree = args.fitdegree
-    fixApertures = args.flexibleapertures
+    if args.flexibleapertures:
+        fixApertures = False
+    else:
+        fixApertures = True
 
     saveDiag = False
     if args.savediaginfo:

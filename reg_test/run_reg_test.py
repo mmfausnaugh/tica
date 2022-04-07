@@ -58,7 +58,7 @@ def run_wcs_fit(sector, cam, ccd, refdata, imglist):
 
     outdir='./'
     fitdeg = 6
-    fixApertures=False
+    fixApertures=True
     save = False
     debug = 0
     #print('in func!', sector, cam, ccd, refdata, imglist)

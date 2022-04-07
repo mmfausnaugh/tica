@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ## [1.1.0] - 2022-03-30
-Improves configuration control, adds a file that tracks HLSP processing by sector.
+Improves configuration control, adds a file that tracks HLSP processing by sector.  Added header kewords and info in reference .h5 files, defaults to "fixed" apertures for WCS.
 ### Changed
 - wingFAC and contrastFAC in `step1_get_refimg_ctrlpts.py` are now command line arguments.
 - Number of processers in `Pool` are command line arguments in `bin/tica-cal-ffi2ccds` and similar.
@@ -22,8 +22,8 @@ Improves configuration control, adds a file that tracks HLSP processing by secto
 - Duplicates in the TIC are filtered out of the MAST query for reference stars.
 ### Added
 - Header keywords for RMS scatter of faint stars in WCS fits.
-- Script to see if the data in two reference star h5 files is the same. 
-	
+- Script to see if the data in two reference star h5 files is the same.
+
 ## [1.0.2] - 2022-02-04
 Initial release on public github.  Primarily based on branch `faus_fix_requirements`.
 ### Changed
