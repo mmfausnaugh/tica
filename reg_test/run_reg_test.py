@@ -174,8 +174,8 @@ if __name__ == "__main__":
 
         cam = int(ccd1.header['CAMERA'])
         ccd = int(ccd1.header['CCD'])
-        #ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
-        ref_file = 'ref_stars_new/reftica_s35_{}-{}.h5'.format(cam,ccd)
+        ref_file = 'ref_stars/hlsp_tica_tess_ffi_s0035-cam{}-ccd{}_tess_v01_cat.h5'.format(cam,ccd)
+        #ref_file = 'ref_stars_new/reftica_s35_{}-{}.h5'.format(cam,ccd)
         run_wcs_fit( 35, cam, ccd, ref_file, [os.path.basename( output_checks[ii] )] )
 
         warning_flag += check_outputs(output_checks[ii], verbose=args.verbose)

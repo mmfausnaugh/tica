@@ -13,13 +13,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.1.0] - 2022-03-30
 Improves configuration control, adds a file that tracks HLSP processing by sector.  Added header kewords and info in reference .h5 files, defaults to "fixed" apertures for WCS.
 ### Changed
-- wingFAC and contrastFAC in `step1_get_refimg_ctrlpts.py` are now command line arguments.
+- wingFAC and contrastFAC in `step1_get_refimg_ctrlpts.py` are now command line arguments, and are stored in the .h5 files.
 - Number of processers in `Pool` are command line arguments in `bin/tica-cal-ffi2ccds` and similar.
 - Reg test now ignores patch number in image header `TICAVER` keyword.
 - Removed np.int from `step1_get_refimg_ctrlpts.py` and `step1_mkwcs.py`, which was deprecated in numpy 1.20.
 - WCS diagnostic info in the .h5 files now appends from files already with a WCS, rather than skipping those files and leaving the diagnostic info as zero.
 - WCS .h5 star files now saves the Row/Col used in the reference, and forces the same row col when deriving the WCS unless the user disables this at the command line.
 - Duplicates in the TIC are filtered out of the MAST query for reference stars.
+- Updated regression test for fixed apertures and new ref_star files.
 ### Added
 - Header keywords for RMS scatter of faint stars in WCS fits.
 - Script to see if the data in two reference star h5 files is the same.

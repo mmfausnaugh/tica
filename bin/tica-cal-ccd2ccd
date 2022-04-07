@@ -73,7 +73,7 @@ if __name__ == "__main__":
     parser.add_argument("--caldir", metavar="DIRECTORY", default=None,
                         help="calibration directory")
     parser.add_argument("--parallel", type=int, default=1,
-                        help="run files in parallel on number of processors specified here"")
+                        help="run files in parallel on number of processors specified here")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
     parser.add_argument("-l", "--log", metavar="LOG_FILE", help="save logging output to this file")
 
