@@ -612,7 +612,8 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
         plt.plot(tmags[idxgd], deltaRas, '.')
         if len(idxbd)>3:
             plt.plot(tmags[idxbd], deltaRasbd, '.k')
-        meddata, midx, mndata, stddata, maddata, iargs, ndata = binmedian(tmags[idxgd], deltaRas, showDetail=showDetailBool)
+        meddata, midx, mndata, stddata, maddata, iargs, ndata = binmedian(
+            tmags[idxgd], deltaRas, showDetail=showDetailBool)
         plt.plot(midx, meddata, '-')
         plt.xlabel('Tmag')
         plt.ylabel('GWCS Predicted - Observed RA Position [arcsec]')
@@ -1061,7 +1062,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                 dccolsum = dccolsum + corCol
                 dcrowsum = dcrowsum + corRow
             if DEBUG_LEVEL>0:
-                logging.info('Predicted Position Tweaks Col: {0:f} Row: {1:f} Blk: {2:d}'.format(corCol, corRow, ii))
+                logging.debug('Predicted Position Tweaks Col: {0:f} Row: {1:f} Blk: {2:d}'.format(corCol, corRow, ii))
             outColPix = curLstGdCols + corCol
             outRowPix = curLstGdRows + corRow
 
@@ -1173,7 +1174,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                                          SECTOR_WANT, CAMERA_WANT, CCD_WANT,
                                          blkidxs[idxgd], CTRL_PER_COL,
                                          useFitDegree, useNoClipping, DEBUG_LEVEL,
-                                         FIGOUTPREFIX)
+                                         #turned off figures for individual FFIs
+                                         )#FIGOUTPREFIX)
         # Add the outliers to gdPrfs
         idx = np.where(np.logical_not(gdResids))[0]
         gdPrfs[idxgd[idx]] = -1
@@ -1281,8 +1283,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
     # Finished all images make some diagnostic figures
     if DEBUG_LEVEL > 1 or saveDiag:
         if saveDiag:
-            fileoutprefix = os.path.join(outputDir,'wcs_diags2','wcs_diag_S{0:d}_{1:d}{2:d}'.format( \
-                                         SECTOR_WANT, CAMERA_WANT, CCD_WANT))
+            fileoutprefix = os.path.join(outputDir,'wcs_diags2','wcs_diag_S{0:d}_{1:d}{2:d}'.format(
+                SECTOR_WANT, CAMERA_WANT, CCD_WANT))
             # Save wcs fit diagnostics for images
             fout = h5py.File('{0}_data.h5'.format(fileoutprefix), 'w')
             asciiList = [n.encode("ascii", "ignore") for n in imgNames]
@@ -1298,6 +1300,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
             tmp = fout.create_dataset('exStd1s', data=exStd1s, compression='gzip')
             tmp = fout.create_dataset('exStd2s', data=exStd2s, compression='gzip')
             tmp = fout.create_dataset('exStd3s', data=exStd3s, compression='gzip')
+            tmp = fout.create_dataset('goodStarFracs', data=gdFracs, compression='gzip')
             
             fout.close()
 

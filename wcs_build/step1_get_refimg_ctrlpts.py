@@ -244,8 +244,8 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
             raCtrl2D_flat[i], decCtrl2D_flat[i], scinfo = tess_stars2px_reverse_function_entry(\
                          SECTOR_WANT, CAMERA_WANT, CCD_WANT, curCol, curRow, scinfo)
         if np.mod(i,CTRL_PER_COL) == 0 and DEBUG_LEVEL>0: # print progress with sufficient debug_level
-            logging.info('{0:d} of {1:d}'.format(i, nCtrl))
-            logging.info('{0:f} {1:f} {2:f} {3:f}'.format(curCol, curRow, raCtrl2D_flat[i], decCtrl2D_flat[i]))
+            logging.debug('{0:d} of {1:d}'.format(i, nCtrl))
+            logging.debug('{0:f} {1:f} {2:f} {3:f}'.format(curCol, curRow, raCtrl2D_flat[i], decCtrl2D_flat[i]))
             #print('{0:d} of {1:d}'.format(i, nCtrl))
             #print('{0:f} {1:f} {2:f} {3:f}'.format(curCol, curRow, raCtrl2D_flat[i], decCtrl2D_flat[i]))
 
@@ -609,6 +609,10 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     logging.info('Found: {0:d} ref targets, {1:d} bright, fit resid [arcsec] bright {2:6.3f} faint {3:6.3f} nTrim: {4:d}'.format(len(kpTics), len(idxb), brightstd, faintstd, len(idxbd)))
     
     if DEBUG_LEVEL>1:
+        #save a bunch of plots
+        outputFileRoot = os.path.splitext(outputFile)[0]
+
+
         plt.plot(kpObsCols, kpObsRows, '.')
         plt.axhline(rowMin, ls='-', color='k')
         plt.axhline(rowMax, ls='-', color='k')
@@ -616,37 +620,74 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
         plt.axvline(colMax, ls='-', color='k')
         plt.xlabel('Column [pix]')
         plt.ylabel('Row [pix]')
-        plt.show()
+        plt.title('Reference Target Positions on Detector')
+        plt.savefig(outputFileRoot+'_ref_target_positions.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpTmags, deltaRas, '.')
         plt.xlabel('Tmag')
         plt.ylabel('GWCS Predicted - Observed RA Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit RA Res Vs. Tmag')
+        plt.savefig(outputFileRoot+'_tmag_resid_ra.png', dpi=300)
+        plt.clf()
+
+
+        #plt.show()
         plt.plot(kpTmags, deltaDecs, '.')
         plt.xlabel('Tmag')
         plt.ylabel('GWCS Predicted - Observed Declination Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS FIT Dec Res Vs Tmag')
+        plt.savefig(outputFileRoot+'_tmag_resid_dec.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpObsCols, deltaRas, '.')
         plt.xlabel('Column [px]')
         plt.ylabel('GWCS Predicted - Observed RA Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit RA Res Vs. Col')
+        plt.savefig(outputFileRoot+'_col_resid_ra.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpObsRows, deltaRas, '.')
         plt.xlabel('Row [px]')
         plt.ylabel('GWCS Predicted - Observed RA Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit RA Res Vs. Row')
+        plt.savefig(outputFileRoot+'_row_resid_ra.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpObsCols, deltaDecs, '.')
         plt.xlabel('Column [px]')
         plt.ylabel('GWCS Predicted - Observed Declination Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit Dec res Vs. Col')
+        plt.savefig(outputFileRoot+'_co._resid_dec.png', dpi=300)
+        plt.clf()
+        #plt.show()
         plt.plot(kpObsRows, deltaDecs, '.')
         plt.xlabel('Row [px]')
         plt.ylabel('GWCS Predicted - Observed Declination Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit Dec Res Vs. Row')
+        plt.savefig(outputFileRoot+'_row_resid_dec.png', dpi=300)
+        plt.clf()
+        #plt.show()
+
+        x = np.sort(deltaSeps[idxb])
+        ndata = len(x)
+        y = np.arange(ndata)/ float(ndata)
+        plt.plot(x, y, '-')
+        plt.xlabel('RA & Dec WCS residuals quadrature add [arcsec]')
+        plt.ylabel('CDF')
+        plt.title('CDF of Residuals (Tmag<10)')
+        plt.savefig(outputFileRoot+'_cdf_resid_bright.png', dpi=300)
+        plt.clf()
 
     # Lets look for wcs outliers
     #  This is at very high debugging level
