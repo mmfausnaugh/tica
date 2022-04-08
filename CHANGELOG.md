@@ -21,6 +21,7 @@ Improves configuration control, adds a file that tracks HLSP processing by secto
 - WCS .h5 star files now saves the Row/Col used in the reference, and forces the same row col when deriving the WCS unless the user disables this at the command line.
 - Duplicates in the TIC are filtered out of the MAST query for reference stars.
 - Updated regression test for fixed apertures and new ref_star files.
+- Changed WCS plotting defaults.
 ### Added
 - Header keywords for RMS scatter of faint stars in WCS fits.
 - Script to see if the data in two reference star h5 files is the same.

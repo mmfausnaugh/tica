@@ -15,6 +15,7 @@ setup(
              'bin/tica-cal-ffi2ccds',
              'bin/tica-cal-ffi2ffi', 
              'bin/tica-ccd-report',  
+             'bin/tica-production-table',  
              'bin/tica-ffi2ccds',
              'bin/tica-ccds2ffi',
              'bin/tica-trim-ccds2ffi',

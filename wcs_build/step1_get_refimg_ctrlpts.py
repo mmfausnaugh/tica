@@ -278,8 +278,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     for i, curRa in enumerate(raCtrl2D_flat):
         curDec = decCtrl2D_flat[i]
         # Do mast cone Search on this subimage region
-        tics, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRAs, ticpmDecs = mast_filter_conesearch(\
-                            curRa, curDec, radSearch, TMAG_MIN, TMAG_MAX)
+        tics, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRAs, ticpmDecs = mast_filter_conesearch(curRa, curDec, radSearch, TMAG_MIN, TMAG_MAX)
         nSrch = len(tics)
         # Sort the targets with brightest first
         idx = np.argsort(ticTmags)
