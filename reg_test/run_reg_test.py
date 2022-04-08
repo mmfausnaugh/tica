@@ -91,10 +91,10 @@ def check_outputs(check_file_name, verbose=False):
                 continue
         if 'CHECKSUM' in key:
             continue
-        if 'RMSF' in key or 'RMSBF' in key:
-            continue
+        #if 'RMSF' in key or 'RMSBF' in key:
+        #    continue
         if 'TICAVER' in key:
-            continue
+            #continue
             #assert that the major.minor versions
             #are the same.  OK if Patches are different,
             gold_ver = gold_f[0].header[key].split('.')
@@ -128,8 +128,8 @@ def check_outputs(check_file_name, verbose=False):
                 continue
         if 'CHECKSUM' in key:
             continue
-        if 'RMSF' in key or 'RMSBF' in key:
-            continue
+        #if 'RMSF' in key or 'RMSBF' in key:
+        #    continue
         if 'TICAVER' in key:
             continue
         try:
