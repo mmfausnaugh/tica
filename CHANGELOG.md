@@ -22,10 +22,13 @@ Improves configuration control, adds a file that tracks HLSP processing by secto
 - Duplicates in the TIC are filtered out of the MAST query for reference stars.
 - Updated regression test for fixed apertures and new ref_star files.
 - Changed WCS plotting defaults.
+- Changed stale SPOC header keywords to 'HISTORY' keywords.
 ### Added
 - Header keywords for RMS scatter of faint stars in WCS fits.
 - Script to see if the data in two reference star h5 files is the same.
-
+- Script to make a "production table," which tracks configuration and important stats from each sector.
+- Production table in Markdown format.
+	
 ## [1.0.2] - 2022-02-04
 Initial release on public github.  Primarily based on branch `faus_fix_requirements`.
 ### Changed

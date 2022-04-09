@@ -14,7 +14,7 @@ def calculate_step2_metrics(infile):
     #require some minimum good frac?
     try:
         good_frac =d['goodStarFracs'][:]
-        frac99 = len(good_frac[ good_frac > 0.99])/len(good_frac)
+        frac99 = len(good_frac[ good_frac > 0.95])/len(good_frac)
         
         m =  good_frac > 0.75
         avg_good_frac = np.mean(good_frac[m])
@@ -49,7 +49,7 @@ def test_output_dict(in_dict):
         if len(in_dict[key]) == 0:
             continue
 
-        print(key,len(in_dict[key]))
+        #print(key,len(in_dict[key]))
         assert (len(in_dict[key]) == 16) or\
             (len(in_dict[key]) == 4)
 
@@ -262,12 +262,12 @@ if __name__ == "__main__":
     end_date = out['end_date']
     end_date_object1 = datetime.strptime(out['end_date'],'%Y.%m.%d-%H:%M:%S')
 
-    print( out )
+    #print( out )
     sector = out['sector']
 
     out2 = get_from_logs('tica_logs/tica_wcs_step1.log')
     test_output_dict(out2)
-    print( out2 )
+    #print( out2 )
 
 
     out3 = []
@@ -364,6 +364,6 @@ if __name__ == "__main__":
 #                   'WCS2 Runtime','N_cores',
             
 
-            print(outline)
+            #print(outline)
             with open(outfile,'a') as fout:
                 fout.write(outline +'\n')
