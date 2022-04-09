@@ -554,6 +554,19 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                                          kpApCols, kpApRows)
                     
 
+    #lastly, sort by tmag
+    idx_out = np.argsort(kpTmags)
+    # Filter out the outliers 
+    kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs,\
+        kpPredCols, kpPredRows, kpObsCols, kpObsRows, \
+        kpContrastCols, kpContrastRows, \
+        kpApCols, kpApRows  = idx_filter(idx_out, 
+                                         kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, 
+                                         kpPredCols, kpPredRows, kpObsCols, kpObsRows,
+                                         kpContrastCols, kpContrastRows,
+                                         kpApCols, kpApRows)
+
+
     # Save data reference image results
     fout = h5py.File(outputFile, 'w')
 
@@ -666,7 +679,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
         plt.ylabel('GWCS Predicted - Observed Declination Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
         plt.title('WCS Fit Dec res Vs. Col')
-        plt.savefig(outputFileRoot+'_co._resid_dec.png', dpi=300)
+        plt.savefig(outputFileRoot+'_col_resid_dec.png', dpi=300)
         plt.clf()
         #plt.show()
         plt.plot(kpObsRows, deltaDecs, '.')

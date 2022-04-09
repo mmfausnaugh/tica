@@ -359,9 +359,6 @@ if __name__ == "__main__":
             outline_list.append('')
             outline_list.insert(0,'')
             outline = '|'.join(outline_list)                    
-#                   'TICA  Runtime','N_cores',
-#                   'WCS1 Runtime','N_cores',
-#                   'WCS2 Runtime','N_cores',
             
 
             #print(outline)
