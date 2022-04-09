@@ -287,8 +287,10 @@ if __name__ == "__main__":
             out3.append( get_from_logs(ccd_log_file))
             #test_output_dict(out3)
             end_date_object = datetime.strptime(out3[-1]['end_date'],'%Y.%m.%d-%H:%M:%S')
+
             if end_date_object > end_date_object1:
                 end_date = out3[-1]['end_date']
+                end_date_object1 = datetime.strptime(out3[-1]['end_date'],'%Y.%m.%d-%H:%M:%S')
 
 
     #check that these are the same across all logs    
