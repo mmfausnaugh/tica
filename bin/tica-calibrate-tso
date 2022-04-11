@@ -92,11 +92,11 @@ for i in 1 2 3 4; do
     fi
 
     if [ $o1 != "None" ]; then
-	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  >> inlist
+	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
     fi
 
     if [ $o2 != "None" ]; then
-	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
+	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*    >> inlist
     fi
 
     cd ..

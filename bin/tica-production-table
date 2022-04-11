@@ -14,14 +14,14 @@ def calculate_step2_metrics(infile):
     #require some minimum good frac?
     try:
         good_frac =d['goodStarFracs'][:]
-        frac99 = len(good_frac[ good_frac > 0.95])/len(good_frac)
+        frac95 = len(good_frac[ good_frac > 0.95])/len(good_frac)
         
         m =  good_frac > 0.75
         avg_good_frac = np.mean(good_frac[m])
 
     except KeyError:
         good_frac = None
-        frac99    = None
+        frac95    = None
 
         m = np.ones(len(d['allStds'][:]),dtype=bool)
         avg_good_frac = None
@@ -29,7 +29,7 @@ def calculate_step2_metrics(infile):
     avg_std_arcsec = np.mean( d['allStds'][:][m] )
     avg_std_pix = np.mean( d['allPixStds'][:][m] )
     
-    return frac99, avg_good_frac, avg_std_arcsec, avg_std_pix
+    return frac95, avg_good_frac, avg_std_arcsec, avg_std_pix
 
 def calculate_step1_metrics(infile):
     d = h5py.File(infile,'r')
@@ -207,8 +207,8 @@ if __name__ == "__main__":
                    'CCD',
                    'Wing FAC','Contrast FAC',
                    'NRef_Stars', 'Ref_Star Tmags','N_Trim_Stars',
-                   'Ref_Bright Residuals (arcsec)','Ref_Faint Residuals (arcsec)',
-                   'Frac_of_FFIs >.99Ref_Stars', 'AvgFrac Ref_Stars',
+                   'Ref_Bright Residuals (arcsec)',
+                   'Frac_of_FFIs >0.95Ref_Stars', 'AvgFrac Ref_Stars',
                    'AvgFit Residual (arcsec)','AvgFit Residual (pixel)',
                    'Flexible Apertures',
                    'TICA Runtime (sec)','N_cores',
@@ -337,7 +337,7 @@ if __name__ == "__main__":
                                                           ref_star_data[idx][2]))
             outline_list.append('{:>35s}'.format(out2['N_ref_trim_targ'][idx] ))
             outline_list.append('{:>35s}'.format(out2['ref_bright_fit_res'][idx] ))
-            outline_list.append('{:>35s}'.format(out2['ref_faint_fit_res'][idx] ))
+            #outline_list.append('{:>35s}'.format(out2['ref_faint_fit_res'][idx] ))
 
             outline_list.append('{:>.2f}'.format(wcs_data[idx][0]))
             outline_list.append('{:>.2f}'.format(wcs_data[idx][1]))

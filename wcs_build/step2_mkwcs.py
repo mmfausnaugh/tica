@@ -229,7 +229,6 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
     xy = (sclObsCols, sclObsRows)
     radec = (ras, decs)
 
-
     gwcs_obj = wcs_from_points(xy, radec, proj_point, degree=fitDegree)
     cx = gwcs_obj.forward_transform[1]
     # polynomial fit object in y (row)
@@ -987,6 +986,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
 
         newCols = np.zeros_like(obscols)
         newRows = np.zeros_like(obscols)
+        newFluxes = np.zeros_like(obscols)
+        newBkgs   = np.zeros_like(obscols)
         gdPrfs = np.zeros_like(obscols, dtype=np.int64)
         # these will be used to keep track of average subregion dc offsets
         nDC = 0
@@ -1002,9 +1003,11 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
             curLstGdRows = lstGdRows[ia]
             curMidCols = midcols[ia]
             curMidRows = midrows[ia]
-            curGdPrfs = np.zeros_like(curLstGdRows, dtype=np.int64)
+            curGdPrfs = np.zeros_like(curLstGdRows, dtype=np.int32)
             curNewCols = np.zeros_like(curLstGdRows)
             curNewRows = np.zeros_like(curLstGdRows)
+            curNewFluxes   = np.zeros_like(curLstGdRows)
+            curNewBkgs     = np.zeros_like(curLstGdRows)
             # In this subregion first get the brightest stars
             #  to determine an initial dc offset in col and row
             #  The targets were sorted by Tmag at the begining
@@ -1095,8 +1098,9 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                     #centOut = cent.centroid_com(sciImgCal-bkgLev)
                     centOut = flux_weighted_centroid(sciImgCal-bkgLev)
 
+
                     # Once in blue moon centroids go nutsy check for it
-                    idx = np.where((centOut<-1.0) | (centOut>blkHlfCent*2+2))[0]
+                    idx = np.where((centOut[0:2]<-1.0) | (centOut[0:2]>blkHlfCent*2+2))[0]
                     if len(idx) == 0:
                         # centroid_com produces 0-based coordinates
                         newCol = centOut[0]+colX[0]
@@ -1104,19 +1108,33 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                         curGdPrfs[jj] = 1
                         curNewCols[jj] = newCol
                         curNewRows[jj] = newRow
+                        curNewFluxes[jj] = centOut[2]
+                        curNewBkgs[jj] = bkgLev
                     else:
                         curNewCols[jj] = outColPix[jj]
                         curNewRows[jj] = outRowPix[jj]
+
+                        #since we are using reference image positions plus tweaks,
+                        #not-applicable --> NaN is most appropriate
+                        curNewFluxes[jj] = np.nan
+                        curNewBkgs[jj]   = np.nan
                 else:
                     #  Insert last ref position  with the dc offsets
                     curNewCols[jj] = outColPix[jj]
                     curNewRows[jj] = outRowPix[jj]
                     if not isGdRegion[ii]:
                         curGdPrfs[jj] = -2
+                        
+                    #since we are using reference image positions plus tweaks,
+                    #not-applicable --> NaN is most appropriate
+                    curNewFluxes[jj] = np.nan
+                    curNewBkgs[jj]   = np.nan
                     
             # Done getting flux weight for this sub block record them in overall list
             newCols[ia] = curNewCols
             newRows[ia] = curNewRows
+            newFluxes[ia] = curNewFluxes
+            newBkgs[ia]   = curNewBkgs
             gdPrfs[ia] = curGdPrfs
         # Done with all the blocks for this image
         # Get the overall good prf fraction
@@ -1256,9 +1274,15 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         c1 = fits.Column(name='TIC', format='K', array=tics)
         c2 = fits.Column(name='FLXCOL', format='E', unit='pix', array=newCols)
         c3 = fits.Column(name='FLXROW', format='E', unit='pix', array=newRows)
-        c4 = fits.Column(name='FLXVALID', format='I', array=gdPrfs)
+
+        c4 = fits.Column(name='FLX', format='E', unit='counts', array=newFluxes)
+        c5 = fits.Column(name='BKG', format='E', unit='counts', array=newBkgs)
+
+        c6 = fits.Column(name='FLXVALID', format='I', array=gdPrfs)
+
         # Make the extension table 
-        hduex = fits.BinTableHDU.from_columns([c1, c2, c3, c4])
+        hduex = fits.BinTableHDU.from_columns([c1, c2, c3, c4, c5, c6],
+                                              name='WCS_Stars')
         #append wcs parameter to primary header            
         hdulistCal[0].header.extend(newhdr, update=True)
         # Now merge the hdus
