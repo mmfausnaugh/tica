@@ -23,6 +23,7 @@ Improves configuration control, adds a file that tracks HLSP processing by secto
 - Updated regression test for fixed apertures and new ref_star files.
 - Changed WCS plotting defaults.
 - Changed stale SPOC header keywords to 'HISTORY' keywords.
+- Added measured flux and backgrounds of WCS stars to extension 1.
 ### Added
 - Header keywords for RMS scatter of faint stars in WCS fits.
 - Script to see if the data in two reference star h5 files is the same.
