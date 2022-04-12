@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ## [1.1.0] - 2022-04-13
-Improves configuration control, adds a file that tracks HLSP processing by sector.  Added header kewords and info in reference .h5 files, defaults to "fixed" apertures for WCS.
+Improves configuration control, adds a file that tracks HLSP processing by sector.  Added header kewords and info in reference .h5 files, defaults to "fixed" apertures for WCS.  Adds Ref star flux and bkg estimates to ext 1 table of individual images.
 ### Changed
 - wingFAC and contrastFAC in `step1_get_refimg_ctrlpts.py` are now command line arguments, and are stored in the .h5 files.
 - Number of processers in `Pool` are command line arguments in `bin/tica-cal-ffi2ccds` and similar.

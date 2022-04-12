@@ -871,11 +871,13 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
     logging.info('Using wingFAC={:.4f} and constrastFAC={:.4f}'.format(wingFAC,
                                                                        contrastFAC))
     # Make sure these are sorted by tmag
-    idx = np.argsort(tmags)
-    tics, ras, decs, tmags, blkidxs,\
-        obscols, obsrows, midcols, midrows = idx_filter(idx, 
-                                                        tics, ras, decs, tmags, 
-                                                        blkidxs, obscols, obsrows, midcols, midrows)
+    #--this was moved to step 1, so that ref files
+    # and ext1 have the same order
+    #idx = np.argsort(tmags)
+    #tics, ras, decs, tmags, blkidxs,\
+    #    obscols, obsrows, midcols, midrows = idx_filter(idx, 
+    #                                                    tics, ras, decs, tmags, 
+    #                                                    blkidxs, obscols, obsrows, midcols, midrows)
 
 
     # The following sets up the analysis subregions there are CTRL_PER_COL x CTRL_PER_Row 
