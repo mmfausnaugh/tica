@@ -542,10 +542,13 @@ class CCD_File(CCD):
         self.outdir = outdir
         
         self.hdu = fits.open(fname, mode='readonly')
+
+        #raw TSO file
         if len(self.hdu) == 1:
             self.header = self.hdu[0].header
             image  = self.hdu[0].data
             
+        #calibrated tica file
         elif len(self.hdu) == 2 and self.hdu[1].header['XTENSION'] == 'BINTABLE':
             self.header = self.hdu[0].header
             image  = self.hdu[0].data
@@ -553,27 +556,47 @@ class CCD_File(CCD):
         #handles either spoc raw or cal---maybe more checks are needed??
         #yes!, because tica calibrated FFIs now have 2 headers
 
+        #SPOC file; raw has 2 extensions, calibrated ahs 3
         elif len(self.hdu) == 2 or len(self.hdu) == 3:
             assert self.hdu[0].data == None
 
             self.header = fits.Header()
 
             for key in self.hdu[0].header.keys():
+
                 if key not in ['SIMPLE','BITPIX','NAXIS',
                                'EXTEND','NEXTEND',
                                'EXTNAME','EXTVER',
+                               'CHECKSUM',
+                               'ORIGIN','DATE','PROCVER',
+                               'FILEVER','IMAGTYPE','CREATOR',
                                'CHECKSUM']:
                     self.header.set(key,
                                     self.hdu[0].header[key],
                                     self.hdu[0].header.comments[key])
                     
+                if key in ['ORIGIN','DATE','PROCVER',
+                           'FILEVER','IMAGTYPE','CREATOR']:
+                    self.header['HISTORY'] = 'Original SPOC header {} = {}'.format(
+                                        key,self.hdu[0].header[key] )
+
             for key in self.hdu[1].header.keys():
                 if key not in ['XTENSION','BITPIX','NAXIS',
                                'NAXIS1','EXTEND','BSCALE','BZERO',
-                               'INHERIT','EXTNAME','EXTVER']:
+                               'INHERIT','EXTNAME','EXTVER',
+                               'ORIGIN','DATE','PROCVER',
+                               'FILEVER','IMAGTYPE','CREATOR',
+                               'CHECKSUM']:
                     self.header.set(key,
                                     self.hdu[1].header[key],
                                     self.hdu[1].header.comments[key])
+
+                if key in ['ORIGIN','DATE','PROCVER',
+                           'FILEVER','IMAGTYPE','CREATOR']:
+                    self.header['HISTORY'] = 'Original SPOC header {} = {}'.format(
+                                        key,self.hdu[1].header[key] )
+
+
                     
             image  = self.hdu[1].data
 
@@ -601,7 +624,7 @@ class CCD_File(CCD):
 
         super(CCD_File, self).__init__(image, calibration=calibration)
 
-        #SPOC uses 'CAMERA' insstead of 'CAM' and 'CCDNUM' instead of 'CCD'
+        #SPOC uses 'CAMERA' instead of 'CAM' and 'CCDNUM' instead of 'CCD'
         #header.get returns None as a backup if it can't match the keyword
         self.ccdnum  = self.header.get('CCD')
         self.camnum = self.header.get('CAM')
@@ -640,12 +663,13 @@ class CCD_File(CCD):
         for key in self.header.keys():                                                     
             #censor the standard fits headers, which have to be changed.                      
             #Let astropy handle internally                                                    
-            if key not in ['SIMPLE','BITPIX','NAXIS',                                         
-                           'NAXIS1','EXTEND','BSCALE','BZERO']:
+            if key not in ['SIMPLE','BITPIX','NAXIS',                                   
+                           'NAXIS1','EXTEND','BSCALE','BZERO','HISTORY']:
                 hdu_out.header.set(key,
                                    self.header[key],
                                    self.header.comments[key])     
-                                               
+        for hist_message in self.header['HISTORY']:
+            hdu_out.header.set('HISTORY', hist_message)
 
         
         # here, the gain is the electron per ADU.

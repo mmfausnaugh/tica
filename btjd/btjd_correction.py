@@ -50,8 +50,8 @@ def btjd_correction(time_in,ra,dec, ephemeris_data):
     #seems as if the default tess_ephem file is rotated 90 degress or so?
     dot_prod = np.dot(tess_position, source_vector)
     norm2 = np.sqrt(np.sum(tess_position**2))
-    print('dot product',dot_prod/norm2)
-    print('arccos',np.arccos(dot_prod/norm2)*180./np.pi)
+    #print('dot product',dot_prod/norm2)
+    #print('arccos',np.arccos(dot_prod/norm2)*180./np.pi)
 
     dtime = np.dot(tess_position, source_vector)/c/86400.0
 
