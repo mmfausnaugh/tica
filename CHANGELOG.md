@@ -36,7 +36,7 @@ Initial release on public github.  Primarily based on branch `faus_fix_requireme
 - Updated to python 3.10 and associated dependencies.
 - DVC tracking of flatfields is now for individual flatfield models.
 - Updated README and help menus based on MIT POC code review.
-- `bin/tica-calibrate-spoc` no longer organizes outputs by camera and CCD, in order to match inputs of `bin/tica-wcs-spoc`..
+- `bin/tica-calibrate-spoc` no longer organizes outputs by camera and CCD, in order to match inputs of `bin/tica-wcs-spoc`.
 - Regression tests updated to match python version 3.10 and associated dependencies.
 - Regression test Header Keywords now have a 1.e-8 relative tolerance, in order to accomodate differences in Intel and M1 processors.
 - Regression test directory now has a README to  log previous tests.
