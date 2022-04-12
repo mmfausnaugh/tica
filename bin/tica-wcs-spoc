@@ -27,7 +27,7 @@ USAGE="
     files are saved in .h5 format, and this script assumes that the
     reference files are saved in <data_dir_path>/ref_stars.
 
-  <SECTOR> is a two digit integer.  It is used in calls to the
+  <sector> is a two digit integer.  It is used in calls to the
     tess-point python package, in order to convert row/col to ra/dec.
 
   <data_dir_path> is the directory where the FFIs are saved.  This
@@ -61,7 +61,7 @@ for i in 1 2 3 4; do
     for j in 1 2 3 4; do
 	ref_file=$(ls "$dstem"/ref_stars/hlsp_tica_tess_ffi_s*"$SECTOR"-"cam$i"-"ccd$j"_tess_*cat.h5)
 	echo $ref_file
-	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/"$ref_file" -if $(ls "$dstem"/tess*-"$i"-"$j"-*) -fd 6 --savediaginfo  -dbg $DEBUGIT 
+	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/"$ref_file" -if $(ls "$dstem"/tess*-"$i"-"$j"-*) -fd 6 --savediaginfo  -dbg $DEBUGIT --log tica_wcs_step2_spoc.log
     done
 done
 

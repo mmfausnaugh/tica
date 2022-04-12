@@ -22,6 +22,10 @@ import h5py
 import os
 import sys
 
+import tica
+from time import time
+import logging
+
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
 
@@ -52,7 +56,7 @@ def flux_weighted_centroid(flux_stamp):
 
     #centroid_row = centroid_row - np.shape(flux_stamp)[0]/2.0 + 0.5
     #centroid_col = centroid_col - np.shape(flux_stamp)[1]/2.0 + 0.5
-    return np.array([centroid_col, centroid_row])
+    return np.array([centroid_col, centroid_row, norm])
 
 def gdPRF_calc(img, blkHlf, wingFAC=0.9, contrastFAC=3.5):
     rowSum = np.sum(img, axis=1)
@@ -65,7 +69,14 @@ def gdPRF_calc(img, blkHlf, wingFAC=0.9, contrastFAC=3.5):
     delLowPk = midPk - lowPk
     delHghPk = midPk - hghPk
     maxDelPk = np.max([delLowPk, delHghPk])
+    #this bounds the symmetry of the PSF:
+    #the maxDelPk corresponds to the minimum of the wings, so
+    #this always fails if wingFAC = 1.0
+    #if wingFAC is smaller, there is space between 
+    #the minimum of the wings and some fraction of the peak
+    #in which the other wing can fit
     trigLev = midPk - maxDelPk*wingFAC
+    
     if lowPk > trigLev or hghPk > trigLev or maxDelPk < 10.0:
         gdPRF = False
     # Check to make sure contrast of middle is higher than wings
@@ -111,8 +122,8 @@ def getRoughTranslation(col, row, cam, ccd, img, region, limits, cam_want, ccd_w
                     (cam == cam_want) & (ccd == ccd_want))
     colUse = midCols[idx]
     rowUse = midRows[idx]
-    track_cols = np.array([], dtype=np.int)
-    track_rows = np.array([], dtype=np.int)
+    track_cols = np.array([], dtype=np.int32)
+    track_rows = np.array([], dtype=np.int32)
     for i in range(len(colUse)):
         curCol = colUse[i]
         curRow = rowUse[i]
@@ -153,7 +164,9 @@ def apply_proper_motion(ras, decs, pmras, pmdecs, delyr):
     
     return ccat_cur.ra.degree, ccat_cur.dec.degree    
 
-def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile, DEBUG_LEVEL=0):
+def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile, 
+                       DEBUG_LEVEL=0,
+                       wingFAC = 0.9, contrastFAC=3.5):
         
     # Use DS9 if it exists and debug level is high
     DEBUG_DS9 = True
@@ -199,7 +212,8 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     #  These will get broken down by sub region
     MAX_NUSE = 1000
     MAX_SUBREGION_USE = MAX_NUSE // (CTRL_PER_COL*CTRL_PER_ROW)
-    print('MAX PER SubRegion {0:d}'.format(MAX_SUBREGION_USE))
+    #print('MAX PER SubRegion {0:d}'.format(MAX_SUBREGION_USE))
+    logging.info('MAX PER SubRegion {0:d}'.format(MAX_SUBREGION_USE))
     
     # The following sets up the analysis subregions there are CTRL_PER_COL x CTRL_PER_Row 
     #  subregions
@@ -230,11 +244,13 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
             raCtrl2D_flat[i], decCtrl2D_flat[i], scinfo = tess_stars2px_reverse_function_entry(\
                          SECTOR_WANT, CAMERA_WANT, CCD_WANT, curCol, curRow, scinfo)
         if np.mod(i,CTRL_PER_COL) == 0 and DEBUG_LEVEL>0: # print progress with sufficient debug_level
-            print('{0:d} of {1:d}'.format(i, nCtrl))
-            print('{0:f} {1:f} {2:f} {3:f}'.format(curCol, curRow, raCtrl2D_flat[i], decCtrl2D_flat[i]))
+            logging.debug('{0:d} of {1:d}'.format(i, nCtrl))
+            logging.debug('{0:f} {1:f} {2:f} {3:f}'.format(curCol, curRow, raCtrl2D_flat[i], decCtrl2D_flat[i]))
+            #print('{0:d} of {1:d}'.format(i, nCtrl))
+            #print('{0:f} {1:f} {2:f} {3:f}'.format(curCol, curRow, raCtrl2D_flat[i], decCtrl2D_flat[i]))
 
     # In each control point grid keep track of how many are valid 
-    numKept = np.zeros((nCtrl,), dtype=np.int)
+    numKept = np.zeros((nCtrl,), dtype=np.int32)
     # Keep track of how many were tried
     numBlk = np.zeros_like(numKept)
     
@@ -244,14 +260,16 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     kpRas = np.array([], dtype=np.double)
     kpDecs = np.array([], dtype=np.double)
     kpTmags = np.array([], dtype=np.double)
-    kpCtrlIdxs = np.array([], dtype=np.int)
+    kpCtrlIdxs = np.array([], dtype=np.int32)
     kpPredCols = np.array([], dtype=np.double)
     kpPredRows = np.array([], dtype=np.double)
     kpObsCols = np.array([], dtype=np.double)
     kpObsRows = np.array([], dtype=np.double)
     kpContrastCols = np.array([], dtype=np.double)
     kpContrastRows = np.array([], dtype=np.double)
-    
+    kpApCols = np.array([], dtype=np.int32)
+    kpApRows = np.array([], dtype=np.int32)
+
     # Specify cone search radius
     radSearch = np.max([delCol, delRow])*np.sqrt(2.0)/2.0 * pixScl
     # Here is the main work loop where over each sub image region
@@ -260,8 +278,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     for i, curRa in enumerate(raCtrl2D_flat):
         curDec = decCtrl2D_flat[i]
         # Do mast cone Search on this subimage region
-        tics, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRAs, ticpmDecs = mast_filter_conesearch(\
-                            curRa, curDec, radSearch, TMAG_MIN, TMAG_MAX)
+        tics, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRAs, ticpmDecs = mast_filter_conesearch(curRa, curDec, radSearch, TMAG_MIN, TMAG_MAX)
         nSrch = len(tics)
         # Sort the targets with brightest first
         idx = np.argsort(ticTmags)
@@ -290,7 +307,8 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
         outColPix = outColPix + cold
         outRowPix = outRowPix + rowd
         if DEBUG_LEVEL > 0:
-            print('Initial Position Tweaks Col: {0:f} Row: {1:f}'.format(cold, rowd))
+            #print('Initial Position Tweaks Col: {0:f} Row: {1:f}'.format(cold, rowd))
+            logging.debug('Initial Position Tweaks Col: {0:f} Row: {1:f}'.format(cold, rowd))
 
         nTry = 5
         gotN = 0
@@ -315,7 +333,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                     sciImgCal = hdulistCal[0].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
                     
                     # Check if target is isolated
-                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
+                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                                 wingFAC = wingFAC, 
+                                                                 contrastFAC=contrastFAC)
                     if gdPRF:                    # Determine background from 2 pixel ring around box
                         bkgLev = ring_background(sciImgCal)
                         #centOut = cent.centroid_com(sciImgCal-bkgLev)
@@ -331,12 +351,15 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
         if (gotN < nTry):
             print('Something went wrong determining initial pixel position correction on reference image!')
             print('Could not find nTry: {0:d} targets passing gdPRF'.format(nTry))
+            logging.error('Something went wrong determining initial pixel position correction on reference image!')
+            logging.error('Could not find nTry: {0:d} targets passing gdPRF'.format(nTry))
             exit()
         # From these nTry targets calculate the col and row translation from prediction
         corCol = np.median(delCols)
         corRow = np.median(delRows)
         if DEBUG_LEVEL > 0:
-            print('Predicted Position Tweaks Col: {0:f} Row: {1:f}'.format(corCol, corRow))
+            #print('Predicted Position Tweaks Col: {0:f} Row: {1:f}'.format(corCol, corRow))
+            logging.debug('Predicted Position Tweaks Col: {0:f} Row: {1:f}'.format(corCol, corRow))
         outColPix = outColPix + corCol
         outRowPix = outRowPix + corRow
         
@@ -368,7 +391,9 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                     #sciImgCal[4, 5] = 1000.0
                     
                     # Check if target is isolated
-                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
+                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                                 wingFAC = wingFAC, 
+                                                                 contrastFAC=contrastFAC)
 
                     # Determine background from 2 pixel ring around box
                     bkgLev = ring_background(sciImgCal)
@@ -430,10 +455,17 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                         kpObsRows = np.append(kpObsRows, newRow)
                         kpContrastCols = np.append(kpContrastCols, contrastCol)
                         kpContrastRows = np.append(kpContrastRows, contrastRow)
+                        kpApCols = np.append(kpApCols, int(midCol))
+                        kpApRows = np.append(kpApRows, int(midRow))
+
         if DEBUG_LEVEL>0:
             cur_idx = np.where(kpCtrlIdxs == i)[0]
-            print('Image Coords Col: {0:d} {1:d} Row: {2:d} {3:d} NGd: {4:d} Ntry: {5:d}'.format(\
-                  colLow, colHgh, rowLow, rowHgh, len(cur_idx), nSrch))
+            #print('Image Coords Col: {0:d} {1:d} '
+            #      'Row: {2:d} {3:d} NGd: {4:d} Ntry: {5:d}'.format(
+            #          colLow, colHgh, rowLow, rowHgh, len(cur_idx), nSrch))
+            logging.debug('Image Coords Col: {0:d} {1:d} '
+                         'Row: {2:d} {3:d} NGd: {4:d} Ntry: {5:d}'.format(
+                             colLow, colHgh, rowLow, rowHgh, len(cur_idx), nSrch))
                 
     
                 
@@ -471,16 +503,19 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
             idxsort = np.argsort(curContrast)[::-1]
             idxsort = idxsort[0:MAX_SUBREGION_USE]
             keepIt[cur_idx[idxsort]] = 1
-            print('Region:{0:d} clipout {1:d}'.format(i, nCur-MAX_SUBREGION_USE))
+            #print('Region:{0:d} clipout {1:d}'.format(i, nCur-MAX_SUBREGION_USE))
+            logging.info('Region:{0:d} clipout {1:d}'.format(i, nCur-MAX_SUBREGION_USE))
         else:
             keepIt[cur_idx] = 1
     idx = np.where(keepIt == 1)[0]
     kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs,\
         kpPredCols, kpPredRows, kpObsCols, kpObsRows, \
-        kpContrastCols, kpContrastRows = idx_filter(idx, \
-            kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, \
-            kpPredCols, kpPredRows, kpObsCols, kpObsRows,\
-            kpContrastCols, kpContrastRows)
+        kpContrastCols, kpContrastRows, \
+        kpApCols, kpApRows = idx_filter(idx, 
+                                        kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, 
+                                        kpPredCols, kpPredRows, kpObsCols, kpObsRows,
+                                        kpContrastCols, kpContrastRows,
+                                        kpApCols, kpApRows)
 
 
     # Fit a wcs to see the residuals and trim outliers
@@ -511,14 +546,31 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     # Filter out the outliers 
     kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs,\
         kpPredCols, kpPredRows, kpObsCols, kpObsRows, \
-        kpContrastCols, kpContrastRows = idx_filter(idxgd, \
-            kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, \
-            kpPredCols, kpPredRows, kpObsCols, kpObsRows,\
-            kpContrastCols, kpContrastRows)
+        kpContrastCols, kpContrastRows, \
+        kpApCols, kpApRows  = idx_filter(idxgd, 
+                                         kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, 
+                                         kpPredCols, kpPredRows, kpObsCols, kpObsRows,
+                                         kpContrastCols, kpContrastRows,
+                                         kpApCols, kpApRows)
                     
+
+    #lastly, sort by tmag
+    idx_out = np.argsort(kpTmags)
+    # Filter out the outliers 
+    kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs,\
+        kpPredCols, kpPredRows, kpObsCols, kpObsRows, \
+        kpContrastCols, kpContrastRows, \
+        kpApCols, kpApRows  = idx_filter(idx_out, 
+                                         kpTics, kpRas, kpDecs, kpTmags, kpCtrlIdxs, 
+                                         kpPredCols, kpPredRows, kpObsCols, kpObsRows,
+                                         kpContrastCols, kpContrastRows,
+                                         kpApCols, kpApRows)
+
 
     # Save data reference image results
     fout = h5py.File(outputFile, 'w')
+
+
     tmp = fout.create_dataset('tics', data=kpTics, compression='gzip')
     tmp = fout.create_dataset('ras', data=kpRas, compression='gzip')
     tmp = fout.create_dataset('decs', data=kpDecs, compression='gzip')
@@ -530,6 +582,14 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     tmp = fout.create_dataset('obsrows', data=kpObsRows, compression='gzip')
     tmp = fout.create_dataset('contrastcols', data=kpContrastCols, compression='gzip')
     tmp = fout.create_dataset('contrastrows', data=kpContrastRows, compression='gzip')
+    tmp = fout.create_dataset('aperturecols', data=kpApCols, compression='gzip')
+    tmp = fout.create_dataset('aperturerows', data=kpApRows, compression='gzip')
+
+    #example REF_IMAGE: tess2022072133152-00204040-1-crm-ffi_ccd1.cal.fits
+    fout.attrs['ref_FIN'] = REF_IMAGE.split('-')[1]
+    fout.attrs['wingFAC']     = wingFAC
+    fout.attrs['contrastFAC'] = contrastFAC
+#save the 
     fout.close()
 
     # Fit a wcs after trimming to report the residuals
@@ -557,9 +617,14 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     std1 = np.std(deltaRas)
     std2 = np.std(deltaDecs)
     allstd = np.sqrt(std1*std1+std2*std2)*c1
-    print('Found: {0:d} ref targets, {1:d} bright, fit resid [arcsec] bright {2:6.3f} faint {3:6.3f} nTrim: {4:d}'.format(len(kpTics), len(idxb), brightstd, faintstd, len(idxbd)))
+    #print('Found: {0:d} ref targets, {1:d} bright, fit resid [arcsec] bright {2:6.3f} faint {3:6.3f} nTrim: {4:d}'.format(len(kpTics), len(idxb), brightstd, faintstd, len(idxbd)))
+    logging.info('Found: {0:d} ref targets, {1:d} bright, fit resid [arcsec] bright {2:6.3f} faint {3:6.3f} nTrim: {4:d}'.format(len(kpTics), len(idxb), brightstd, faintstd, len(idxbd)))
     
     if DEBUG_LEVEL>1:
+        #save a bunch of plots
+        outputFileRoot = os.path.splitext(outputFile)[0]
+
+
         plt.plot(kpObsCols, kpObsRows, '.')
         plt.axhline(rowMin, ls='-', color='k')
         plt.axhline(rowMax, ls='-', color='k')
@@ -567,37 +632,74 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
         plt.axvline(colMax, ls='-', color='k')
         plt.xlabel('Column [pix]')
         plt.ylabel('Row [pix]')
-        plt.show()
+        plt.title('Reference Target Positions on Detector')
+        plt.savefig(outputFileRoot+'_ref_target_positions.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpTmags, deltaRas, '.')
         plt.xlabel('Tmag')
         plt.ylabel('GWCS Predicted - Observed RA Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit RA Res Vs. Tmag')
+        plt.savefig(outputFileRoot+'_tmag_resid_ra.png', dpi=300)
+        plt.clf()
+
+
+        #plt.show()
         plt.plot(kpTmags, deltaDecs, '.')
         plt.xlabel('Tmag')
         plt.ylabel('GWCS Predicted - Observed Declination Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS FIT Dec Res Vs Tmag')
+        plt.savefig(outputFileRoot+'_tmag_resid_dec.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpObsCols, deltaRas, '.')
         plt.xlabel('Column [px]')
         plt.ylabel('GWCS Predicted - Observed RA Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit RA Res Vs. Col')
+        plt.savefig(outputFileRoot+'_col_resid_ra.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpObsRows, deltaRas, '.')
         plt.xlabel('Row [px]')
         plt.ylabel('GWCS Predicted - Observed RA Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit RA Res Vs. Row')
+        plt.savefig(outputFileRoot+'_row_resid_ra.png', dpi=300)
+        plt.clf()
+
+        #plt.show()
         plt.plot(kpObsCols, deltaDecs, '.')
         plt.xlabel('Column [px]')
         plt.ylabel('GWCS Predicted - Observed Declination Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit Dec res Vs. Col')
+        plt.savefig(outputFileRoot+'_col_resid_dec.png', dpi=300)
+        plt.clf()
+        #plt.show()
         plt.plot(kpObsRows, deltaDecs, '.')
         plt.xlabel('Row [px]')
         plt.ylabel('GWCS Predicted - Observed Declination Position [arcsec]')
         plt.axhline(0.0, ls='--', color='r')
-        plt.show()
+        plt.title('WCS Fit Dec Res Vs. Row')
+        plt.savefig(outputFileRoot+'_row_resid_dec.png', dpi=300)
+        plt.clf()
+        #plt.show()
+
+        x = np.sort(deltaSeps[idxb])
+        ndata = len(x)
+        y = np.arange(ndata)/ float(ndata)
+        plt.plot(x, y, '-')
+        plt.xlabel('RA & Dec WCS residuals quadrature add [arcsec]')
+        plt.ylabel('CDF')
+        plt.title('CDF of Residuals (Tmag<10)')
+        plt.savefig(outputFileRoot+'_cdf_resid_bright.png', dpi=300)
+        plt.clf()
 
     # Lets look for wcs outliers
     #  This is at very high debugging level
@@ -650,8 +752,10 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
             colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
             rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
             sciImgCal = hdulistCal[0].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
-            gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf)
-            print('Col: {0:d} {1:5.3f} Row: {2:d} {3:5.3f} PixValue: {4} Tic: {5:d} Good? {6:b} Tmag: {7:f}'.format(\
+            gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                         wingFAC = wingFAC, 
+                                                         contrastFAC=contrastFAC)
+            print('Col: {0:d} {1:5.3f} Row: {2:d} {3:5.3f} PixValue: {4} Tic: {5:d} Good? {6:b} Tmag: {7:f}'.format(
                   midCol, curcol, midRow, currow, hdulistCal[0].data[midRow-1,midCol-1], curTic, gdPRF, tmpTmags[iaa]))
             dispDS9.set('frame 1')
             dispDS9.set_np2arr(sciImgCal)
@@ -677,12 +781,26 @@ if __name__ == '__main__':
                         help="Camera Number [1-4]")
     parser.add_argument("-cd", "--ccd", type=int, choices=range(1,5), \
                         help="CCD Number [1-4]")
-    parser.add_argument("-ri", "--refimage", type=argparse.FileType('rb'), \
+    parser.add_argument("-ri", "--refimage", type=str, \
                         help="Reference Image FITS Filename With Path")
     parser.add_argument("-o", "--outputfile", type=argparse.FileType('w'),\
                         help="Control point data storeage filename with path")
     parser.add_argument("-dbg", "--debug", type=int, \
                         help="Debug level; integer higher has more output")
+    parser.add_argument("-w","--wing", type=float, default = 0.9,
+                         help="For a candidate WCS star, this sets a bound on the "
+                         "symmetry of the PSF; the drop in flux from the core to the "
+                        "brighter PSF wing cannot be smaller than this fraction "
+                        "of the drop in flux form the core to the fainter PSF wing.")
+    parser.add_argument("-c","--contrast", type=float, default=3.5,
+                         help = "For candidate WCS star, this sets minimum ratio of the core "
+                         "of the PSF to the maximum in the wings.  Crowded stars will "
+                         "tend to have a smaller ratio.")
+    parser.add_argument("-l", "--log", metavar="LOG_FILE", 
+                        help="save logging output to thiss file")
+
+    
+
     args = parser.parse_args()
 
 # DEBUG BLOCK for hard coding input parameters and testing
@@ -711,10 +829,25 @@ if __name__ == '__main__':
     args.outputfile.close()
     outputFile = args.outputfile.name
     DEBUG_LEVEL = args.debug
-    
+
+    tica.setup_logging(filename=args.log)    
+    info_lines = tica.platform_info()
+    for info_line in info_lines:
+        logging.info(info_line)
+    logging.info('python environment:  {}'.format(  os.getenv('CONDA_DEFAULT_ENV') )  )
+    logging.info('program: {}'.format( parser.prog ) )
+    logging.info('argument parameters:')
+    for key in vars(args).keys():
+        logging.info('     {} = {}'.format(key, vars(args)[key]) )
+    starttime = time()
     
     # Call the main functionality to get
     #  bright isolated stars on a reference image
     #  that will be used on all images for a sector camera ccd 
     #  to determine a wcs solution
-    get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile, DEBUG_LEVEL)
+    get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, 
+                       REF_IMAGE, 
+                       outputFile, DEBUG_LEVEL, 
+                       args.wing, args.contrast)
+    runtime = time() - starttime
+    logging.info("Runtime: {0:.2f}sec".format(runtime) )

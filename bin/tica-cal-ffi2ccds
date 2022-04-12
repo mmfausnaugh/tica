@@ -22,7 +22,7 @@
 #SOFTWARE.
 
 import sys
-import os.path
+import os
 import numpy as np
 import matplotlib.pyplot as plt
 import argparse
@@ -77,7 +77,8 @@ if __name__ == "__main__":
     parser.add_argument("--caldir", metavar="DIRECTORY", default=None,
                         help="calibration directory")
     parser.add_argument("--version", action="version", version="tica %s" % tica.version)
-    parser.add_argument("--parallel", action="store_true", help="run files in parallel")
+    parser.add_argument("--parallel", type=int, default=1,
+                        help="run files in parallel on number of processors specified here")
     parser.add_argument("--trim", action="store_true", help="trim calibration pixels from edges")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
     parser.add_argument("-l", "--log", metavar="LOG_FILE", help="save logging output to this file")
@@ -87,6 +88,15 @@ if __name__ == "__main__":
     # setup logging
     tica.setup_logging(debug=args.debug, filename=args.log)
     logger = logging.getLogger(__name__)
+    info_lines = tica.platform_info()
+    for info_line in info_lines:
+        logger.info(info_line)
+    logger.info('python environment:  {}'.format(  os.getenv('CONDA_DEFAULT_ENV') )  )
+    logger.info('program: {}'.format( parser.prog ) )
+    logger.info('working directory {}'.format(os.getcwd() ))
+    logger.info('argument parameters:')
+    for key in vars(args).keys():
+        logging.info('     {} = {}'.format(key, vars(args)[key]) )
 
     if args.outdir:
         outdir=args.outdir
@@ -112,8 +122,8 @@ if __name__ == "__main__":
 
     starttime = time()
 
-    if args.parallel:
-        p = Pool(16)
+    if args.parallel > 1:
+        p = Pool(args.parallel)
         for filename in inlist:
             p.apply_async(worker, ( (filename, outdir, args.trim), ) )
         p.close()
@@ -123,5 +133,6 @@ if __name__ == "__main__":
             worker( (filename,  outdir, args.trim))
     runtime = time() - starttime
 
-    print("Runtime: {0:.2f}sec".format(runtime), "parallel" if args.parallel else "single") 
-
+    print("Runtime: {0:.2f}sec".format(runtime), "N Pools = {}".format( args.parallel ) )
+    logger.info("N Pools = {}".format( args.parallel ) )
+    logger.info("Runtime: {0:.2f}sec".format(runtime) )
