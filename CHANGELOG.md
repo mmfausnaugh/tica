@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 ### Removed
 
+## [1.1.1] - 2022-04-27
+Extended same capabilities on the production table logging.
+### Changed
+- Changed FLXWIN header keyword to blkHlfCent variable, as per issue 14.
+- Updated tica-production-table to deal with logs that capture reruns.
+### Added
+### Removed
+
 ## [1.1.0] - 2022-04-13
 Improves configuration control, adds a file that tracks HLSP processing by sector.  Added header kewords and info in reference .h5 files, defaults to "fixed" apertures for WCS.  Adds Ref star flux and bkg estimates to ext 1 table of individual images.
 ### Changed

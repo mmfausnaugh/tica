@@ -1271,7 +1271,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         newhdr['WCSGDF' ] = (gdFracs[iImg], 'Fraction of control point targs valid')
         newhdr['CTRPCOL'] = (CTRL_PER_COL, 'Subregion analysis blocks over columns')
         newhdr['CTRPROW'] = (CTRL_PER_ROW, 'Subregion analysis blocks over rows')
-        newhdr['FLXWIN'] = (blkHlf*2+1, 'Width in pixels of Flux-weight centroid region')
+        newhdr['FLXWIN'] = (blkHlfCent*2+1, 'Width in pixels of Flux-weight centroid region')
         # Make the fits table columns
         c1 = fits.Column(name='TIC', format='K', array=tics)
         c2 = fits.Column(name='FLXCOL', format='E', unit='pix', array=newCols)
