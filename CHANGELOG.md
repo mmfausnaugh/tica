@@ -15,6 +15,7 @@ Extended same capabilities on the production table logging.
 ### Changed
 - Changed FLXWIN header keyword to blkHlfCent variable, as per issue 14.
 - Updated tica-production-table to deal with logs that capture reruns.
+- Updated regression test to check ext 1 data and headers.  Renamed ref star files to v02.
 ### Added
 ### Removed
 
