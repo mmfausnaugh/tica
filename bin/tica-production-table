@@ -402,11 +402,13 @@ if __name__ == "__main__":
                                  '{:>35s}'.format(out['py_ver']),
                                  '{:>35s}'.format(out['host']),
                                  '{:>35s}'.format(out['py_env']), ]
-                if out2 is not None:
+                if out2 is  None:
+                    outline_list.append( '{:>35s}'.format('') )
+                else:
                     outline_list.append( '{:>35s}'.format(out2['reffin']) )
                         
             else:
-                outline_list = ['{:>35s}'.format('') for _ in range(9)]
+                outline_list = ['{:>35s}'.format('') for _ in range(10)]
                 #if one ever wanted to load the table into pandas or numpy,
                 #useful to match a sector for each ccd
                 outline_list[0] = '{:>04d}'.format( int(out['sector']))
