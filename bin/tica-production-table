@@ -436,6 +436,8 @@ if __name__ == "__main__":
                 outline_list.append( '{:>35s}'.format('') )
             elif ii == 0 and jj == 0:
                 outline_list.append( '{:>35s}'.format(out2['reffin']) )
+            else:
+                outline_list.append( '{:>35s}'.format('') )
 
             if out2 is None:
                 outline_list.append('{:>35s}'.format('') )
