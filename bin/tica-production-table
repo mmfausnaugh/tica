@@ -397,7 +397,7 @@ if __name__ == "__main__":
         for jj in [0,1,2,3]:
             if ii == 0 and jj == 0:
                 outline_list = [ '{:>04d}'.format( int(out['sector'])), 
-                                 '{:>35s}'.format( orbit_string.replace('_',' ' )), 
+                                 '{:>35s}'.format( orbit_string.replace('_','' )), 
                                  '{:>35s}'.format(start_date),
                                  '{:>35s}'.format(end_date),
                                  '{:>35.3f}'.format( (dt.days*86400 + dt.seconds)/86400 ),
@@ -411,7 +411,7 @@ if __name__ == "__main__":
                 #if one ever wanted to load the table into pandas or numpy,
                 #useful to match a sector for each ccd
                 outline_list[0] = '{:>04d}'.format( int(out['sector']))
-                outline_list[1] = '{:>35s}'.format( orbit_string.replace('_',' ' ) )
+                outline_list[1] = '{:>35s}'.format( orbit_string.replace('_','' ) )
 
             idx = 4*ii + jj
             outline_list.append('{:>35s}'.format('cam{}_ccd{}'.format(ii+1,jj+1 )))
