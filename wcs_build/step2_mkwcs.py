@@ -1271,7 +1271,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         newhdr['WCSGDF' ] = (gdFracs[iImg], 'Fraction of control point targs valid')
         newhdr['CTRPCOL'] = (CTRL_PER_COL, 'Subregion analysis blocks over columns')
         newhdr['CTRPROW'] = (CTRL_PER_ROW, 'Subregion analysis blocks over rows')
-        newhdr['FLXWIN'] = (blkHlf*2+1, 'Width in pixels of Flux-weight centroid region')
+        newhdr['FLXWIN'] = (blkHlfCent*2+1, 'Width in pixels of Flux-weight centroid region')
         # Make the fits table columns
         c1 = fits.Column(name='TIC', format='K', array=tics)
         c2 = fits.Column(name='FLXCOL', format='E', unit='pix', array=newCols)
@@ -1455,6 +1455,18 @@ if __name__ == '__main__':
             os.mkdir(saveDir)
     DEBUG_LEVEL = args.debug
 
+    #for step 2, we usually do all of the files
+    #so, move the old logs, and make a new file
+    #for every run.
+    if os.path.isfile(args.log):
+        ii = 1
+        while True:
+            if os.path.isfile(args.log + '_run{}'.format(ii) ):
+                ii += 1
+            else:
+                os.rename(args.log, args.log + '_run{}'.format(ii) )
+                break
+    
     tica.setup_logging(filename=args.log)
     info_lines = tica.platform_info()
     for info_line in info_lines:
