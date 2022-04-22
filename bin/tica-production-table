@@ -431,11 +431,11 @@ if __name__ == "__main__":
             outline_list.append( '{:>35s}'.format(out3[idx]['flexible_apertures'] ))
 
 
-            if ii == 0 and jj == 0:
-                if out2 is  None:
-                    outline_list.append( '{:>35s}'.format('') )
-                else:
-                    outline_list.append( '{:>35s}'.format(out2['reffin']) )
+            if out2 is  None:
+                outline_list.append( '{:>35s}'.format('') )
+            elif ii == 0 and jj == 0:
+                outline_list.append( '{:>35s}'.format(out2['reffin']) )
+
             if out2 is None:
                 outline_list.append('{:>35s}'.format('') )
                 outline_list.append('{:>35s}'.format('') )
