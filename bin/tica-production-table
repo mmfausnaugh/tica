@@ -407,10 +407,11 @@ if __name__ == "__main__":
                                  '{:>35s}'.format(out['py_env']), ]
                         
             else:
-                outline_list = ['{:>35s}'.format('') for _ in range(10)]
+                outline_list = ['{:>35s}'.format('') for _ in range(9)]
                 #if one ever wanted to load the table into pandas or numpy,
                 #useful to match a sector for each ccd
                 outline_list[0] = '{:>04d}'.format( int(out['sector']))
+                outline_list[1] = '{:>35s}'.format( orbit_string.replace('_',' ' ) )
 
             idx = 4*ii + jj
             outline_list.append('{:>35s}'.format('cam{}_ccd{}'.format(ii+1,jj+1 )))
