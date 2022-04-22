@@ -274,17 +274,17 @@ if __name__ == "__main__":
     head_labels = ['Sector','Segment',
                    'Date Start','Date End','Total Time (days)',
                    'TICA version','Python version','Host','conda Environment',
-                   'Ref_FIN',
                    'CCD',
-                   'Wing FAC','Contrast FAC',
-                   'NRef_Stars', 'Ref_Star Tmags','N_Trim_Stars',
-                   'Ref_Bright Residuals (arcsec)',
+                   'TICA Runtime (sec)','N_cores',
+                   'WCS2 Runtime (sec)','N_cores',
                    'Frac_of_FFIs >0.95Ref_Stars', 'AvgFrac Ref_Stars',
                    'AvgFit Residual (arcsec)','AvgFit Residual (pixel)',
                    'Flexible Apertures',
-                   'TICA Runtime (sec)','N_cores',
+                   'Ref_FIN',
                    'WCS1 Runtime (sec)','N_cores',
-                   'WCS2 Runtime (sec)','N_cores',
+                   'Wing FAC','Contrast FAC',
+                   'NRef_Stars', 'Ref_Star Tmags','N_Trim_Stars',
+                   'Ref_Bright Residuals (arcsec)',
                ]
     header_list = ['{:>35s}'.format( head_label) for head_label in head_labels]
     header_list.append('')
@@ -292,18 +292,21 @@ if __name__ == "__main__":
     header = '|'.join(header_list)
     align_list = [':---:' for head_label in head_labels]
     #align right
-    align_list[4] = '---:'
-    align_list[13] = '---:'
-    align_list[15] = '---:'
-    align_list[16] = '---:'
-    align_list[17] = '---:'
-    align_list[18] = '---:'
-    align_list[19] = '---:'
-    align_list[20] = '---:'
-    align_list[21] = '---:'
-    align_list[23] = '---:'
-    align_list[25] = '---:'
-    align_list[27] = '---:'
+    align_list[4] = '---:'   #total time
+    align_list[10] = '---:'  #tica runtime
+    align_list[11] = '---:'  #N cores 
+    align_list[12] = '---:'  #WCS2 Runtime
+    align_list[13] = '---:'  #N cores
+    align_list[14] = '---:'  #frac with 0.95
+    align_list[15] = '---:'  #avg Frac
+    align_list[16] = '---:'  #Avg fit resid (arcsec)
+    align_list[17] = '---:'  #Avg fit resid (pix)
+    align_list[18] = '---:'  #flexible aperture
+    align_list[20] = '---:'  #WCS1 Runtime
+    align_list[21] = '---:'  #Ncores
+    align_list[24] = '---:'  #Nref
+    align_list[26] = '---:'  #Ntrim
+    align_list[27] = '---:'  #bright res
 
     
 
@@ -402,10 +405,6 @@ if __name__ == "__main__":
                                  '{:>35s}'.format(out['py_ver']),
                                  '{:>35s}'.format(out['host']),
                                  '{:>35s}'.format(out['py_env']), ]
-                if out2 is  None:
-                    outline_list.append( '{:>35s}'.format('') )
-                else:
-                    outline_list.append( '{:>35s}'.format(out2['reffin']) )
                         
             else:
                 outline_list = ['{:>35s}'.format('') for _ in range(10)]
@@ -415,7 +414,31 @@ if __name__ == "__main__":
 
             idx = 4*ii + jj
             outline_list.append('{:>35s}'.format('cam{}_ccd{}'.format(ii+1,jj+1 )))
+            if jj == 0:
+                outline_list.append( '{:>35s}'.format(out['runtime'][idx]) )
+                outline_list.append( '{:>35s}'.format(out['N_pool'][idx]) )
+            else:
+                outline_list.append('{:>35s}'.format(''))
+                outline_list.append('{:>35s}'.format(''))           
+
+            outline_list.append( '{:>35s}'.format(out3[idx]['runtime'][idx] ))
+            outline_list.append( '{:>35d}'.format(1))
+
+            outline_list.append('{:>.2f}'.format(wcs_data[idx][0]))
+            outline_list.append('{:>.2f}'.format(wcs_data[idx][1]))
+            outline_list.append('{:>.3f}'.format(wcs_data[idx][2]))
+            outline_list.append('{:>.2f}'.format(wcs_data[idx][3]))
+            outline_list.append( '{:>35s}'.format(out3[idx]['flexible_apertures'] ))
+
+
+            if ii == 0 and jj == 0:
+                if out2 is  None:
+                    outline_list.append( '{:>35s}'.format('') )
+                else:
+                    outline_list.append( '{:>35s}'.format(out2['reffin']) )
             if out2 is None:
+                outline_list.append('{:>35s}'.format('') )
+                outline_list.append('{:>35s}'.format('') )
                 outline_list.append('{:>35s}'.format('') )
                 outline_list.append('{:>35s}'.format('') )
                 outline_list.append('{:>35s}'.format('') )
@@ -424,6 +447,8 @@ if __name__ == "__main__":
                 outline_list.append('{:>35s}'.format('') )
 
             else:
+                outline_list.append( '{:>35s}'.format(out2['runtime'][idx] ))
+                outline_list.append( '{:>35d}'.format(1))
                 outline_list.append('{:>35s}'.format(out2['wing'][idx] ))
                 outline_list.append('{:>35s}'.format(out2['contrast'][idx] ))
                 outline_list.append('{:>35s}'.format(out2['N_ref_targets'][idx] ))
@@ -433,28 +458,6 @@ if __name__ == "__main__":
                 outline_list.append('{:>35s}'.format(out2['ref_bright_fit_res'][idx] ))
                 #outline_list.append('{:>35s}'.format(out2['ref_faint_fit_res'][idx] ))
 
-            outline_list.append('{:>.2f}'.format(wcs_data[idx][0]))
-            outline_list.append('{:>.2f}'.format(wcs_data[idx][1]))
-            outline_list.append('{:>.3f}'.format(wcs_data[idx][2]))
-            outline_list.append('{:>.2f}'.format(wcs_data[idx][3]))
-            outline_list.append( '{:>35s}'.format(out3[idx]['flexible_apertures'] ))
-
-            if jj == 0:
-                outline_list.append( '{:>35s}'.format(out['runtime'][idx]) )
-                outline_list.append( '{:>35s}'.format(out['N_pool'][idx]) )
-            else:
-                outline_list.append('{:>35s}'.format(''))
-                outline_list.append('{:>35s}'.format(''))           
-
-            if out2 is None:
-                outline_list.append('{:>35s}'.format('') )
-                outline_list.append('{:>35s}'.format('') )
-            else:
-                outline_list.append( '{:>35s}'.format(out2['runtime'][idx] ))
-                outline_list.append( '{:>35d}'.format(1))
-
-            outline_list.append( '{:>35s}'.format(out3[idx]['runtime'][idx] ))
-            outline_list.append( '{:>35d}'.format(1))
 
             outline_list.append('')
             outline_list.insert(0,'')
