@@ -5,6 +5,7 @@ import os
 import re
 import sys
 import h5py
+import argparse
 from datetime import datetime
 
 def calculate_step2_metrics(infile):
@@ -255,7 +256,22 @@ if __name__ == "__main__":
     #step 2: average GdFrac, frac goodFrac > 0.99, 
     #average stds arcsec (all), average std pixel (all)
 
-    head_labels = ['Sector',
+    description_string = """
+
+    This script scrapes logs in the tica production directories, and updates the Markdown table in the github repo.
+
+    """
+
+    parser = argparse.ArgumentParser(prog='tica-production-table', description=description_string)
+    parser.add_argument("-s", "--segments", nargs="*", type=int, 
+                        help="Segments of sector; orbit 1 or 2 in EM1,"
+                        "1, 2, 3, or 4 in EM2.  Can input multiple segments, e.g., `-s 1 2`")
+    args = parser.parse_args()
+
+
+
+
+    head_labels = ['Sector','Segment',
                    'Date Start','Date End','Total Time (days)',
                    'TICA version','Python version','Host','conda Environment',
                    'Ref_FIN',
@@ -276,18 +292,18 @@ if __name__ == "__main__":
     header = '|'.join(header_list)
     align_list = [':---:' for head_label in head_labels]
     #align right
-    align_list[3] = '---:'
-    align_list[12] = '---:'
-    align_list[14] = '---:'
+    align_list[4] = '---:'
+    align_list[13] = '---:'
     align_list[15] = '---:'
     align_list[16] = '---:'
     align_list[17] = '---:'
     align_list[18] = '---:'
     align_list[19] = '---:'
     align_list[20] = '---:'
-    align_list[22] = '---:'
-    align_list[24] = '---:'
-    align_list[26] = '---:'
+    align_list[21] = '---:'
+    align_list[23] = '---:'
+    align_list[25] = '---:'
+    align_list[27] = '---:'
 
     
 
@@ -307,7 +323,10 @@ if __name__ == "__main__":
 
 
     #load up the data
-    out = get_from_logs('tica_logs/tica.log')
+    orbit_string = ''
+    for seg in args.segments:
+        orbit_string += 'o{}_'.format(seg)
+    out = get_from_logs('tica_logs/{}tica.log'.format(orbit_string) )
     test_output_dict(out)
     start_date = out['start_date']
     start_date_object = datetime.strptime(out['start_date'],'%Y.%m.%d-%H:%M:%S')
@@ -320,8 +339,11 @@ if __name__ == "__main__":
     #print( out )
     sector = out['sector']
 
-    out2 = get_from_logs('tica_logs/tica_wcs_step1.log')
-    test_output_dict(out2)
+    if 1 in args.segments:
+        out2 = get_from_logs('tica_logs/tica_wcs_step1.log')
+        test_output_dict(out2)
+    else:
+        out2 = None
     #print( out2 )
 
 
@@ -351,11 +373,15 @@ if __name__ == "__main__":
     #check that these are the same across all logs    
     #'Sector','TICA version','Python version',
     #'Host','Environment','Flexibel Apertures', 
-    assert out['sector'] == out2['wcs_sector']
-    for s in out3:
-        assert out['sector'] == s['wcs_sector']
+    if out2 is not None:
+        assert out['sector'] == out2['wcs_sector']
+
+        for s in out3:
+            assert out['sector'] == s['wcs_sector']
+
     for key in ['tica_ver','py_ver','host','py_env']:
-        assert out[key] == out2[key]
+        if out2 is not None:
+            assert out[key] == out2[key]
         for s in out3:
             assert out[key] == s[key]
                             
@@ -368,15 +394,17 @@ if __name__ == "__main__":
         for jj in [0,1,2,3]:
             if ii == 0 and jj == 0:
                 outline_list = [ '{:>04d}'.format( int(out['sector'])), 
+                                 '{:>35s}'.format( orbit_string ), 
                                  '{:>35s}'.format(start_date),
                                  '{:>35s}'.format(end_date),
                                  '{:>35.3f}'.format( (dt.days*86400 + dt.seconds)/86400 ),
                                  '{:>35s}'.format(out['tica_ver']),
                                  '{:>35s}'.format(out['py_ver']),
                                  '{:>35s}'.format(out['host']),
-                                 '{:>35s}'.format(out['py_env']), 
-                                 '{:>35s}'.format(out2['reffin']), 
-                        ]
+                                 '{:>35s}'.format(out['py_env']), ]
+                if out2 is not None:
+                    outline_list.append( '{:>35s}'.format(out2['reffin']) )
+                        
             else:
                 outline_list = ['{:>35s}'.format('') for _ in range(9)]
                 #if one ever wanted to load the table into pandas or numpy,
@@ -385,14 +413,23 @@ if __name__ == "__main__":
 
             idx = 4*ii + jj
             outline_list.append('{:>35s}'.format('cam{}_ccd{}'.format(ii+1,jj+1 )))
-            outline_list.append('{:>35s}'.format(out2['wing'][idx] ))
-            outline_list.append('{:>35s}'.format(out2['contrast'][idx] ))
-            outline_list.append('{:>35s}'.format(out2['N_ref_targets'][idx] ))
-            outline_list.append('{:>.2f}-{:>.2f}'.format(ref_star_data[idx][1],
-                                                          ref_star_data[idx][2]))
-            outline_list.append('{:>35s}'.format(out2['N_ref_trim_targ'][idx] ))
-            outline_list.append('{:>35s}'.format(out2['ref_bright_fit_res'][idx] ))
-            #outline_list.append('{:>35s}'.format(out2['ref_faint_fit_res'][idx] ))
+            if out2 is None:
+                outline_list.append('{:>35s}'.format('') )
+                outline_list.append('{:>35s}'.format('') )
+                outline_list.append('{:>35s}'.format('') )
+                outline_list.append('{:>35s}'.format('') )
+                outline_list.append('{:>35s}'.format('') )
+                outline_list.append('{:>35s}'.format('') )
+
+            else:
+                outline_list.append('{:>35s}'.format(out2['wing'][idx] ))
+                outline_list.append('{:>35s}'.format(out2['contrast'][idx] ))
+                outline_list.append('{:>35s}'.format(out2['N_ref_targets'][idx] ))
+                outline_list.append('{:>.2f}-{:>.2f}'.format(ref_star_data[idx][1],
+                                                             ref_star_data[idx][2]))
+                outline_list.append('{:>35s}'.format(out2['N_ref_trim_targ'][idx] ))
+                outline_list.append('{:>35s}'.format(out2['ref_bright_fit_res'][idx] ))
+                #outline_list.append('{:>35s}'.format(out2['ref_faint_fit_res'][idx] ))
 
             outline_list.append('{:>.2f}'.format(wcs_data[idx][0]))
             outline_list.append('{:>.2f}'.format(wcs_data[idx][1]))
@@ -407,8 +444,13 @@ if __name__ == "__main__":
                 outline_list.append('{:>35s}'.format(''))
                 outline_list.append('{:>35s}'.format(''))           
 
-            outline_list.append( '{:>35s}'.format(out2['runtime'][idx] ))
-            outline_list.append( '{:>35d}'.format(1))
+            if out2 is None:
+                outline_list.append('{:>35s}'.format('') )
+                outline_list.append('{:>35s}'.format('') )
+            else:
+                outline_list.append( '{:>35s}'.format(out2['runtime'][idx] ))
+                outline_list.append( '{:>35d}'.format(1))
+
             outline_list.append( '{:>35s}'.format(out3[idx]['runtime'][idx] ))
             outline_list.append( '{:>35d}'.format(1))
 

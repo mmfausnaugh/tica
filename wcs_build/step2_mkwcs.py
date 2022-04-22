@@ -1455,6 +1455,18 @@ if __name__ == '__main__':
             os.mkdir(saveDir)
     DEBUG_LEVEL = args.debug
 
+    #for step 2, we usually do all of the files
+    #so, move the old logs, and make a new file
+    #for every run.
+    if os.path.isfile(args.log):
+        ii = 1
+        while True:
+            if os.path.isfile(args.log + '_run{}'.format(ii) ):
+                ii += 1
+            else:
+                os.rename(args.log, args.log + '_run{}'.format(ii) )
+                break
+    
     tica.setup_logging(filename=args.log)
     info_lines = tica.platform_info()
     for info_line in info_lines:

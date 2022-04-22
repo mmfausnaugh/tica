@@ -83,7 +83,7 @@ for i in 1 2 3 4; do
 done
 mkdir tica_logs
 
-#make inlist for tica
+#make inlist for tica, 
 for i in 1 2 3 4; do
     cd cam${i}_ccd1
 
@@ -92,20 +92,32 @@ for i in 1 2 3 4; do
     fi
 
     if [ $o1 != "None" ]; then
-	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
+	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  >> inlist
     fi
 
     if [ $o2 != "None" ]; then
-	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*    >> inlist
+	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
     fi
 
     cd ..
 done
 
+# define log file
+if [ $o1 != "None" ] && [ $o2 == "None" ] ; then
+    logfile='../tica_logs/o1_tica.log'
+elif  [ $o1 == "None" ] && [ $o2 != "None" ] ; then
+    logfile='../tica_logs/o2_tica.log'
+elif  [ $o1 != "None" ] && [ $o2 != "None" ] ; then
+    logfile='../tica_logs/o1_o2_tica.log'
+else
+    echo "no logfile set"
+    exit
+fi
+
 #run tica
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
-    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log ../tica_logs/tica.log
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done
