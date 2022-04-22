@@ -394,7 +394,7 @@ if __name__ == "__main__":
         for jj in [0,1,2,3]:
             if ii == 0 and jj == 0:
                 outline_list = [ '{:>04d}'.format( int(out['sector'])), 
-                                 '{:>35s}'.format( orbit_string ), 
+                                 '{:>35s}'.format( orbit_string.replace('_',' ' )), 
                                  '{:>35s}'.format(start_date),
                                  '{:>35s}'.format(end_date),
                                  '{:>35.3f}'.format( (dt.days*86400 + dt.seconds)/86400 ),
