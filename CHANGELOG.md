@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 ### Removed
 
+## [1.1.2] - 2022-06-07
+Fixed some issues related to reprocessing old TICA products.
+### Changed
+- EXPTIME header keyword now depends on sector.
+- Remved `header.extend` from wcs step2, so duplicate keywords should never be added.
+### Added
+### Removed
+
 ## [1.1.1] - 2022-04-27
 Extended same capabilities on the production table logging.
 ### Changed

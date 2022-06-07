@@ -1212,8 +1212,20 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         exStd2s[iImg] = exResids[2]
         exStd3s[iImg] = exResids[3]
 
-        #have to fix this by hand for TSO FFIs
-        hdulistCal[0].header['EXPTIME'] = 475.2
+        #If start time is before s27, use 30min exposure
+        #check if tso FFI:
+        if 'STARTTJD' in hdulistCal[0].header.keys():
+            start_key_use = 'STARTTJD'
+        elif 'TSTART' in hdulistCal[0].header.keys():
+            start_key_use = 'TSTART'
+            
+        if hdulistCal[0].header[start_key_use] < 2036.0:
+            hdulistCal[0].header['EXPTIME'] = 1800.0*0.8*0.99
+            integration_time = 1800.0
+        else:
+            hdulistCal[0].header['EXPTIME'] = 600*0.8*0.99
+            integration_time = 1800.0
+
         #added by Scott Flemmings request for MAST archive
         hdulistCal[0].header['EQUINOX'] = 2000.0
         hdulistCal[0].header['INSTRUME'] = "TESS Photometer"
@@ -1234,7 +1246,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         
             #        print(  (hdulistCal[0].header['MJD-BEG'] - hdulistCal[0].header['MJD-END']) , 600.0/86400 )
         try:
-            assert (hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG']  -  600.0/86400 ) < 1.e-10
+            assert (hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG']  -  integration_time/86400 ) < 1.e-9
         except KeyError:
             #no key in SPOC, just continue for now
             pass
@@ -1243,10 +1255,14 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         #  separate file for now.  Not touching input data
         # Add the wcsfit diagnostics to header
         try:
-            hdulistCal[0].header.extend( add_btjd_info(hdulistCal[0].header['MIDTJD'], 
-                                                       newhdr['CRVAL1'], 
-                                                       newhdr['CRVAL2'],
-                                                       ephemeris_data)  )
+            btjd_header = add_btjd_info(hdulistCal[0].header['MIDTJD'], 
+                                        newhdr['CRVAL1'], 
+                                        newhdr['CRVAL2'],
+                                        ephemeris_data) 
+            for key in btjd_header.keys():
+                hdulistCal[0].header[key] = btjd_header[key]
+                hdulistCal[0].header.comments[key] = btjd_header.comments[key]
+
         except KeyError:
             #no key in SPOC, just continue for now
             pass
@@ -1286,7 +1302,10 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         hduex = fits.BinTableHDU.from_columns([c1, c2, c3, c4, c5, c6],
                                               name='WCS_Stars')
         #append wcs parameter to primary header            
-        hdulistCal[0].header.extend(newhdr, update=True)
+        for key in newhdr:
+            hdulistCal[0].header[key] = newhdr[key]
+            hdulistCal[0].header.comments[key] = newhdr.comments[key]
+
         # Now merge the hdus
         all_hdus = fits.HDUList([hdulistCal[0], hduex])
         # Actually write fits file
