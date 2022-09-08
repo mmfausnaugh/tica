@@ -168,6 +168,8 @@ def get_from_logs(infile):
 
 
             if 'refimage' in fline:
+                if 'fits' not in fline:
+                    continue
                 ref_reg = re.search('refimage = (.*)',fline)
                 ref[map_idx] =  ref_reg.group(1) 
                 reffin_reg = re.search('-(\d\d\d\d\d\d\d\d)-',ref[map_idx])
@@ -383,10 +385,18 @@ if __name__ == "__main__":
             assert out['sector'] == s['wcs_sector']
 
     for key in ['tica_ver','py_ver','host','py_env']:
+        
         if out2 is not None:
-            assert out[key] == out2[key]
+            try:
+                assert out[key] == out2[key]
+            except AssertionError as e:
+                print('Warning!! key {} in wcs step1 {} not equal to {}'.format(out2[key], out[key]))
+                
         for s in out3:
-            assert out[key] == s[key]
+            try:
+                assert out[key] == s[key], print(key, out[key], s[key])
+            except AssertionError as e:
+                print('Warning!! key {} in wcs step2 {} not equal to {}'.format(out3[key], out[key]))
                             
 
     t1 = datetime.strptime(start_date,'%Y.%m.%d-%H:%M:%S')

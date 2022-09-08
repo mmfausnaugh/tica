@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 with open('VERSION','r') as infile:
-    version = infile.read()
+    version = infile.read().strip()
     
 setup(
     name='tica',
@@ -28,6 +28,9 @@ setup(
 
              'wcs_build/step1_get_refimg_ctrlpts.py',
              'wcs_build/step2_mkwcs.py',
+
+             'bin/tica-check-delivery',
+             'bin/tica-stage-delivery'
 
          ],
     install_requires=[

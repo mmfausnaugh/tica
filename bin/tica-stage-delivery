@@ -1,0 +1,85 @@
+#!/usr/bin/env bash
+
+
+#from scott's email
+#tess2020226081718-00120152-1-crm-ffi_ccd1.cal.fits ->
+#hlsp_tica_tess_ffi_s0028-00120152-cam1-ccd1_tess_2020226081718_ffi.fits
+
+#so, that is 
+#hlsp_tica_tess_ffi_s<sector>-<FIN>-cam<cam>-ccd<ccd>_tess_<version>_ffi.fits
+
+#for each new delivery, make this v01, v02, etc.
+version=$1
+outdir=$2
+
+function do_move(){
+        camnum=$1
+	ccdnum=$2
+	cd "cam$camnum""_ccd$ccdnum"
+	#cam, ccd, and sector can be got from the the directory structures
+	cam=$(pwd |  grep -o "cam[1-4]")
+	ccd=$(pwd |  grep -o "ccd[1-4]")
+	sector=$(pwd | grep -o "[0-9][0-9]" )
+
+	outdir_use="$outdir/""$cam""-$ccd"
+	if [ -d $outdir_use ]; then
+	    echo "$outdir_use"" exists"
+	else
+	    mkdir $outdir_use
+	fi
+
+	#outdir_use="$outdir/""o2-$cam""-$ccd"
+	#if [ -d $outdir_use ]; then
+	#    echo "$outdir_use"" exists"
+	#else
+	#    mkdir $outdir_use
+	#fi
+
+	stamps=$(ls tess*fits | awk -F- '{print $1}' | sort | uniq | awk -Ftess '{print $2}')
+
+	ffi_first=$(echo  $stamps '{print $1}')
+	ffi_second=$(echo $stamps '{print $2}')
+	ffi_third=$(echo  $stamps '{print $3}')
+	ffi_fourth=$(echo $stamps '{print $4}')
+
+	#ffi_first=$(ls tess*fits | head -n 1)
+	#stamp_first=${ffi_first:4:13}
+	#ffi_last=$(ls tess*fits | tail -n 1)
+	#stamp_last=${ffi_last:4:13}
+	
+	for ii in $(ls tess*fits ); do
+	    #fin can be got from the filename
+	    fin=$(echo "$ii" | awk -F\- '{print$2}')
+
+	    #echo "${ii:4:16}" "$stamp_first" "$stamp_last"
+	    if [ ${ii:4:13} == $stamp_first || ${ii:4:13} == $stamp_second] ; then
+		orbit="o1"
+	    elif [ ${ii:4:13} == $stamp_third || ${ii:4:13} == $stamp_fourth  ]; then
+		orbit="o2"
+	    fi
+	    #outdir_use="$outdir/""$orbit""-$cam""-$ccd"
+
+	    cp $ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
+#	    cp $ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
+	done
+	cd ..
+
+	#copy the reference star list
+	if [ -d $outdir"/ref-stars" ]; then
+	    echo $outdir"/ref-stars"" exists"
+	else
+	    mkdir $outdir"/ref-stars"
+	fi
+
+	cp "refout/reftica_s$sector"_"$camnum""-$ccdnum"".h5" "$outdir""/ref-stars/hlsp_tica_tess_ffi_s00$sector""-$cam""-$ccd""_tess_$version""_cat.h5"
+
+
+}
+
+#loop over ccds
+for camnum in 1 2 3 4; do
+    for ccdnum in 1 2 3 4; do
+	do_move $camnum $ccdnum & 
+    done
+done
+

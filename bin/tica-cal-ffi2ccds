@@ -177,13 +177,11 @@ if __name__ == "__main__":
     if args.parallel > 1:
         p = Pool(args.parallel)
         for ii, filename in enumerate(inlist):
-            print(filename, orbit_seg[ii])
             p.apply_async(worker, ( (filename, outdir, args.trim, orbit_seg[ii]), ) )
         p.close()
         p.join()
     else:
         for ii,filename in enumerate(inlist):
-            print(filename, orbit_seg[ii])
             worker( (filename,  outdir, args.trim, orbit_seg[ii] ))
     runtime = time() - starttime
 

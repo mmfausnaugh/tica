@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 ### Removed
 
-## [1.1.3] - 2022-09-09
+## [1.2.0] - 2022-09-09
 Added 200sec models, and keyword specifying which half of an orbit FFIs came from.
 ### Changed
 Fixed issue with check on total integration times.
