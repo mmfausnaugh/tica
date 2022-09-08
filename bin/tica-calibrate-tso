@@ -17,8 +17,10 @@ o2=''
 dstem=''
 CALDIR=''
 
+NCORES=''
+
 USAGE="
-  Usage: tica-calibrate-tso o1=<orbit1> o2=<orbit2> dstem=<data_dir_path> CALDIR=<calibration_dir_path>
+  Usage: tica-calibrate-tso o1=<orbit1> o2=<orbit2> dstem=<data_dir_path> CALDIR=<calibration_dir_path> NCORES=<int>
 
    This script sets up directories and runs tica-cal-ffi2ccds.
      tica-cal-ffi2ccds is a python script that reads TESS Science
@@ -44,10 +46,12 @@ USAGE="
      correspond to TSO format, which are not publicly available at this
      time.
 
-   <CALDIR> is a directory with calibration models, which are
+   <calibration_dir_path> is a directory with calibration models, which are
      distributed with the git repository and DVC. For example, one
      might set this variable to CALDIR=~/python/tica/caliration_10min
      Absolute or relative paths are allowed.
+
+   <int> is the number of cores to use for parallel processing.  Defaults to 1.
 
 "
 
@@ -66,7 +70,9 @@ done
 [[ $o2 == '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
 [[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
 [[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit ; }
+#[[ $NCORES == '' ]] && { echo "$USAGE" ; echo "number of cores to use in parallel processing" ; exit ; }
 
+[[ $NCORES == '' ]] && let NCORES=1
 #[ -z $verbose ] || v=yes
 
 
@@ -75,8 +81,9 @@ for i in 1 2 3 4; do
 	mkdir cam${i}_ccd${j}
     done
 done
+mkdir tica_logs
 
-#make in list for tica
+#make inlist for tica, 
 for i in 1 2 3 4; do
     cd cam${i}_ccd1
 
@@ -85,20 +92,32 @@ for i in 1 2 3 4; do
     fi
 
     if [ $o1 != "None" ]; then
-	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits* > inlist
+	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  >> inlist
     fi
 
     if [ $o2 != "None" ]; then
-	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits* >> inlist
+	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
     fi
 
     cd ..
 done
 
+# define log file
+if [ $o1 != "None" ] && [ $o2 == "None" ] ; then
+    logfile='../tica_logs/o1_tica.log'
+elif  [ $o1 == "None" ] && [ $o2 != "None" ] ; then
+    logfile='../tica_logs/o2_tica.log'
+elif  [ $o1 != "None" ] && [ $o2 != "None" ] ; then
+    logfile='../tica_logs/o1_o2_tica.log'
+else
+    echo "no logfile set"
+    exit
+fi
+
 #run tica
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
-    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel --log ../tica.log
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done

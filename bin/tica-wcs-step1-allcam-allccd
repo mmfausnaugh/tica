@@ -7,7 +7,7 @@ dstem=''
 
 
 USAGE="
-  Usage: tica-wcs-step1-allcam-allccd SECTOR=<sector> REFIN=<ffi_name> dstem=<data_dir_path> 
+  Usage: tica-wcs-step1-allcam-allccd SECTOR=<sector> REFFIN=<ffi_cad> dstem=<data_dir_path> 
 
   This script sets up directories and runs
     step1_get_refimg_ctrlpts.py.  step1_get_refimg_ctrlpts.py is a
@@ -26,10 +26,10 @@ USAGE="
     See tica-calibrate-spoc and tica-wcs-spoc for the scripts that run
     TICA on publicly available SPOC FFIs.
 
-  <SECTOR> is a two digit integer.  It is used in calls to the
+  <sector> is a two digit integer.  It is used in calls to the
     tess-point python package, in order to convert row/col to ra/dec.
 
-  <REFIN> is a reference cadence, either FIN or TIN for TSO format
+  <ffi_cad> is a reference cadence, either FIN or TIN for TSO format
     FFIs.  The corresponding FFI for this epoch should be free from
     scattered light in order to identify suitable stars for the
     WCS. This script assumes the FIN or TIN is in the file name, as
@@ -74,8 +74,8 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
       USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)
       USE_OUT="$dstem""refout/reftica_s$SECTOR""_$iCam""-$jCcd"".h5"
 
-      echo ${USE_REF}
-      echo ${USE_OUT}
+      #echo ${USE_REF}
+      #echo ${USE_OUT}
       
       if [ -e $USE_OUT ]; then
 	  echo "skipping $USE_OUT; already exists"
@@ -83,6 +83,6 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
       fi
 
       #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
-      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT}
+      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1.log 
   done
 done
