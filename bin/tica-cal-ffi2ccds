@@ -29,6 +29,7 @@ import argparse
 import logging
 from multiprocessing import Pool
 from time import time
+import re
 
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
@@ -44,9 +45,12 @@ def worker( in_tuple ):
     filename = in_tuple[0]
     outdir = in_tuple[1]
     trim = in_tuple[2]
-
+    orbit_segment = in_tuple[3]
     #it knows about calibration as a global variable...very yucky...
-    im = FFI_File(filename, calibration=calibration, outdir=outdir)
+    im = FFI_File(filename, 
+                  calibration=calibration, 
+                  outdir=outdir,
+                  orbit_segment = orbit_segment)
 
     if trim:
         im.write_calibrated_trimmed_CCDs()
@@ -109,6 +113,54 @@ if __name__ == "__main__":
         logger.error("input file not found: %s" % args.fileinputs)
         sys.exit(1)
 
+    orbits, stamps = [],[]
+    for filename in inlist:
+        search_obj = re.search('orbit-(\d*)\D*tess(\d*)-',filename)
+        orbits.append( int(search_obj.group(1)) )
+        stamps.append( int(search_obj.group(2)) )
+
+
+    orbits = np.array(orbits)
+    stamps = np.array(stamps)
+    #we can get o1 or o2 from even and odd orbits
+    #we can get a and b if there are 2 unique time stamps
+    #we can't know if it is a or b by itself
+
+    #assume a, unless override is given
+
+    m_odd  = orbits%2 == 1
+    odd_segments = {}
+    for ii,stamp in enumerate(  np.unique(stamps[m_odd])):
+        if ii == 0:
+            odd_segments[stamp] = 'a'
+        if ii == 1:
+            odd_segments[stamp] = 'b'
+
+
+    m_even = orbits%2 == 0    
+    even_segments = {}
+    for ii,stamp in enumerate(  np.unique(stamps[m_even])):
+        if ii == 0:
+            even_segments[stamp] = 'a'
+        if ii == 1:
+            even_segments[stamp] = 'b'
+
+
+
+    orbit_seg = []
+    for ii in range(len(orbits)):        
+        #assumes odd orbits are first, even orbits 2nd
+        if orbits[ii]%2 == 1:
+            orbit_seg_str = 'o1'
+            orbit_seg_str += odd_segments[stamps[ii]]
+
+        elif orbits[ii]%2 == 0:
+            orbit_seg_str = 'o2'
+            orbit_seg_str += even_segments[stamps[ii]]
+
+        orbit_seg.append(  orbit_seg_str )
+
+    
     # setup calibration object before processing files so it is done just once
     if args.caldir:
         calibration = Calibration(calibration_dir=args.caldir)
@@ -124,13 +176,15 @@ if __name__ == "__main__":
 
     if args.parallel > 1:
         p = Pool(args.parallel)
-        for filename in inlist:
-            p.apply_async(worker, ( (filename, outdir, args.trim), ) )
+        for ii, filename in enumerate(inlist):
+            print(filename, orbit_seg[ii])
+            p.apply_async(worker, ( (filename, outdir, args.trim, orbit_seg[ii]), ) )
         p.close()
         p.join()
     else:
-        for filename in inlist:
-            worker( (filename,  outdir, args.trim))
+        for ii,filename in enumerate(inlist):
+            print(filename, orbit_seg[ii])
+            worker( (filename,  outdir, args.trim, orbit_seg[ii] ))
     runtime = time() - starttime
 
     print("Runtime: {0:.2f}sec".format(runtime), "N Pools = {}".format( args.parallel ) )

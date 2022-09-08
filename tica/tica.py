@@ -39,7 +39,7 @@ from .LinearityModels import LinearityModel, SpocLinearity_Updated
 
 fstem = os.path.abspath(os.path.dirname(__file__) + '/../')
 with open(os.path.join(fstem, 'VERSION'),'r') as infile:
-    version = infile.read()
+    version = infile.read().strip()
 
 
 # these are functions for fast manipulation of images
@@ -139,6 +139,8 @@ class Calibration(object):
             self.int_time = 120
         elif '20sec' in int_time_key:
             self.int_time = 20
+        elif '200sec' in int_time_key:
+            self.int_time = 200
 
         twodbias_dir = os.path.join(calibration_dir, 'twodbias/')
         twodbias_files = {'cam1':{'ccd1':'cam1_ccd1_twoDcorrect.fits',
@@ -610,15 +612,13 @@ class CCD_File(CCD):
             #SPOC keyword
             assert np.isclose(calibration.int_time,
                               self.header['EXPOSURE']*86400/0.8/0.99), \
-                "It appears you are trying to calibrate {:4.0f} second "\
-            "data with {} second models".format(
+                "It appears you are trying to calibrate {:4.0f} second data with {} second models".format(
                 self.header['EXPOSURE']*86400/0.8/0.99,
                 calibration.int_time)
         except KeyError:
             #TSO keyword
             assert calibration.int_time == self.header['INT_TIME'], \
-                "It appears you are trying to calibrate {:4.0f} second "\
-            "data with {} second models".format(
+                "It appears you are trying to calibrate {:4.0f} second data with {} second models".format(
                 self.header['INT_TIME'],
                 calibration.int_time)
 
@@ -845,29 +845,31 @@ class FFI_File(FFI):
     self.CCDs:  list of ccds, counterclockwise order from top left
 
     """
-    def __init__(self, fname, calibration, outdir):
+    def __init__(self, fname, calibration, outdir, orbit_segment = None):
         self.fname = fname
         self.outdir = outdir
-        
+    
+        self.orbit_segment = orbit_segment
+
         self.hdu = fits.open(fname, mode='readonly')
         self.header = self.hdu[0].header
         im  = self.hdu[0].data
+
+    
 
         try:
             #SPOC keyword
             assert np.isclose(calibration.int_time,
                               self.header['EXPOSURE']*86400/0.8/0.99), \
-                "It appears you are trying to calibrate {} second"
-            "data with models for {} second data".format(
+                "It appears you are trying to calibrate {} second data with models for {} second data".format(
                 self.header['EXPOSURE']*86400/0.8/0.99,
                 calibration.int_time)
         except KeyError:
             #TSO keyword
             assert calibration.int_time == self.header['INT_TIME'], \
-                "It appears you are trying to calibrate {} second"
-            "data with models for {} second data".format(
-                self.header['INT_TIME'],
-                calibration.int_time)
+                "It appears you are trying to calibrate {} second data with models for {} second data".format(
+                    self.header['INT_TIME'],
+                    calibration.int_time)
 
         super(FFI_File, self).__init__(im, calibration=calibration)
         self.camnum = self.header['CAM']
@@ -900,6 +902,10 @@ class FFI_File(FFI):
                                'NAXIS1','EXTEND','BSCALE',
                                'BZERO','CAM','COMMENT']:
                     hdu_out.header.set(key, self.header[key], self.header.comments[key])                                              
+            if self.orbit_segment is not None:
+                hdu_out.header.set('ORB_SEG', self.orbit_segment,
+                                   'Orbit Identifier, o1a, o1b, o2a, o2b'
+                                   )
 
 
             hdu_out.header.set('CAMNUM', self.header['CAM'], 'Camera Number')
@@ -919,6 +925,7 @@ class FFI_File(FFI):
                 hdu_out.header.set('COMMENT', 'calibration applied at {time}'.format(
                     time=datetime.datetime.utcnow().isoformat())
                 )
+
 
             else:
                 hdu_out.header.set('UNITS',  'ADU', 'Units (ADU or electrons)')
