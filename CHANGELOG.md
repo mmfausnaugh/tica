@@ -15,7 +15,7 @@ Added 200sec models, and keyword specifying which half of an orbit FFIs came fro
 ### Changed
 Fixed issue with check on total integration times.
 ### Added
-dvc file for twodbias_200s.dvc, added keyword ORB_SEG in headers for o1a, o1b, o2a, o2b, added relevant 200 sec exposures where needed.
+dvc file for twodbias_200s.dvc, added keyword ORB_SEG in headers for o1a, o1b, o2a, o2b, added relevant 200 sec exposures where needed.  tica-cal-ffi2ccds has a switch to write this keyword (disabled by default, so no change for users).
 ### Removed
 
 ## [1.1.2] - 2022-06-07

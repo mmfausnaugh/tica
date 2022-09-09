@@ -103,21 +103,12 @@ for i in 1 2 3 4; do
 done
 
 # define log file
-if [ $o1 != "None" ] && [ $o2 == "None" ] ; then
-    logfile='../tica_logs/o1_tica.log'
-elif  [ $o1 == "None" ] && [ $o2 != "None" ] ; then
-    logfile='../tica_logs/o2_tica.log'
-elif  [ $o1 != "None" ] && [ $o2 != "None" ] ; then
-    logfile='../tica_logs/o1_o2_tica.log'
-else
-    echo "no logfile set"
-    exit
-fi
+logfile='../tica_logs/tica.log'
 
 #run tica
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
-    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile --orb_seg
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done

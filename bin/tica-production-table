@@ -329,9 +329,18 @@ if __name__ == "__main__":
 
     #load up the data
     orbit_string = ''
-    for seg in args.segments:
-        orbit_string += 'o{}_'.format(seg)
-    out = get_from_logs('tica_logs/{}tica.log'.format(orbit_string) )
+    #for seg in args.segments:
+    #    orbit_string += 'o{}_'.format(seg)
+    if args.segments == 1:
+        orbit_string = 'o1a'
+    if args.segments == 2:
+        orbit_string = 'o1b'
+    if args.segments == 3:
+        orbit_string = 'o2a'
+    if args.segments == 4:
+        orbit_string = 'o2b'
+
+    out = get_from_logs('tica_logs/tica.log'
     test_output_dict(out)
     start_date = out['start_date']
     start_date_object = datetime.strptime(out['start_date'],'%Y.%m.%d-%H:%M:%S')
