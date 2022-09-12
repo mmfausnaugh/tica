@@ -37,10 +37,18 @@ function do_move(){
 
 	stamps=$(ls tess*fits | awk -F- '{print $1}' | sort | uniq | awk -Ftess '{print $2}')
 
-	ffi_first=$(echo  $stamps '{print $1}')
-	ffi_second=$(echo $stamps '{print $2}')
-	ffi_third=$(echo  $stamps '{print $3}')
-	ffi_fourth=$(echo $stamps '{print $4}')
+	Nstamps=$(echo $stamps | wc | awk '{print $2}')
+	
+	#weird exception where awk will not do the right thing 
+	#if there is only one item in $stamps, needed for o1a
+	if [ $Nstamps == 1 ]; then
+	    stamp_first=$stamps;
+	else
+	    stamp_first=$(echo  $stamps  | awk '{print $1}')
+	fi
+	stamp_second=$(echo $stamps  | awk '{print $2}')
+	stamp_third=$(echo  $stamps  | awk '{print $3}')
+	stamp_fourth=$(echo $stamps  | awk '{print $4}')
 
 	#ffi_first=$(ls tess*fits | head -n 1)
 	#stamp_first=${ffi_first:4:13}
@@ -51,10 +59,10 @@ function do_move(){
 	    #fin can be got from the filename
 	    fin=$(echo "$ii" | awk -F\- '{print$2}')
 
-	    #echo "${ii:4:16}" "$stamp_first" "$stamp_last"
-	    if [ ${ii:4:13} == $stamp_first || ${ii:4:13} == $stamp_second] ; then
+	    echo "${ii:4:13}" "$stamp_first" "$stamp_second" "$stamp_third" "$stamp_fourth"
+	    if [ ${ii:4:13} == $stamp_first ] || [ ${ii:4:13} == $stamp_second ] ; then
 		orbit="o1"
-	    elif [ ${ii:4:13} == $stamp_third || ${ii:4:13} == $stamp_fourth  ]; then
+	    elif [ ${ii:4:13} == $stamp_third ] || [ ${ii:4:13} == $stamp_fourth ]; then
 		orbit="o2"
 	    fi
 	    #outdir_use="$outdir/""$orbit""-$cam""-$ccd"
@@ -82,4 +90,3 @@ for camnum in 1 2 3 4; do
 	do_move $camnum $ccdnum & 
     done
 done
-

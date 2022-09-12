@@ -340,7 +340,7 @@ if __name__ == "__main__":
     if args.segments == 4:
         orbit_string = 'o2b'
 
-    out = get_from_logs('tica_logs/tica.log'
+    out = get_from_logs('tica_logs/tica.log')
     test_output_dict(out)
     start_date = out['start_date']
     start_date_object = datetime.strptime(out['start_date'],'%Y.%m.%d-%H:%M:%S')
