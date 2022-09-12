@@ -331,13 +331,13 @@ if __name__ == "__main__":
     orbit_string = ''
     #for seg in args.segments:
     #    orbit_string += 'o{}_'.format(seg)
-    if args.segments == 1:
+    if args.segments[0] == 1:
         orbit_string = 'o1a'
-    if args.segments == 2:
+    if args.segments[0] == 2:
         orbit_string = 'o1b'
-    if args.segments == 3:
+    if args.segments[0] == 3:
         orbit_string = 'o2a'
-    if args.segments == 4:
+    if args.segments[0] == 4:
         orbit_string = 'o2b'
 
     out = get_from_logs('tica_logs/tica.log')
@@ -415,6 +415,7 @@ if __name__ == "__main__":
     for ii in [0,1,2,3]:
         for jj in [0,1,2,3]:
             if ii == 0 and jj == 0:
+                print(orbit_string, orbit_string.replace('_',''))
                 outline_list = [ '{:>04d}'.format( int(out['sector'])), 
                                  '{:>35s}'.format( orbit_string.replace('_','' )), 
                                  '{:>35s}'.format(start_date),
