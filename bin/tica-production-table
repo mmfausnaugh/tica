@@ -265,9 +265,9 @@ if __name__ == "__main__":
     """
 
     parser = argparse.ArgumentParser(prog='tica-production-table', description=description_string)
-    parser.add_argument("-s", "--segments", nargs="*", type=int, 
+    parser.add_argument("-s", "--segments", type=str, 
                         help="Segments of sector; orbit 1 or 2 in EM1,"
-                        "1, 2, 3, or 4 in EM2.  Can input multiple segments, e.g., `-s 1 2`")
+                        "o1a, o1b, o2a, or o2b in EM2.  Can only enter one segment at a time.")
     args = parser.parse_args()
 
 
@@ -329,18 +329,15 @@ if __name__ == "__main__":
 
     #load up the data
     orbit_string = ''
-    #for seg in args.segments:
-    #    orbit_string += 'o{}_'.format(seg)
-    if args.segments[0] == 1:
-        orbit_string = 'o1a'
-    if args.segments[0] == 2:
-        orbit_string = 'o1b'
-    if args.segments[0] == 3:
-        orbit_string = 'o2a'
-    if args.segments[0] == 4:
-        orbit_string = 'o2b'
 
-    out = get_from_logs('tica_logs/tica.log')
+    assert (args.segments == 'o1a') | \
+        (args.segments == 'o1b') |\
+        (args.segments == 'o2a') |\
+        (args.segments == 'o2b') |\
+        
+
+
+    out = get_from_logs('tica_logs/{}tica.log'.format(args.segments) )
     test_output_dict(out)
     start_date = out['start_date']
     start_date_object = datetime.strptime(out['start_date'],'%Y.%m.%d-%H:%M:%S')
@@ -415,9 +412,9 @@ if __name__ == "__main__":
     for ii in [0,1,2,3]:
         for jj in [0,1,2,3]:
             if ii == 0 and jj == 0:
-                print(orbit_string, orbit_string.replace('_',''))
+                #print(orbit_string, orbit_string.replace('_',''))
                 outline_list = [ '{:>04d}'.format( int(out['sector'])), 
-                                 '{:>35s}'.format( orbit_string.replace('_','' )), 
+                                 '{:>35s}'.format( args.segments.replace('_','' )), 
                                  '{:>35s}'.format(start_date),
                                  '{:>35s}'.format(end_date),
                                  '{:>35.3f}'.format( (dt.days*86400 + dt.seconds)/86400 ),
@@ -431,7 +428,7 @@ if __name__ == "__main__":
                 #if one ever wanted to load the table into pandas or numpy,
                 #useful to match a sector for each ccd
                 outline_list[0] = '{:>04d}'.format( int(out['sector']))
-                outline_list[1] = '{:>35s}'.format( orbit_string.replace('_','' ) )
+                outline_list[1] = '{:>35s}'.format( args.segments.replace('_','' ) )
 
             idx = 4*ii + jj
             print(idx, jj, out['runtime'])
