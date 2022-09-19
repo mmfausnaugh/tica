@@ -46,6 +46,8 @@ def worker( in_tuple ):
     outdir = in_tuple[1]
     trim = in_tuple[2]
     orbit_segment = in_tuple[3]
+    no_gzip = in_tuple[4]
+
     #it knows about calibration as a global variable...very yucky...
     im = FFI_File(filename, 
                   calibration=calibration, 
@@ -53,9 +55,11 @@ def worker( in_tuple ):
                   orbit_segment = orbit_segment)
 
     if trim:
-        im.write_calibrated_trimmed_CCDs()
+        im.write_calibrated_trimmed_CCDs(
+            no_gzip = no_gzip)
     else:
-        im.write_calibrated_CCDs()
+        im.write_calibrated_CCDs(
+            no_gzip = no_gzip)
 
 if __name__ == "__main__":
 
@@ -85,8 +89,10 @@ if __name__ == "__main__":
                         help="run files in parallel on number of processors specified here")
     parser.add_argument("--trim", action="store_true", help="trim calibration pixels from edges")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
-    parser.add_argument("-l", "--log", metavar="LOG_FILE", help="save logging output to this file")
-    parser.add_argument("--orb_seg",action="store_true", help="if set, write ORB_SEG header keyword in calibrated files.")
+    parser.add_argument("-l", "--log", metavar="LOG_FILE", default='tica.log', 
+                        help="save logging output to this file")
+    parser.add_argument("--orb_seg", type=str, help="if set, write ORB_SEG header keyword in calibrated files.")
+    parser.add_argument("--no_gzip",action="store_true", help="if set, do not write gzipped files regardless of input file extension.")
 
     args = parser.parse_args()
 
@@ -125,11 +131,17 @@ if __name__ == "__main__":
         logger.error("input file not found: %s" % args.fileinputs)
         sys.exit(1)
 
+
     orbits, stamps = [],[]
     for filename in inlist:
-        search_obj = re.search('orbit-(\d*)\D*tess(\d*)-',filename)
-        orbits.append( int(search_obj.group(1)) )
-        stamps.append( int(search_obj.group(2)) )
+        try:
+            search_obj = re.search('orbit-(\d*)\D*tess(\d*)-',filename)
+            orbits.append( int(search_obj.group(1)) )
+            stamps.append( int(search_obj.group(2)) )
+        except AttributeError:
+            set_orb_seg = False
+            orbits.append( int(1) )
+            stamps.append( int('dummy') )
 
 
     orbits = np.array(orbits)
@@ -163,7 +175,6 @@ if __name__ == "__main__":
             even_segments[stamp] = 'b'
 
 
-
     orbit_seg = []
     for ii in range(len(orbits)):        
         #assumes odd orbits are first, even orbits 2nd
@@ -180,6 +191,8 @@ if __name__ == "__main__":
         else:
             orbit_seg.append(None)
 
+    if len(args.orb_seg) == 0:
+        args.orb_seg = None
     
     # setup calibration object before processing files so it is done just once
     if args.caldir:
@@ -197,12 +210,16 @@ if __name__ == "__main__":
     if args.parallel > 1:
         p = Pool(args.parallel)
         for ii, filename in enumerate(inlist):
-            p.apply_async(worker, ( (filename, outdir, args.trim, orbit_seg[ii]), ) )
+            p.apply_async(worker, ( (filename, outdir, 
+                                     args.trim, args.orb_seg, 
+                                     args.no_gzip, ), ))
         p.close()
         p.join()
     else:
         for ii,filename in enumerate(inlist):
-            worker( (filename,  outdir, args.trim, orbit_seg[ii] ))
+            worker( (filename,  outdir, 
+                     args.trim, args.orb_seg,
+                     args.no_gzip, ),)
     runtime = time() - starttime
 
     print("Runtime: {0:.2f}sec".format(runtime), "N Pools = {}".format( args.parallel ) )

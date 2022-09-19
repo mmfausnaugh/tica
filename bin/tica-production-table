@@ -434,6 +434,7 @@ if __name__ == "__main__":
                 outline_list[1] = '{:>35s}'.format( orbit_string.replace('_','' ) )
 
             idx = 4*ii + jj
+            print(idx, jj, out['runtime'])
             outline_list.append('{:>35s}'.format('cam{}_ccd{}'.format(ii+1,jj+1 )))
             if jj == 0:
                 outline_list.append( '{:>35s}'.format(out['runtime'][idx]) )

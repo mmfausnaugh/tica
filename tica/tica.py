@@ -658,7 +658,7 @@ class CCD_File(CCD):
             print('calibration failed')
             raise
 
-    def write_calibrate(self):      
+    def write_calibrate(self, no_gzip=False):      
         hdu_out = fits.PrimaryHDU(self.calibrated_frame.get_frame().astype(np.float32))
         for key in self.header.keys():                                                     
             #censor the standard fits headers, which have to be changed.                      
@@ -692,10 +692,12 @@ class CCD_File(CCD):
         inpath, infilename = os.path.split(self.fname)   # get path and original filename
         inbasename, inext = os.path.splitext(infilename)  # get basename and extension 
         if inext == '.gz':
-            write_gz = True
             inbasename, inext = os.path.splitext(inbasename)
-        else:
+
+        if no_gzip:
             write_gz = False
+        else:
+            write_gz = True
 
         if write_gz:
             hdupath = os.path.join(self.outdir, inbasename + '.cal' + inext + '.gz')  #generate new path
@@ -788,7 +790,11 @@ class FFI(object):
 
         return calibrated_CCDs
 
-    def write_frame(self, CCDlist, stem):
+    def write_frame(self, 
+                    CCDlist, 
+                    stem,
+                    no_gzip=False):
+
         hdu_out = fits.PrimaryHDU(self.get_frame(CCDlist).astype(np.float32))
         for key in self.header.keys():                                                     
             #censor the standard fits headers, which have to be changed.                      
@@ -815,10 +821,13 @@ class FFI(object):
         inbasename, inext = os.path.splitext(infilename)  # get basename and extension 
 
         if inext == '.gz':
-            write_gz = True
             inbasename, inext = os.path.splitext(inbasename)
-        else:
+
+        if no_gzip:
             write_gz = False
+        else:
+            write_gz = True
+
 
         if write_gz:
             hdupath = os.path.join(self.outdir, inbasename + stem + inext + '.gz')  #generate new path
@@ -892,7 +901,12 @@ class FFI_File(FFI):
             raise
 
 
-    def write_CCD_files(self,CCDlist, stem, calibrated=True):
+    def write_CCD_files(self,
+                        CCDlist, 
+                        stem, 
+                        calibrated=True,
+                        no_gzip=False):
+
         for i,ccd in enumerate(CCDlist):      
             hdu_out = fits.PrimaryHDU(ccd.get_frame().astype(np.float32))
             for key in self.header.keys():                                                     
@@ -935,11 +949,14 @@ class FFI_File(FFI):
         
             inpath, infilename = os.path.split(self.fname)   # get path and original filename
             inbasename, inext = os.path.splitext(infilename)  # get basename and extension 
-            if inext == '.gz':
-                write_gz = True
+            if inext == '.gz' :
                 inbasename, inext = os.path.splitext(inbasename)
-            else:
+
+            if no_gzip:
                 write_gz = False
+            else:
+                write_gz = True
+
 
             if write_gz:
                 hdupath = os.path.join(self.outdir, inbasename + '_ccd'+str(i+1) + stem + inext + '.gz')  # generate new path
@@ -955,7 +972,11 @@ class FFI_File(FFI):
         
 
 
-    def write_trimmed_CCD_files(self,CCDlist, stem, calibrated=True):
+    def write_trimmed_CCD_files(self,
+                                CCDlist, 
+                                stem, 
+                                calibrated=True,
+                                no_gzip=False):
         for i,ccd in enumerate(CCDlist):      
 #            hdu_out = fits.PrimaryHDU(ccd.get_frame().astype(np.float32))
             hdu_out = fits.PrimaryHDU(ccd.get_image().astype(np.float32)[0:2048,0:2048])
@@ -998,10 +1019,13 @@ class FFI_File(FFI):
             inpath, infilename = os.path.split(self.fname)   # get path and original filename
             inbasename, inext = os.path.splitext(infilename)  # get basename and extension
             if inext == '.gz':
-                write_gz = True
                 inbasename, inext = os.path.splitext(inbasename)
-            else:
+
+            if no_gzip:
                 write_gz = False
+            else:
+                write_gz = True
+
 
             if write_gz:
                 hdupath = os.path.join(self.outdir, inbasename + '_ccd'+str(i+1) + stem + inext + '.gz')  # generate new path
@@ -1016,14 +1040,15 @@ class FFI_File(FFI):
 
 
 
-    #These handle the API of the scripts in tica/bin
-    def write_raw_CCDs(self):
-        self.write_CCD_files(self.CCDs,'.raw',calibrated=False)
+    #These handle the scripts in tica/bin
+    def write_raw_CCDs(self, no_gzip = False):
+        self.write_CCD_files(self.CCDs,'.raw',calibrated=False, no_gzip=no_gzip)
 
-    def write_calibrated_CCDs(self):
-        self.write_CCD_files(self.calibrated_CCDs,'.cal')
+    def write_calibrated_CCDs(self, no_gzip = False):
+        self.write_CCD_files(self.calibrated_CCDs,'.cal', no_gzip = no_gzip)
 
-    def write_calibrated_trimmed_CCDs(self):
-        self.write_trimmed_CCD_files(self.calibrated_CCDs,'.cal')
+    def write_calibrated_trimmed_CCDs(self, no_gzip = False):
+        self.write_trimmed_CCD_files(self.calibrated_CCDs,'.cal',
+                                     no_gzip = False)
     
 
