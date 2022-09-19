@@ -1249,9 +1249,10 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         
             #        print(  (hdulistCal[0].header['MJD-BEG'] - hdulistCal[0].header['MJD-END']) , 600.0/86400 )
         try:
+            #for it to be leess than 1 second
             assert abs(
                 hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG'] \
-                -  integration_time/86400) < 1.e-9
+                -  integration_time/86400) < 1.1574074074074073e-05
         except KeyError:
             #no key in SPOC, just continue for now
             pass
