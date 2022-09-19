@@ -15,7 +15,12 @@ Added 200sec models, and keyword specifying which half of an orbit FFIs came fro
 ### Changed
 Fixed issue with check on total integration times.
 ### Added
-dvc file for twodbias_200s.dvc, added keyword ORB_SEG in headers for o1a, o1b, o2a, o2b, added relevant 200 sec exposures where needed.  tica-cal-ffi2ccds has a switch to write this keyword (disabled by default, so no change for users).
+- dvc file for twodbias_200s.dvc
+- added relevant 200 sec exposures where needed.  
+- added keyword ORB_SEG in headers for o1a, o1b, o2a, o2b, 
+- added tica-cal-ffi2ccds command line argument --orb_seg to add ORB_SEG
+- tica-calibrate-tso can now do orbit segments independently.  Includes catches for weird combinations (i.e., o2 is set but requesting o1a)
+- added option to force .fits file, even if input is gzipped (default is to write as .gz if input is .gz)
 ### Removed
 
 ## [1.1.2] - 2022-06-07
