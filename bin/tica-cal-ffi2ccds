@@ -132,67 +132,6 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    orbits, stamps = [],[]
-    for filename in inlist:
-        try:
-            search_obj = re.search('orbit-(\d*)\D*tess(\d*)-',filename)
-            orbits.append( int(search_obj.group(1)) )
-            stamps.append( int(search_obj.group(2)) )
-        except AttributeError:
-            set_orb_seg = False
-            orbits.append( int(1) )
-            stamps.append( int('dummy') )
-
-
-    orbits = np.array(orbits)
-    stamps = np.array(stamps)
-    #we can get o1 or o2 from even and odd orbits
-    #we can get a and b if there are 2 unique time stamps
-    #we can't know if it is a or b by itself
-    #also, the logical fails if you calibrate two sectors
-    #at the same time
-
-    #assume a single time stamp is a
-
-    #if processing off nominal, don't write this keyword,
-    #do not write keyword as default; only set it if we know what we are doing
-
-    m_odd  = orbits%2 == 1
-    odd_segments = {}
-    for ii,stamp in enumerate(  np.unique(stamps[m_odd])):
-        if ii == 0:
-            odd_segments[stamp] = 'a'
-        if ii == 1:
-            odd_segments[stamp] = 'b'
-
-
-    m_even = orbits%2 == 0    
-    even_segments = {}
-    for ii,stamp in enumerate(  np.unique(stamps[m_even])):
-        if ii == 0:
-            even_segments[stamp] = 'a'
-        if ii == 1:
-            even_segments[stamp] = 'b'
-
-
-    orbit_seg = []
-    for ii in range(len(orbits)):        
-        #assumes odd orbits are first, even orbits 2nd
-        if orbits[ii]%2 == 1:
-            orbit_seg_str = 'o1'
-            orbit_seg_str += odd_segments[stamps[ii]]
-
-        elif orbits[ii]%2 == 0:
-            orbit_seg_str = 'o2'
-            orbit_seg_str += even_segments[stamps[ii]]
-
-        if args.orb_seg:
-            orbit_seg.append(  orbit_seg_str )
-        else:
-            orbit_seg.append(None)
-
-    if len(args.orb_seg) == 0:
-        args.orb_seg = None
     
     # setup calibration object before processing files so it is done just once
     if args.caldir:
