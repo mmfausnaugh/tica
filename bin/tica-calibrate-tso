@@ -80,7 +80,7 @@ done
 [[ "$NCORES" == '' ]] && let NCORES=1
 #[ -z $verbose ] || v=yes
 
-[[ "$orbseg" == '' ]] && { echo "orbseg is not set, will not write keyword ORB_SEG in output files". ;}
+[[ "$orbseg" == '' ]] && { echo "orbseg is not set, running both ffi_fits-haho and ffi_fits and will not write keyword ORB_SEG in output files". ;}
 
 [[ "$o1" != "None" ]] && [[ $o2 != "None" ]] && { echo "Configuration Error.  Both orbits are set, cannot use orbseg.  Processes individual orbits if you need this keyword set."; exit ;}
 
@@ -109,65 +109,85 @@ for i in 1 2 3 4; do
 
     if [ $o1 != "None" ]; then
 	if [ "$orbseg" == '' ]; then
+	    if [ -d ${dstem}//orbit-{$o1}/ffi_fits-haho ]; then
+		ls ${dstem}//orbit-${o1}/ffi_fits-haho/tess*-${i}-crm-ffi.fits*  >> inlist
+	    fi
 	    ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  >> inlist
 	else
-	    #check orbit segments
-	    stamps=$(ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  |\
-               awk -F- '{print $3}' | sort | uniq | awk -Ftess '{print $2}')
-	    Nstamps=$(echo $stamps | wc | awk '{print $2}')
+	    #this code may be useful later---it finds the stamps used
+	    #for processign HAHOs and LAHOs; need ot adapt for ffi_fits-haho and ffi_fits
 
-	    #weird exception where awk will not do the right thing
-	    #if there is only one item in $stamps, needed for o1a
-	    if [ "$Nstamps" == 1 ]; then
-		stamp_first=$stamps;
-	    else
-		stamp_first=$(echo  $stamps  | awk '{print $1}')
-	    fi
-	    stamp_second=$(echo $stamps  | awk '{print $2}')	    
-	    
-	    
-	    [[ "$orbseg" =~ 'a' ]] && { stampuse=$stamp_first ; }
-	    [[ "$orbseg" =~ 'b' ]] && { stampuse=$stamp_second ; }
+	    ##check orbit segments
+	    #stamps=$(ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  |\
+            #   awk -F- '{print $3}' | sort | uniq | awk -Ftess '{print $2}')
+	    #Nstamps=$(echo $stamps | wc | awk '{print $2}')
+	    #
+	    ##weird exception where awk will not do the right thing
+	    ##if there is only one item in $stamps, needed for o1a
+	    #if [ "$Nstamps" == 1 ]; then
+	    #	stamp_first=$stamps;
+	    #else
+	    #	stamp_first=$(echo  $stamps  | awk '{print $1}')
+	    #fi
+	    #stamp_second=$(echo $stamps  | awk '{print $2}')	    
+	    #
+	    #
+	    #[[ "$orbseg" =~ 'a' ]] && { stampuse=$stamp_first ; }
+	    #[[ "$orbseg" =~ 'b' ]] && { stampuse=$stamp_second ; }
+	    #if [ "$stampuse" == '' ]; then 
+	    #	echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o1/ffi_fits."
+	    #	exit
+	    #fi
 
-	    if [ "$stampuse" == '' ]; then 
-		echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o1/ffi_fits."
+	    [[ "$orbseg" =~ 'a' ]] && { subdir="ffi_fits-haho"; }
+	    [[ "$orbseg" =~ 'b' ]] && { subdir="ffi_fits"; }
+	    if [ "$subdir" == '' ]; then 
+		echo "Error.  Requested $orbseg but could not find a valid subdirectory (ffi_fits-haho or ffi_fits)."
 		exit
 	    fi
 
-            ls ${dstem}//orbit-${o1}/ffi_fits/tess${stampuse}*-${i}-crm-ffi.fits*  >> inlist
+
+            ls ${dstem}//orbit-${o1}/${subdir}/tess${stampuse}*-${i}-crm-ffi.fits*  >> inlist
 	    
 	fi
     fi
 
     if [ $o2 != "None" ]; then
 	if [ "$orbseg" == '' ]; then
+	    if [ -d ${dstem}//orbit-{$o2}/ffi_fits-haho ]; then
+		ls ${dstem}//orbit-${o2}/ffi_fits-haho/tess*-${i}-crm-ffi.fits*  >> inlist
+	    fi
 	    ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
 	else
 	    #check orbit segments
-	    stamps=$(ls ${dstem}//orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*  |\
-                awk -F- '{print $1}' | sort | uniq | awk -Ftess '{print $2}')
-	    Nstamps=$(echo $stamps | wc | awk '{print $2}')
-
-	    #weird exception where awk will not do the right thing
-	    #if there is only one item in $stamps, needed for o1a
-	    if [ "$Nstamps" == 1 ]; then
-		stamp_first=$stamps;
-	    else
-		stamp_first=$(echo  $stamps  | awk '{print $1}')
-	    fi
-	    stamp_second=$(echo $stamps  | awk '{print $2}')	    
-	    
-	    if [ "$orbseg" =~ 'a' ]; then
-		stampuse=$stamp_first
-	    elif [ "$orbseg" =~ 'b' ]; then
-		stampuse=$stamp_second
-	    fi
-	    if [ "$stampuse" == '' ] ; then 
-		echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o1/ffi_fits." 
+            #stamps=$(ls ${dstem}//orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*  |\
+            #   awk -F- '{print $3}' | sort | uniq | awk -Ftess '{print $2}')
+	    #Nstamps=$(echo $stamps | wc | awk '{print $2}')
+	    #
+	    ##weird exception where awk will not do the right thing
+	    ##if there is only one item in $stamps, needed for o1a
+	    #if [ "$Nstamps" == 1 ]; then
+	    #	stamp_first=$stamps;
+	    #else
+	    #	stamp_first=$(echo  $stamps  | awk '{print $1}')
+	    #fi
+	    #stamp_second=$(echo $stamps  | awk '{print $2}')	    
+	    #
+	    #[[ "$orbseg" =~ 'a' ]] && { stampuse=$stamp_first ; }
+	    ##[[ "$orbseg" =~ 'b' ]] && { stampuse=$stamp_second ; }
+	    #if [ "$stampuse" == '' ] ; then 
+	    #	echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o2/ffi_fits." 
+	    #	exit
+	    #fi
+	    [[ "$orbseg" =~ 'a' ]] && { subdir="ffi_fits-haho"; }
+	    [[ "$orbseg" =~ 'b' ]] && { subdir="ffi_fits"; }
+	    if [ "$subdir" == '' ]; then 
+		echo "Error.  Requested $orbseg but could not find a valid subdirectory (ffi_fits-haho or ffi_fits)."
 		exit
 	    fi
 
-            ls ${dstem}//orbit-${o2}/ffi_fits/tess${stampuse}*-${i}-crm-ffi.fits*  >> inlist
+
+            ls ${dstem}//orbit-${o2}/${subdir}/tess${stampuse}*-${i}-crm-ffi.fits*  >> inlist
 	
 	fi
     fi
@@ -176,7 +196,19 @@ for i in 1 2 3 4; do
 done
 
 # define log file
-logfile='../tica_logs/"$orbseg"tica.log'
+if [ "$orbseg" == '' ]; then
+    if [ $o1 != "None" ]; then
+	if [ $o2 != "None" ]; then
+	    logfile="../tica_logs/o1o2_tica.log"
+	else
+	    logfile="../tica_logs/o1_tica.log"
+	fi
+    else
+	logfile="../tica_logs/o2_tica.log"
+    fi
+else
+    logfile="../tica_logs/""$orbseg""_tica.log"
+fi
 
 #run tica
 for i in 1 2 3 4; do    

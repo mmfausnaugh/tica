@@ -100,12 +100,12 @@ if __name__ == "__main__":
     #this forces tica.log to match tica_wcs_step2*log
     if os.path.isfile(args.log):
         jj = 1
-        while True:
-            if os.path.isfile(args.log + '_run{}'.format(jj) ):
-                jj += 1
-            else:
-                os.rename(args.log, args.log + '_run{}'.format(jj) )
-                break
+       ## while True:
+       ##     if os.path.isfile(args.log + '_run{}'.format(jj) ):
+       ##         jj += 1
+       ##     else:
+       ##         os.rename(args.log, args.log + '_run{}'.format(jj) )
+       ##         break
 
     # setup logging
     tica.setup_logging(debug=args.debug, filename=args.log)

@@ -268,6 +268,8 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--segments", type=str, 
                         help="Segments of sector; orbit 1 or 2 in EM1,"
                         "o1a, o1b, o2a, or o2b in EM2.  Can only enter one segment at a time.")
+    parser.add_argument("--wcs1", action='store_true',
+                        help="If set, scrape the tica_wcs_step1.log file and populate columns.")
     args = parser.parse_args()
 
 
@@ -328,16 +330,10 @@ if __name__ == "__main__":
 
 
     #load up the data
-    orbit_string = ''
-
-    assert (args.segments == 'o1a') | \
-        (args.segments == 'o1b') |\
-        (args.segments == 'o2a') |\
-        (args.segments == 'o2b') |\
-        
+    orbit_string = ''        
 
 
-    out = get_from_logs('tica_logs/{}tica.log'.format(args.segments) )
+    out = get_from_logs('tica_logs/{}_tica.log'.format(args.segments) )
     test_output_dict(out)
     start_date = out['start_date']
     start_date_object = datetime.strptime(out['start_date'],'%Y.%m.%d-%H:%M:%S')
@@ -350,7 +346,7 @@ if __name__ == "__main__":
     #print( out )
     sector = out['sector']
 
-    if 1 in args.segments:
+    if args.wcs1:
         out2 = get_from_logs('tica_logs/tica_wcs_step1.log')
         test_output_dict(out2)
     else:
@@ -414,7 +410,7 @@ if __name__ == "__main__":
             if ii == 0 and jj == 0:
                 #print(orbit_string, orbit_string.replace('_',''))
                 outline_list = [ '{:>04d}'.format( int(out['sector'])), 
-                                 '{:>35s}'.format( args.segments.replace('_','' )), 
+                                 '{:>35s}'.format( args.segments), 
                                  '{:>35s}'.format(start_date),
                                  '{:>35s}'.format(end_date),
                                  '{:>35.3f}'.format( (dt.days*86400 + dt.seconds)/86400 ),
@@ -428,10 +424,9 @@ if __name__ == "__main__":
                 #if one ever wanted to load the table into pandas or numpy,
                 #useful to match a sector for each ccd
                 outline_list[0] = '{:>04d}'.format( int(out['sector']))
-                outline_list[1] = '{:>35s}'.format( args.segments.replace('_','' ) )
+                outline_list[1] = '{:>35s}'.format( args.segments ) 
 
             idx = 4*ii + jj
-            print(idx, jj, out['runtime'])
             outline_list.append('{:>35s}'.format('cam{}_ccd{}'.format(ii+1,jj+1 )))
             if jj == 0:
                 outline_list.append( '{:>35s}'.format(out['runtime'][idx]) )
