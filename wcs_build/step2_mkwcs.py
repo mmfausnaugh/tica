@@ -1222,9 +1222,12 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         if hdulistCal[0].header[start_key_use] < 2036.0:
             hdulistCal[0].header['EXPTIME'] = 1800.0*0.8*0.99
             integration_time = 1800.0
-        else:
+        elif hdulistCal[0].header[start_key_use] < 2824.5:
             hdulistCal[0].header['EXPTIME'] = 600*0.8*0.99
-            integration_time = 1800.0
+            integration_time = 600.0
+        else:
+            hdulistCal[0].header['EXPTIME'] = 200*0.8*0.99
+            integration_time = 200.0
 
         #added by Scott Flemmings request for MAST archive
         hdulistCal[0].header['EQUINOX'] = 2000.0
@@ -1246,7 +1249,10 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         
             #        print(  (hdulistCal[0].header['MJD-BEG'] - hdulistCal[0].header['MJD-END']) , 600.0/86400 )
         try:
-            assert (hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG']  -  integration_time/86400 ) < 1.e-9
+            #for it to be leess than 1 second
+            assert abs(
+                hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG'] \
+                -  integration_time/86400) < 1.1574074074074073e-05
         except KeyError:
             #no key in SPOC, just continue for now
             pass

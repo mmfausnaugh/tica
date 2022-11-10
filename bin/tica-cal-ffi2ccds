@@ -29,6 +29,7 @@ import argparse
 import logging
 from multiprocessing import Pool
 from time import time
+import re
 
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
@@ -44,14 +45,21 @@ def worker( in_tuple ):
     filename = in_tuple[0]
     outdir = in_tuple[1]
     trim = in_tuple[2]
+    orbit_segment = in_tuple[3]
+    no_gzip = in_tuple[4]
 
     #it knows about calibration as a global variable...very yucky...
-    im = FFI_File(filename, calibration=calibration, outdir=outdir)
+    im = FFI_File(filename, 
+                  calibration=calibration, 
+                  outdir=outdir,
+                  orbit_segment = orbit_segment)
 
     if trim:
-        im.write_calibrated_trimmed_CCDs()
+        im.write_calibrated_trimmed_CCDs(
+            no_gzip = no_gzip)
     else:
-        im.write_calibrated_CCDs()
+        im.write_calibrated_CCDs(
+            no_gzip = no_gzip)
 
 if __name__ == "__main__":
 
@@ -81,9 +89,23 @@ if __name__ == "__main__":
                         help="run files in parallel on number of processors specified here")
     parser.add_argument("--trim", action="store_true", help="trim calibration pixels from edges")
     parser.add_argument("-d", "--debug", action="store_true", help="emit extra diagnostic information to log")
-    parser.add_argument("-l", "--log", metavar="LOG_FILE", help="save logging output to this file")
+    parser.add_argument("-l", "--log", metavar="LOG_FILE", default='tica.log', 
+                        help="save logging output to this file")
+    parser.add_argument("--orb_seg", type=str, help="if set, write ORB_SEG header keyword in calibrated files.")
+    parser.add_argument("--no_gzip",action="store_true", help="if set, do not write gzipped files regardless of input file extension.")
 
     args = parser.parse_args()
+
+    #each time we run tica, copy the old log file
+    #this forces tica.log to match tica_wcs_step2*log
+    if os.path.isfile(args.log):
+        jj = 1
+       ## while True:
+       ##     if os.path.isfile(args.log + '_run{}'.format(jj) ):
+       ##         jj += 1
+       ##     else:
+       ##         os.rename(args.log, args.log + '_run{}'.format(jj) )
+       ##         break
 
     # setup logging
     tica.setup_logging(debug=args.debug, filename=args.log)
@@ -109,6 +131,8 @@ if __name__ == "__main__":
         logger.error("input file not found: %s" % args.fileinputs)
         sys.exit(1)
 
+
+    
     # setup calibration object before processing files so it is done just once
     if args.caldir:
         calibration = Calibration(calibration_dir=args.caldir)
@@ -124,13 +148,17 @@ if __name__ == "__main__":
 
     if args.parallel > 1:
         p = Pool(args.parallel)
-        for filename in inlist:
-            p.apply_async(worker, ( (filename, outdir, args.trim), ) )
+        for ii, filename in enumerate(inlist):
+            p.apply_async(worker, ( (filename, outdir, 
+                                     args.trim, args.orb_seg, 
+                                     args.no_gzip, ), ))
         p.close()
         p.join()
     else:
-        for filename in inlist:
-            worker( (filename,  outdir, args.trim))
+        for ii,filename in enumerate(inlist):
+            worker( (filename,  outdir, 
+                     args.trim, args.orb_seg,
+                     args.no_gzip, ),)
     runtime = time() - starttime
 
     print("Runtime: {0:.2f}sec".format(runtime), "N Pools = {}".format( args.parallel ) )

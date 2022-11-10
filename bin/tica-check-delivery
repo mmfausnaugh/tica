@@ -1,0 +1,194 @@
+#!/usr/bin/env python
+
+import numpy as np
+from astropy.io import fits
+import os
+import sys
+import glob
+import h5py
+from multiprocessing import Pool
+
+#what checks?
+
+#every file should have:
+#--valid checkusm and datasum
+#--calibrated data
+#   --an added plus would be that the data are correction, 
+#      or at least don't look bad
+#--a WCS solution
+#--two headers, the second being  a fits table with a valid binary table
+
+#***what should happen if there is invalid data?? (cam1 saturated)***
+
+
+#mast can check the names, and probably the checksum and datasum
+
+#star lists should have 11 columns, like this
+#'blkidxs', 'contrastcols', 'contrastrows','decs','obscols','obsrows', 'predcols', 'predrows', 'ras', 'tics','tmags'
+
+#every delivery should have 16 ccd directories, with either N FFIs per delivery or N-1
+#there should be a ref_stars directory with the star lists, 16 files, one per CCD
+
+
+#start by checking the directory structure, number of files
+topdirs = glob.glob('*')
+#dirs_to_check = ['o1-cam1-ccd1','o1-cam1-ccd2','o1-cam1-ccd3','o1-cam1-ccd4',
+#                 'o1-cam2-ccd1','o1-cam2-ccd2','o1-cam2-ccd3','o1-cam2-ccd4',
+#                 'o1-cam3-ccd1','o1-cam3-ccd2','o1-cam3-ccd3','o1-cam3-ccd4',
+#                 'o1-cam4-ccd1','o1-cam4-ccd2','o1-cam4-ccd3','o1-cam4-ccd4',
+#                 'o2-cam1-ccd1','o2-cam1-ccd2','o2-cam1-ccd3','o2-cam1-ccd4',
+#                 'o2-cam2-ccd1','o2-cam2-ccd2','o2-cam2-ccd3','o2-cam2-ccd4',
+#                 'o2-cam3-ccd1','o2-cam3-ccd2','o2-cam3-ccd3','o2-cam3-ccd4',
+#                 'o2-cam4-ccd1','o2-cam4-ccd2','o2-cam4-ccd3','o2-cam4-ccd4',
+#                 'ref_stars'
+#             ]
+dirs_to_check = ['cam1-ccd1','cam1-ccd2','cam1-ccd3','cam1-ccd4',
+                 'cam2-ccd1','cam2-ccd2','cam2-ccd3','cam2-ccd4',
+                 'cam3-ccd1','cam3-ccd2','cam3-ccd3','cam3-ccd4',
+                 'cam4-ccd1','cam4-ccd2','cam4-ccd3','cam4-ccd4',
+                 'ref-stars'
+             ]
+
+try:
+    assert len(dirs_to_check) == 17
+except AssertionError:
+    print('Found {} directories instead of 17 (16 CCDS + ref_stars'.format(len(dirs_to_check) ) )
+    sys.exit()
+
+for d in dirs_to_check:
+    try:
+        assert d in topdirs
+    except AssertionError:
+        print('Directory {} not in expected CCD/ref_star directories'.format(d))
+        sys.exit()
+
+#check the ref_stars files, and that no columns are none
+filestems_to_check = ['cam1-ccd1','cam1-ccd2','cam1-ccd3','cam1-ccd4',
+                      'cam2-ccd1','cam2-ccd2','cam2-ccd3','cam2-ccd4',
+                      'cam3-ccd1','cam3-ccd2','cam3-ccd3','cam3-ccd4',
+                      'cam4-ccd1','cam4-ccd2','cam4-ccd3','cam4-ccd4']
+
+#ref_files = glob.glob('ref_stars/*')
+ref_files = glob.glob('ref-stars/*')
+
+try:
+    assert len(ref_files) == 16
+except AssertionError:
+    print('Found {} ref_star files instead of 16'.format(len(ref_files)) )
+    sys.exit()
+
+n_checks = 0
+for stem in filestems_to_check:
+    for ref_file in ref_files:
+        if stem in ref_file:
+            n_checks += 1
+            break
+try:
+    assert n_checks == 16
+except AssertionError:
+    print('Found unexpected file {} in ref_star directory'.format(stem))
+    sys.exit()
+
+columns_to_check = ['blkidxs', 
+                    'contrastcols', 'contrastrows', 
+                    'decs', 
+                    'obscols', 'obsrows', 
+                    'predcols', 'predrows', 
+                    'ras', 
+                    'tics', 'tmags']
+for ref_file in ref_files:
+    print(ref_file)
+    f = h5py.File(ref_file,'r')
+    for col in columns_to_check:
+        try:
+            assert col in f.keys()
+        except AssertionError:
+            print('  Unexpected olumn {} found in file'.format(col))
+            sys.exit()
+        try:
+            assert not any( np.isnan(f[col]) )
+        except AssertionError:
+            print('  NaN value found in column {}'.format(col) )
+            sys.exit()
+
+
+#check the right number of files in each directory
+#because the bintables are record arrays, can't check the shape, but can use the header
+#but, header has 18 columns, for some reason?
+columns_to_check = ['TIC', 'FLXCOL', 'FLXROW', 'FLXVALID']
+#N_cad_check_o1 = len(glob.glob('o1-cam4-ccd4/*fits'))
+#N_cad_check_o2 = len(glob.glob('o2-cam4-ccd4/*fits'))
+N_cad_check_o1 = len(glob.glob('cam4-ccd4/*fits'))
+#N_cad_check_o2 = len(glob.glob('cam4-ccd4/*fits'))
+#don't check the ref_stars directory
+
+def check_with_message(condition, message):
+    try:
+        assert condition
+    except AssertionError:
+        print(message)
+
+        
+def worker( in_tuple ):
+    d = in_tuple[0]
+    N_cad_check = in_tuple[1]
+    
+    print('checking ffis in ',d)
+    ffi_files = glob.glob(d + '/*fits')
+    try:        
+        assert len(ffi_files) == N_cad_check
+    except AssertionError:
+        print('Directory {} has {} files, expected {}'.format(d, len(ffi_files), N_cad_check) )
+    for ffi in ffi_files:
+        f = fits.open(ffi)
+
+
+        check_with_message(len(f) == 2, 
+                           '  File {} has {} extensions'.format(ffi, len(f) ) )
+        check_with_message(f[0].header['NAXIS1']  == 2136,
+                           '  File {} has NAXIS1 equal to {}, should be 2136'.format(ffi, f[0].header['NAXIS1']) )
+        check_with_message(f[0].header['NAXIS2']  == 2078,
+                           '  File {} has NAXIS2 equal to {}, should be 2078'.format(ffi, f[0].header['NAXIS2']) )
+        check_with_message(f[0].header['CTYPE1']  == 'RA---TAN-SIP',
+                           '  File {} has CTYPE1 equal to {}, should be "RA--TAN-SIP"'.format(ffi, f[0].header['CTYPE1']) )
+        check_with_message(f[0].header['CTYPE2']  == 'DEC--TAN-SIP',
+                           '  File {} has CTYPE2 equal to {}, should be "DEC--TAN-SIP'.format(ffi, f[0].header['CTYPE2']) )
+        check_with_message(f[0].header['CRPIX1']  ==  1069.0,
+                           '  File {} has CRPIX1 equal to {}, should be 1069.0'.format(ffi, f[0].header['CRPIX1']) )
+        check_with_message(f[0].header['CRPIX2']  ==  1024.0,
+                           '  File {} has CRPIX2 equal to {}, should be 1024.0'.format(ffi, f[0].header['CRPIX2']) )
+        check_with_message(not np.isnan(f[0].header['CRVAL1']),
+                           '  File {} CRVAL1 is {} (should not be Nan)'.format(ffi, f[0].header['CRVAL1']) )
+        check_with_message(not np.isnan(f[0].header['CRVAL2']),
+                           '  File {} CRVAL2 is {} (should not be Nan)'.format(ffi, f[0].header['CRVAL2']) )
+        check_with_message(not f[0].header['A_ORDER'] == 0,
+                           '  File {} A_ORDER is {} (should not be 0)'.format(ffi, f[0].header['A_ORDER']) )
+        check_with_message(not np.isnan(f[0].header['A_ORDER']),
+                           '  File {} A_ORDER is {} (should not be NaN)'.format(ffi, f[0].header['A_ORDER']))
+        check_with_message(not f[0].header['B_ORDER'] == 0,
+                           '  File {} B_ORDER is {} (should not be 0)'.format(ffi, f[0].header['B_ORDER']) )
+        check_with_message(not np.isnan(f[0].header['B_ORDER'] ),
+                           '  File {} B_ORDER is {} (should not be NaN)'.format(ffi, f[0].header['B_ORDER']))
+
+
+        for col in columns_to_check:
+            try:
+                assert col in f[1].data.names
+            except AssertionError:
+                print('  File {} has unexpected column {} in extension 1'.format(ffi, col) )
+                sys.exit()
+
+            try:
+                assert not any(np.isnan(f[1].data[col]))
+            except AssertionError:
+                print('  File {} has NaN in column {} (ext 1)'.format(ffi, col) )
+                sys.exit()
+
+    
+p = Pool(16)
+for d in dirs_to_check[0:-1]:
+    p.apply_async(worker, ( (d, N_cad_check_o1), ) )
+p.close()
+p.join()
+
+print('check complete! No assertion errors')
