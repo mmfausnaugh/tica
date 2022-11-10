@@ -13,7 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.2.0] - 2022-09-09
 Added 200sec models, and keyword specifying which half of an orbit FFIs came from.
 ### Changed
-Fixed issue with check on total integration times.
+- Fixed issue with check on total integration times.
+- Changed tica-calibrate-tso to deal withi new directory structure from POC.
+- Changed details of output logs and production table.
 ### Added
 - dvc file for twodbias_200s.dvc
 - added relevant 200 sec exposures where needed.  
