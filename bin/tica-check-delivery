@@ -192,6 +192,8 @@ p = Pool(16)
 for d in dirs_to_check[0:-1]:
     p.apply_async(worker, ( ( os.path.join(duse, d) , 
                               N_cad_check_o1), ) )
+    #worker( (os.path.join(duse,d), N_cad_check_o1) )
+
 p.close()
 p.join()
 
