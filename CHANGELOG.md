@@ -10,6 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 ### Removed
 
+## [1.2.0] - 2022-09-09
+Added 200sec models, and keyword specifying which half of an orbit FFIs came from.
+### Changed
+- Fixed issue with check on total integration times.
+- Changed tica-calibrate-tso to deal withi new directory structure from POC.
+- Changed details of output logs and production table.
+### Added
+- dvc file for twodbias_200s.dvc
+- added relevant 200 sec exposures where needed.  
+- added keyword ORB_SEG in headers for o1a, o1b, o2a, o2b, 
+- added tica-cal-ffi2ccds command line argument --orb_seg to add ORB_SEG
+- tica-calibrate-tso can now do orbit segments independently.  Includes catches for weird combinations (i.e., o2 is set but requesting o1a)
+- added option to force .fits file, even if input is gzipped (default is to write as .gz if input is .gz)
+### Removed
+
+## [1.1.2] - 2022-06-07
+Fixed some issues related to reprocessing old TICA products.
+### Changed
+- EXPTIME header keyword now depends on sector.
+- Remved `header.extend` from wcs step2, so duplicate keywords should never be added.
+### Added
+### Removed
+
 ## [1.1.1] - 2022-04-27
 Extended same capabilities on the production table logging.
 ### Changed

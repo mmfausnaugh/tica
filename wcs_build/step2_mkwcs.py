@@ -46,6 +46,20 @@ import tica
 from time import time
 import logging
 
+
+#a horrible thing to do is define globals here at the top,
+#but perhaps this is the code that we deserve...
+
+# ***These following parameters must match what was used in 
+#  step1 to generate the reference image control points
+# If you change these then you will want to rerun step1 
+#  to keep things consistent
+pixScl = 21.0 # arcsec
+colMin = 45
+colMax = 2092
+rowMin = 1
+rowMax = 2048
+
 def calc_MAD(x):
     abs_res = abs(x - np.median(x))
     return np.median(abs_res)/0.6744897501960817  #0.67449
@@ -801,6 +815,426 @@ def fit_wcs(ras, decs, cols, rows, tmags, \
 
 
 
+def worker( intuple):
+    #unpack intuple
+    curImg           = intuple[0]
+    obscols          = intuple[1]  
+    obsrows          = intuple[2]
+    colCtrl2D_flat   = intuple[3]
+    blkidxs          = intuple[4]
+    fixApertures     = intuple[5]
+    midcols          = intuple[6]
+    midrows          = intuple[7]
+    blkHlf           = intuple[8]
+    blkHlfCent       = intuple[9]
+    fitDegree        = intuple[10]
+    ras              = intuple[11]
+    decs             = intuple[12]
+    tics             = intuple[13]
+    tmags            = intuple[14]
+    SECTOR_WANT      = intuple[15]
+    CAMERA_WANT      = intuple[16]
+    CCD_WANT         = intuple[17]                           
+    CTRL_PER_COL     = intuple[18]
+    CTRL_PER_ROW     = intuple[19]
+    DEBUG_LEVEL      = intuple[20]
+    PLOT_FIG         = intuple[21]
+    wingFAC          = intuple[22]
+    contrastFAC      = intuple[23]     
+ 
+ 
+    #do the calcs
+    hdulistCal = fits.open(curImg)
+    gotTimeStamp = False
+    if not gotTimeStamp:
+        try:
+            # QLP/TICA has MIDTJD
+            timeVal = hdulistCal[0].header['MIDTJD']
+            timeKey = 'MIDTJD'
+            dataKey = 0
+        except:
+            # SPOC has TSTART
+            timeKey = 'TSTART'
+            dataKey = 1
+        gotTimeStamp = True
+    if 'cal' in curImg:
+        dataKey = 0
+    if len(hdulistCal) == 2:
+        logging.info('skipping {},  already has WCS'.format(curImg))
+ 
+        allStd       = hdulistCal[0].header['RMSA']
+        brightStd    = hdulistCal[0].header['RMSB']
+        
+        allStdPix    = hdulistCal[0].header['RMSAP']
+        brightStdPix = hdulistCal[0].header['RMSBP']
+        #did not have these keywords before tica 1.1.0
+        try:
+            faintStd     = hdulistCal[0].header['RMSF']
+        except KeyError:
+            faintStd = 0
+        try:
+            faintStdPix  = hdulistCal[0].header['RMSBF']
+        except KeyError:
+            faintStdPix = 0
+ 
+        ts = hdulistCal[dataKey].header[timeKey]
+        exStd0 = hdulistCal[0].header['RMSX0']
+        exStd1 = hdulistCal[0].header['RMSX1']
+        exStd2 = hdulistCal[0].header['RMSX2']
+        exStd3 = hdulistCal[0].header['RMSX3']
+        gdFracs = hdulistCal[0].header['WCSGDF']
+ 
+        return [allStd, brightStd,faintStd,
+                allStdPix, brightStdPix, faintStdPix,
+                hdulistCal[dataKey].header[timeKey], 
+                exStd0, exStd1, exStd2, exStd3,gdFracs]
+ 
+ 
+    #imgNames = np.append(imgNames, os.path.basename(curImg))
+    # Always initialize to the reference image coordinates
+    lstGdCols = np.copy(obscols)
+    lstGdRows = np.copy(obsrows)
+ 
+    newCols = np.zeros_like(obscols)
+    newRows = np.zeros_like(obscols)
+    newFluxes = np.zeros_like(obscols)
+    newBkgs   = np.zeros_like(obscols)
+    gdPrfs = np.zeros_like(obscols, dtype=np.int64)
+    # these will be used to keep track of average subregion dc offsets
+    nDC = 0
+    dccolsum = 0.0
+    dcrowsum = 0.0
+    # Loop over subregions
+    # keep track of regions that cannot find any valid stars
+    isGdRegion = np.zeros((len(colCtrl2D_flat),), dtype=bool)
+    for ii, curCol in enumerate(colCtrl2D_flat):
+        # Get the reference data corresonding with this subregion
+        ia = np.where(blkidxs == ii)[0]
+        curLstGdCols = lstGdCols[ia]
+        curLstGdRows = lstGdRows[ia]
+        curMidCols = midcols[ia]
+        curMidRows = midrows[ia]
+        curGdPrfs = np.zeros_like(curLstGdRows, dtype=np.int32)
+        curNewCols = np.zeros_like(curLstGdRows)
+        curNewRows = np.zeros_like(curLstGdRows)
+        curNewFluxes   = np.zeros_like(curLstGdRows)
+        curNewBkgs     = np.zeros_like(curLstGdRows)
+        # In this subregion first get the brightest stars
+        #  to determine an initial dc offset in col and row
+        #  The targets were sorted by Tmag at the begining
+        #  so no need to do it here
+        nTry = 5
+        gotN = 0
+        jj = 0
+        delCols = np.array([], dtype=np.double)
+        delRows = np.array([], dtype=np.double)
+        while (gotN <= nTry and jj<len(curLstGdCols)):
+            midCol = int(round(curLstGdCols[jj]))
+            midRow = int(round(curLstGdRows[jj]))
+            if fixApertures:
+                midCol = curMidCols[jj]
+                midRow = curMidRows[jj]
+            colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
+            rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
+ #           print(midRow-blkHlf-1,  midRow+blkHlf, midCol-blkHlf-1, midCol+blkHlf)
+ #           print(dataKey, len(hdulistCal))
+ #           print('type',type(hdulistCal[dataKey].data))
+ #           print('shape',np.shape(hdulistCal[dataKey].data))
+            sciImgCal = hdulistCal[dataKey].data[midRow-blkHlf-1: midRow+blkHlf,
+                                                 midCol-blkHlf-1: midCol+blkHlf]
+            # Check if target is isolated
+            try:
+                gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                             wingFAC = wingFAC,
+                                                             contrastFAC = contrastFAC)
+            except ValueError:
+                break
+                
+            if gdPRF:
+                # Determine background from 2 pixel ring around box
+                bkgLev = ring_background(sciImgCal)
+                #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                centOut = flux_weighted_centroid(sciImgCal-bkgLev)
+                # centroid_com produces 0-based coordinates
+                newCol = centOut[0]+colX[0]
+                newRow = centOut[1]+rowY[0]
+                delCols = np.append(delCols, newCol - curLstGdCols[jj])
+                delRows = np.append(delRows, newRow - curLstGdRows[jj])
+                gotN = gotN + 1
+            jj = jj+1
+        if (gotN < nTry):
+            if DEBUG_LEVEL>0:
+                logging.debug('Too few targets for initial pixel position correction on Block {0:d}'.format(ii))
+            delCols = np.array([0.0, 0.0])
+            delRows = np.array([0.0, 0.0])
+        else:
+            isGdRegion[ii] = True
+        corCol = np.median(delCols)
+        corRow = np.median(delRows)
+        if isGdRegion[ii]:
+            nDC = nDC + 1
+            dccolsum = dccolsum + corCol
+            dcrowsum = dcrowsum + corRow
+        if DEBUG_LEVEL>0:
+            logging.debug('Predicted Position Tweaks Col: {0:f} Row: {1:f} Blk: {2:d}'.format(corCol, corRow, ii))
+        outColPix = curLstGdCols + corCol
+        outRowPix = curLstGdRows + corRow
+ 
+        # Now we are ready to get all target flux weighted centroids on this subimage
+        for jj, curCol in enumerate(outColPix):
+            if isGdRegion[ii]: # if region found offsets measure and update if good
+                # this is predicted coordinates
+                midCol = int(round(curCol))
+                midRow = int(round(outRowPix[jj]))
+                if midCol-blkHlf >= colMin and midCol+blkHlf <= colMax and midRow-blkHlf >= rowMin and midRow+blkHlf <= rowMax:
+                    colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
+                    rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
+                    sciImgCal = hdulistCal[dataKey].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
+                    gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
+                                                                 wingFAC = wingFAC,
+                                                                 contrastFAC = contrastFAC)
+                else:
+                    gdPRF = False
+            else: # if region did not find any offsets dont measure and done update
+                gdPRF = False
+ 
+            if gdPRF:
+                # Determine background from 2 pixel ring around box
+                bkgLev = ring_background(sciImgCal)
+                # Use small blkHlfCent region for final centroid calc
+                colX = np.arange(midCol-blkHlfCent, midCol+blkHlfCent+1)
+                rowY = np.arange(midRow-blkHlfCent, midRow+blkHlfCent+1)
+                # analysis region around target
+                sciImgCal = hdulistCal[0].data[midRow-blkHlfCent-1: midRow+blkHlfCent, midCol-blkHlfCent-1: midCol+blkHlfCent]
+                #centOut = cent.centroid_com(sciImgCal-bkgLev)
+                centOut = flux_weighted_centroid(sciImgCal-bkgLev)
+ 
+ 
+                # Once in blue moon centroids go nutsy check for it
+                idx = np.where((centOut[0:2]<-1.0) | (centOut[0:2]>blkHlfCent*2+2))[0]
+                if len(idx) == 0:
+                    # centroid_com produces 0-based coordinates
+                    newCol = centOut[0]+colX[0]
+                    newRow = centOut[1]+rowY[0]
+                    curGdPrfs[jj] = 1
+                    curNewCols[jj] = newCol
+                    curNewRows[jj] = newRow
+                    curNewFluxes[jj] = centOut[2]
+                    curNewBkgs[jj] = bkgLev
+                else:
+                    curNewCols[jj] = outColPix[jj]
+                    curNewRows[jj] = outRowPix[jj]
+ 
+                    #since we are using reference image positions plus tweaks,
+                    #not-applicable --> NaN is most appropriate
+                    curNewFluxes[jj] = np.nan
+                    curNewBkgs[jj]   = np.nan
+            else:
+                #  Insert last ref position  with the dc offsets
+                curNewCols[jj] = outColPix[jj]
+                curNewRows[jj] = outRowPix[jj]
+                if not isGdRegion[ii]:
+                    curGdPrfs[jj] = -2
+                    
+                #since we are using reference image positions plus tweaks,
+                #not-applicable --> NaN is most appropriate
+                curNewFluxes[jj] = np.nan
+                curNewBkgs[jj]   = np.nan
+                
+        # Done getting flux weight for this sub block record them in overall list
+        newCols[ia] = curNewCols
+        newRows[ia] = curNewRows
+        newFluxes[ia] = curNewFluxes
+        newBkgs[ia]   = curNewBkgs
+        gdPrfs[ia] = curGdPrfs
+    # Done with all the blocks for this image
+    # Get the overall good prf fraction
+    nGd = len(np.where(gdPrfs==1)[0])
+    gdFracs = float(nGd)/float(len(gdPrfs))
+    #if DEBUG_LEVEL>0:
+    logging.info('Image {} GdFrac:{:0.3f}'.format(curImg, gdFracs))
+    #  Now we determine wcss
+    # We need to reject bad prfs from wcs fit
+    idxgd = np.where(gdPrfs == 1)[0]
+    # In subregion with no good prfs we need to add in a couple 
+    #  targets with reference coords just to keep fit  somewhat behaved
+    # first determine average dc offset
+    if nDC > 0:
+        dccol = dccolsum/float(nDC)
+        dcrow = dcrowsum/float(nDC)
+    else:
+        dccol = 0.0
+        dcrow = 0.0
+    idx_badregion = np.where(isGdRegion == 0)[0]
+    for curibad in idx_badregion:
+        idx = np.where(blkidxs == curibad)[0]
+        # pick three random ones in this subregion
+        np.random.seed(1010101)
+        idxUse = np.random.choice(idx, (3,), replace=False)
+        gdPrfs[idxUse] = -1 # record these random added for plotting and diagnostics
+        idxgd = np.append(idxgd, idxUse)
+        # These targets never had dc offset added from subregion
+        #  so add the average dc offset over all subregions
+        newCols[idxUse] = newCols[idxUse] + dccol
+        newRows[idxUse] = newRows[idxUse] + dcrow
+ 
+    # If all subregions are bad then drop down to lower fit degree
+    useFitDegree = fitDegree
+    useNoClipping = False
+    if np.sum(isGdRegion) == 0:
+        useFitDegree = np.min([4, fitDegree])
+        useNoClipping = True
+        logging.info('All regions bad, using {0:d} fit degree'.format(useFitDegree))
+ 
+    # Write out FIGOUTEVERY image
+    FIGOUTPREFIX = None
+    if saveDiag == True:
+        if PLOT_FIG:
+            fileBase = os.path.splitext(os.path.basename(curImg))[0]
+            FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
+ 
+    newhdr, allStd, brightStd,\
+        faintStd, allStdPix, \
+        brightStdPix, faintStdPix, \
+        gdResids, exResids = fit_wcs(ras[idxgd], 
+                                     decs[idxgd], 
+                                     newCols[idxgd], newRows[idxgd], 
+                                     tmags[idxgd], 
+                                     SECTOR_WANT, CAMERA_WANT, CCD_WANT,
+                                     blkidxs[idxgd], CTRL_PER_COL,
+                                     useFitDegree, useNoClipping, DEBUG_LEVEL,
+                                     #turned off figures for individual FFIs
+                                     )#FIGOUTPREFIX)
+    # Add the outliers to gdPrfs
+    idx = np.where(np.logical_not(gdResids))[0]
+    gdPrfs[idxgd[idx]] = -1
+  
+  
+    #If start time is before s27, use 30min exposure
+    #check if tso FFI:
+    if 'STARTTJD' in hdulistCal[0].header.keys():
+        start_key_use = 'STARTTJD'
+    elif 'TSTART' in hdulistCal[0].header.keys():
+        start_key_use = 'TSTART'
+        
+    if hdulistCal[0].header[start_key_use] < 2036.0:
+        hdulistCal[0].header['EXPTIME'] = 1800.0*0.8*0.99
+        integration_time = 1800.0
+    elif hdulistCal[0].header[start_key_use] < 2824.5:
+        hdulistCal[0].header['EXPTIME'] = 600*0.8*0.99
+        integration_time = 600.0
+    else:
+        hdulistCal[0].header['EXPTIME'] = 200*0.8*0.99
+        integration_time = 200.0
+
+    #added by Scott Flemmings request for MAST archive
+    hdulistCal[0].header['EQUINOX'] = 2000.0
+    hdulistCal[0].header['INSTRUME'] = "TESS Photometer"
+    hdulistCal[0].header['TELESCOP'] = "TESS"
+    hdulistCal[0].header['FILTER'] = "TESS" 
+
+    try:
+        hdulistCal[0].header['MJD-BEG'] = hdulistCal[0].header['STARTTJD'] +\
+                                          hdulistCal[0].header['TJD_ZERO'] - 2400000.5
+        hdulistCal[0].header['MJD-END'] = hdulistCal[0].header['ENDTJD'] +\
+                                          hdulistCal[0].header['TJD_ZERO'] - 2400000.5
+    except:
+        #for spoc origin???
+        hdulistCal[0].header['MJD-BEG'] = hdulistCal[0].header['TSTART'] +\
+                                          hdulistCal[0].header['BJDREFI'] - 2400000.5
+        hdulistCal[0].header['MJD-END'] = hdulistCal[0].header['TSTOP'] +\
+                                          hdulistCal[0].header['BJDREFI'] - 2400000.5
+    
+        #        print(  (hdulistCal[0].header['MJD-BEG'] - hdulistCal[0].header['MJD-END']) , 600.0/86400 )
+    try:
+        #for it to be leess than 1 second
+        assert abs(
+            hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG'] \
+            -  integration_time/86400) < 1.1574074074074073e-05
+    except KeyError:
+        #no key in SPOC, just continue for now
+        pass
+
+    # Save header and control point data to fits file
+    #  separate file for now.  Not touching input data
+    # Add the wcsfit diagnostics to header
+    try:
+        btjd_header = add_btjd_info(hdulistCal[0].header['MIDTJD'], 
+                                    newhdr['CRVAL1'], 
+                                    newhdr['CRVAL2'],
+                                    ephemeris_data) 
+        for key in btjd_header.keys():
+            hdulistCal[0].header[key] = btjd_header[key]
+            hdulistCal[0].header.comments[key] = btjd_header.comments[key]
+
+    except KeyError:
+        #no key in SPOC, just continue for now
+        pass
+
+    #added by Scott Flemmings request for MAST archive
+    newhdr['RA_TARG']   = newhdr['CRVAL1']
+    newhdr['DEC_TARG'] = newhdr['CRVAL2']
+
+
+    newhdr['RMSA'] = (allStd, 'WCS fit resid all targs [arcsec]')
+    newhdr['RMSB'] = (brightStd, 'WCS fit resid bright (Tmag<10) targs [arcsec]')
+    newhdr['RMSF'] = (faintStd, 'WCS fit resid faint (Tmag>10) targs [arcsec]')
+    newhdr['RMSAP'] = (allStdPix, 'WCS fit resid all targs [pixel]')
+    newhdr['RMSBP'] = (brightStdPix, 'WCS fit resid bright (Tmag<10) targs [pixel]')
+    newhdr['RMSBF'] = (faintStdPix, 'WCS fit resid faint (Tmag>10) targs [pixel]')
+    newhdr['RMSX0'] = (exResids[0], 'WCS fit resid extra 0 [arcsec]')
+    newhdr['RMSX1'] = (exResids[1], 'WCS fit resid extra 1 [arcsec]')
+    newhdr['RMSX2'] = (exResids[2], 'WCS fit resid extra 2 [arcsec]')
+    newhdr['RMSX3'] = (exResids[3], 'WCS fit resid extra 3 [arcsec]')
+    # Skip this header element in production 
+    #newhdr['TIME'] = (ts[iImg], 'Time From Original Image Header')
+    newhdr['WCSGDF' ] = (gdFracs, 'Fraction of control point targs valid')
+    newhdr['CTRPCOL'] = (CTRL_PER_COL, 'Subregion analysis blocks over columns')
+    newhdr['CTRPROW'] = (CTRL_PER_ROW, 'Subregion analysis blocks over rows')
+    newhdr['FLXWIN'] = (blkHlfCent*2+1, 'Width in pixels of Flux-weight centroid region')
+    # Make the fits table columns
+    c1 = fits.Column(name='TIC', format='K', array=tics)
+    c2 = fits.Column(name='FLXCOL', format='E', unit='pix', array=newCols)
+    c3 = fits.Column(name='FLXROW', format='E', unit='pix', array=newRows)
+
+    c4 = fits.Column(name='FLX', format='E', unit='counts', array=newFluxes)
+    c5 = fits.Column(name='BKG', format='E', unit='counts', array=newBkgs)
+
+    c6 = fits.Column(name='FLXVALID', format='I', array=gdPrfs)
+
+    # Make the extension table 
+    hduex = fits.BinTableHDU.from_columns([c1, c2, c3, c4, c5, c6],
+                                          name='WCS_Stars')
+    #append wcs parameter to primary header            
+    for key in newhdr:
+        hdulistCal[0].header[key] = newhdr[key]
+        hdulistCal[0].header.comments[key] = newhdr.comments[key]
+
+    # Now merge the hdus
+    all_hdus = fits.HDUList([hdulistCal[0], hduex])
+    # Actually write fits file
+    #fileBase = os.path.splitext(os.path.basename(curImg))[0]
+    #outFits = os.path.join(outputDir, fileBase+'_wcs.fits')        
+    all_hdus.writeto(curImg, checksum=True, overwrite=True)
+
+    # Show where the prfs were deemed not good
+    if DEBUG_LEVEL>2:
+        plt.plot(newCols, newRows, '.')
+        idx = np.where(gdPrfs == 0)[0]
+        plt.plot(newCols[idx], newRows[idx], '.')
+        idx = np.where(gdPrfs == -1)[0]
+        plt.plot(newCols[idx], newRows[idx], '.k')
+        idx = np.where(gdPrfs == -2)[0]
+        plt.plot(newCols[idx], newRows[idx], '.r')
+        plt.show()
+    # save diagnostic fit quality for image
+    return [allStd, brightStd, faintStd,
+            allStdPix, brightStdPix, faintStdPix,
+            hdulistCal[dataKey].header[timeKey], 
+            exResids[0], exResids[1],exResids[2],exResids[3],
+            gdFracs ]
+
+
 
 def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, 
                       IMG_LIST_STR, outputDir, fitDegree=5, 
@@ -809,15 +1243,6 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                       DEBUG_LEVEL=0,
                       n_cores=1):
     
-    # ***These following parameters must match what was used in 
-    #  step1 to generate the reference image control points
-    # If you change these then you will want to rerun step1 
-    #  to keep things consistent
-    pixScl = 21.0 # arcsec
-    colMin = 45
-    colMax = 2092
-    rowMin = 1
-    rowMax = 2048
     # We want control point grid over pixels to get an even
     # distribution of stars for determining wcs
     #  These control how many regions in each dimension to find stars
@@ -828,7 +1253,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
     blkHlfCent = 2 # The analysis region for background estimate, gdPRF check, initial
                     # position offets use blkHlf. However, final centroid is calcualted
                     # with a small blkHlfCent region
-    FIGOUTEVERY = 300 # Write out fit residual figures for every
+    FIGOUTEVERY = 500 # Write out fit residual figures for every
                         # FIGOUTEVERY image
     
     # Load the reference position information
@@ -935,411 +1360,62 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
     #exStd2s = np.zeros_like(allStds)
     #exStd3s = np.zeros_like(allStds)
     
-    # get timestamp header keyword
-    #  and determine whether this is QLP/TICA or SPOC data
-    gotTimeStamp = False
-    iImg = 0
-    # Main loop over images 
-    #yucky, but memery efficient to 
-    #pass the data common to each image
-    # over the head of this function
-    def worker( curImg )
-       #unpack intuple
-       #curImg = intuple[0]
-       ###obscols
-       ###obsrow
-       ###colCtrl2D_flat
-       ###blkidxs
-       ###fixApertures
-       ###midcols
-       ###midrows
-       ###blkHlf
-       ###blkHlfCent
-       ###fitDegree
-       ###ras
-       ###decs
-       ###tics
-       ###tmags
-       ###SECTOR_WANT
-       ###CAMERA_WANT
-       ###CCD_WANT                                    
-       ###CTRL_PER_COL
-       ###useNoClipping
-       ###DEBUG_LEVEL
-       ###FIGOUTEVERY
-       ###wingFAC
-       ###contrastFAC
-    
-    
-       #do the calcs
-       hdulistCal = fits.open(curImg)
-       if not gotTimeStamp:
-           try:
-               # QLP/TICA has MIDTJD
-               timeVal = hdulistCal[0].header['MIDTJD']
-               timeKey = 'MIDTJD'
-               dataKey = 0
-           except:
-               # SPOC has TSTART
-               timeKey = 'TSTART'
-               dataKey = 1
-           gotTimeStamp = True
-       if 'cal' in curImg:
-           dataKey = 0
-       if len(hdulistCal) == 2:
-           logging.info('skipping {},  already has WCS'.format(curImg))
-    
-           allStds       = hdulistCal[0].header['RMSA']
-           brightStds    = hdulistCal[0].header['RMSB']
-           
-           allPixStds    = hdulistCal[0].header['RMSAP']
-           brightPixStds = hdulistCal[0].header['RMSBP']
-           #did not have these keywords before tica 1.1.0
-           try:
-               faintStds     = hdulistCal[0].header['RMSF']
-           except KeyError:
-               faintStds = 0
-           try:
-               faintPixStds  = hdulistCal[0].header['RMSBF']
-           except KeyError:
-               faintStds = 0
-    
-           ts = hdulistCal[dataKey].header[timeKey]
-           exStd0s = hdulistCal[0].header['RMSX0']
-           exStd1s = hdulistCal[0].header['RMSX1']
-           exStd2s = hdulistCal[0].header['RMSX2']
-           exStd3s = hdulistCal[0].header['RMSX3']
-           gdFracs = hdulistCal[0].header['WCSGDF']
-    
-           return allStd, brightStd,FaintStd,\
-               allStdPix, brightStdPix, faiantStdPix,\
-               hdulistCal[dataKey].header[timeKey], \
-               exResids[0], exResids[1],exResids[2],exResids[3]
-    
-    
-       #imgNames = np.append(imgNames, os.path.basename(curImg))
-       # Always initialize to the reference image coordinates
-       lstGdCols = np.copy(obscols)
-       lstGdRows = np.copy(obsrows)
-    
-       newCols = np.zeros_like(obscols)
-       newRows = np.zeros_like(obscols)
-       newFluxes = np.zeros_like(obscols)
-       newBkgs   = np.zeros_like(obscols)
-       gdPrfs = np.zeros_like(obscols, dtype=np.int64)
-       # these will be used to keep track of average subregion dc offsets
-       nDC = 0
-       dccolsum = 0.0
-       dcrowsum = 0.0
-       # Loop over subregions
-       # keep track of regions that cannot find any valid stars
-       isGdRegion = np.zeros((len(colCtrl2D_flat),), dtype=bool)
-       for ii, curCol in enumerate(colCtrl2D_flat):
-           # Get the reference data corresonding with this subregion
-           ia = np.where(blkidxs == ii)[0]
-           curLstGdCols = lstGdCols[ia]
-           curLstGdRows = lstGdRows[ia]
-           curMidCols = midcols[ia]
-           curMidRows = midrows[ia]
-           curGdPrfs = np.zeros_like(curLstGdRows, dtype=np.int32)
-           curNewCols = np.zeros_like(curLstGdRows)
-           curNewRows = np.zeros_like(curLstGdRows)
-           curNewFluxes   = np.zeros_like(curLstGdRows)
-           curNewBkgs     = np.zeros_like(curLstGdRows)
-           # In this subregion first get the brightest stars
-           #  to determine an initial dc offset in col and row
-           #  The targets were sorted by Tmag at the begining
-           #  so no need to do it here
-           nTry = 5
-           gotN = 0
-           jj = 0
-           delCols = np.array([], dtype=np.double)
-           delRows = np.array([], dtype=np.double)
-           while (gotN <= nTry and jj<len(curLstGdCols)):
-               midCol = int(round(curLstGdCols[jj]))
-               midRow = int(round(curLstGdRows[jj]))
-               if fixApertures:
-                   midCol = curMidCols[jj]
-                   midRow = curMidRows[jj]
-               colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
-               rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
-    #           print(midRow-blkHlf-1,  midRow+blkHlf, midCol-blkHlf-1, midCol+blkHlf)
-    #           print(dataKey, len(hdulistCal))
-    #           print('type',type(hdulistCal[dataKey].data))
-    #           print('shape',np.shape(hdulistCal[dataKey].data))
-               sciImgCal = hdulistCal[dataKey].data[midRow-blkHlf-1: midRow+blkHlf,
-                                                    midCol-blkHlf-1: midCol+blkHlf]
-               # Check if target is isolated
-               try:
-                   gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
-                                                                wingFAC = wingFAC,
-                                                                contrastFAC = contrastFAC)
-               except ValueError:
-                   break
-                   
-               if gdPRF:
-                   # Determine background from 2 pixel ring around box
-                   bkgLev = ring_background(sciImgCal)
-                   #centOut = cent.centroid_com(sciImgCal-bkgLev)
-                   centOut = flux_weighted_centroid(sciImgCal-bkgLev)
-                   # centroid_com produces 0-based coordinates
-                   newCol = centOut[0]+colX[0]
-                   newRow = centOut[1]+rowY[0]
-                   delCols = np.append(delCols, newCol - curLstGdCols[jj])
-                   delRows = np.append(delRows, newRow - curLstGdRows[jj])
-                   gotN = gotN + 1
-               jj = jj+1
-           if (gotN < nTry):
-               if DEBUG_LEVEL>0:
-                   logging.debug('Too few targets for initial pixel position correction on Block {0:d}'.format(ii))
-               delCols = np.array([0.0, 0.0])
-               delRows = np.array([0.0, 0.0])
-           else:
-               isGdRegion[ii] = True
-           corCol = np.median(delCols)
-           corRow = np.median(delRows)
-           if isGdRegion[ii]:
-               nDC = nDC + 1
-               dccolsum = dccolsum + corCol
-               dcrowsum = dcrowsum + corRow
-           if DEBUG_LEVEL>0:
-               logging.debug('Predicted Position Tweaks Col: {0:f} Row: {1:f} Blk: {2:d}'.format(corCol, corRow, ii))
-           outColPix = curLstGdCols + corCol
-           outRowPix = curLstGdRows + corRow
-    
-           # Now we are ready to get all target flux weighted centroids on this subimage
-           for jj, curCol in enumerate(outColPix):
-               if isGdRegion[ii]: # if region found offsets measure and update if good
-                   # this is predicted coordinates
-                   midCol = int(round(curCol))
-                   midRow = int(round(outRowPix[jj]))
-                   if midCol-blkHlf >= colMin and midCol+blkHlf <= colMax and midRow-blkHlf >= rowMin and midRow+blkHlf <= rowMax:
-                       colX = np.arange(midCol-blkHlf, midCol+blkHlf+1)
-                       rowY = np.arange(midRow-blkHlf, midRow+blkHlf+1)
-                       sciImgCal = hdulistCal[dataKey].data[midRow-blkHlf-1: midRow+blkHlf, midCol-blkHlf-1: midCol+blkHlf]
-                       gdPRF, contrastCol, contrastRow = gdPRF_calc(sciImgCal, blkHlf,
-                                                                    wingFAC = wingFAC,
-                                                                    contrastFAC = contrastFAC)
-                   else:
-                       gdPRF = False
-               else: # if region did not find any offsets dont measure and done update
-                   gdPRF = False
-    
-               if gdPRF:
-                   # Determine background from 2 pixel ring around box
-                   bkgLev = ring_background(sciImgCal)
-                   # Use small blkHlfCent region for final centroid calc
-                   colX = np.arange(midCol-blkHlfCent, midCol+blkHlfCent+1)
-                   rowY = np.arange(midRow-blkHlfCent, midRow+blkHlfCent+1)
-                   # analysis region around target
-                   sciImgCal = hdulistCal[0].data[midRow-blkHlfCent-1: midRow+blkHlfCent, midCol-blkHlfCent-1: midCol+blkHlfCent]
-                   #centOut = cent.centroid_com(sciImgCal-bkgLev)
-                   centOut = flux_weighted_centroid(sciImgCal-bkgLev)
-    
-    
-                   # Once in blue moon centroids go nutsy check for it
-                   idx = np.where((centOut[0:2]<-1.0) | (centOut[0:2]>blkHlfCent*2+2))[0]
-                   if len(idx) == 0:
-                       # centroid_com produces 0-based coordinates
-                       newCol = centOut[0]+colX[0]
-                       newRow = centOut[1]+rowY[0]
-                       curGdPrfs[jj] = 1
-                       curNewCols[jj] = newCol
-                       curNewRows[jj] = newRow
-                       curNewFluxes[jj] = centOut[2]
-                       curNewBkgs[jj] = bkgLev
-                   else:
-                       curNewCols[jj] = outColPix[jj]
-                       curNewRows[jj] = outRowPix[jj]
-    
-                       #since we are using reference image positions plus tweaks,
-                       #not-applicable --> NaN is most appropriate
-                       curNewFluxes[jj] = np.nan
-                       curNewBkgs[jj]   = np.nan
-               else:
-                   #  Insert last ref position  with the dc offsets
-                   curNewCols[jj] = outColPix[jj]
-                   curNewRows[jj] = outRowPix[jj]
-                   if not isGdRegion[ii]:
-                       curGdPrfs[jj] = -2
-                       
-                   #since we are using reference image positions plus tweaks,
-                   #not-applicable --> NaN is most appropriate
-                   curNewFluxes[jj] = np.nan
-                   curNewBkgs[jj]   = np.nan
-                   
-           # Done getting flux weight for this sub block record them in overall list
-           newCols[ia] = curNewCols
-           newRows[ia] = curNewRows
-           newFluxes[ia] = curNewFluxes
-           newBkgs[ia]   = curNewBkgs
-           gdPrfs[ia] = curGdPrfs
-       # Done with all the blocks for this image
-       # Get the overall good prf fraction
-       nGd = len(np.where(gdPrfs==1)[0])
-       gdFracs[iImg] = float(nGd)/float(len(gdPrfs))
-       #if DEBUG_LEVEL>0:
-       logging.info('Image {} GdFrac:{:0.3f}'.format(curImg, gdFracs[iImg]))
-       #  Now we determine wcss
-       # We need to reject bad prfs from wcs fit
-       idxgd = np.where(gdPrfs == 1)[0]
-       # In subregion with no good prfs we need to add in a couple 
-       #  targets with reference coords just to keep fit  somewhat behaved
-       # first determine average dc offset
-       if nDC > 0:
-           dccol = dccolsum/float(nDC)
-           dcrow = dcrowsum/float(nDC)
-       else:
-           dccol = 0.0
-           dcrow = 0.0
-       idx_badregion = np.where(isGdRegion == 0)[0]
-       for curibad in idx_badregion:
-           idx = np.where(blkidxs == curibad)[0]
-           # pick three random ones in this subregion
-           np.random.seed(1010101)
-           idxUse = np.random.choice(idx, (3,), replace=False)
-           gdPrfs[idxUse] = -1 # record these random added for plotting and diagnostics
-           idxgd = np.append(idxgd, idxUse)
-           # These targets never had dc offset added from subregion
-           #  so add the average dc offset over all subregions
-           newCols[idxUse] = newCols[idxUse] + dccol
-           newRows[idxUse] = newRows[idxUse] + dcrow
-    
-       # If all subregions are bad then drop down to lower fit degree
-       useFitDegree = fitDegree
-       useNoClipping = False
-       if np.sum(isGdRegion) == 0:
-           useFitDegree = np.min([4, fitDegree])
-           useNoClipping = True
-           logging.info('All regions bad, using {0:d} fit degree'.format(useFitDegree))
-    
-       # Write out FIGOUTEVERY image
-       FIGOUTPREFIX = None
-       if saveDiag == True:
-           if np.mod(iImg, FIGOUTEVERY) == 0:
-               fileBase = os.path.splitext(os.path.basename(curImg))[0]
-               FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
-    
-       newhdr, allStd, brightStd,\
-           faintStd, allStdPix, \
-           brightStdPix, faintStdPix, \
-           gdResids, exResids = fit_wcs(ras[idxgd], 
-                                        decs[idxgd], 
-                                        newCols[idxgd], newRows[idxgd], 
-                                        tmags[idxgd], 
-                                        SECTOR_WANT, CAMERA_WANT, CCD_WANT,
-                                        blkidxs[idxgd], CTRL_PER_COL,
-                                        useFitDegree, useNoClipping, DEBUG_LEVEL,
-                                        #turned off figures for individual FFIs
-                                        )#FIGOUTPREFIX)
-       # Add the outliers to gdPrfs
-       idx = np.where(np.logical_not(gdResids))[0]
-       gdPrfs[idxgd[idx]] = -1
-    
-       #have to fix this by hand for TSO FFIs
-       hdulistCal[0].header['EXPTIME'] = 475.2
-       #added by Scott Flemmings request for MAST archive
-       hdulistCal[0].header['EQUINOX'] = 2000.0
-       hdulistCal[0].header['INSTRUME'] = "TESS Photometer"
-       hdulistCal[0].header['TELESCOP'] = "TESS"
-       hdulistCal[0].header['FILTER'] = "TESS" 
-    
-       try:
-           hdulistCal[0].header['MJD-BEG'] = hdulistCal[0].header['STARTTJD'] +\
-                                             hdulistCal[0].header['TJD_ZERO'] - 2400000.5
-           hdulistCal[0].header['MJD-END'] = hdulistCal[0].header['ENDTJD'] +\
-                                             hdulistCal[0].header['TJD_ZERO'] - 2400000.5
-       except:
-           #for spoc origin???
-           hdulistCal[0].header['MJD-BEG'] = hdulistCal[0].header['TSTART'] +\
-                                             hdulistCal[0].header['BJDREFI'] - 2400000.5
-           hdulistCal[0].header['MJD-END'] = hdulistCal[0].header['TSTOP'] +\
-                                             hdulistCal[0].header['BJDREFI'] - 2400000.5
-       
-           #        print(  (hdulistCal[0].header['MJD-BEG'] - hdulistCal[0].header['MJD-END']) , 600.0/86400 )
-       try:
-           assert (hdulistCal[0].header['MJD-END'] - hdulistCal[0].header['MJD-BEG']  -  600.0/86400 ) < 1.e-10
-       except KeyError:
-           #no key in SPOC, just continue for now
-           pass
-    
-       # Save header and control point data to fits file
-       #  separate file for now.  Not touching input data
-       # Add the wcsfit diagnostics to header
-       try:
-           hdulistCal[0].header.extend( add_btjd_info(hdulistCal[0].header['MIDTJD'], 
-                                                      newhdr['CRVAL1'], 
-                                                      newhdr['CRVAL2'],
-                                                      ephemeris_data)  )
-       except KeyError:
-           #no key in SPOC, just continue for now
-           pass
-    
-       #added by Scott Flemmings request for MAST archive
-       newhdr['RA_TARG']   = newhdr['CRVAL1']
-       newhdr['DEC_TARG'] = newhdr['CRVAL2']
-    
-    
-       newhdr['RMSA'] = (allStd, 'WCS fit resid all targs [arcsec]')
-       newhdr['RMSB'] = (brightStd, 'WCS fit resid bright (Tmag<10) targs [arcsec]')
-       newhdr['RMSF'] = (faintStd, 'WCS fit resid faint (Tmag>10) targs [arcsec]')
-       newhdr['RMSAP'] = (allStdPix, 'WCS fit resid all targs [pixel]')
-       newhdr['RMSBP'] = (brightStdPix, 'WCS fit resid bright (Tmag<10) targs [pixel]')
-       newhdr['RMSBF'] = (faintStdPix, 'WCS fit resid faint (Tmag>10) targs [pixel]')
-       newhdr['RMSX0'] = (exResids[0], 'WCS fit resid extra 0 [arcsec]')
-       newhdr['RMSX1'] = (exResids[1], 'WCS fit resid extra 1 [arcsec]')
-       newhdr['RMSX2'] = (exResids[2], 'WCS fit resid extra 2 [arcsec]')
-       newhdr['RMSX3'] = (exResids[3], 'WCS fit resid extra 3 [arcsec]')
-       # Skip this header element in production 
-       #newhdr['TIME'] = (ts[iImg], 'Time From Original Image Header')
-       newhdr['WCSGDF' ] = (gdFracs[iImg], 'Fraction of control point targs valid')
-       newhdr['CTRPCOL'] = (CTRL_PER_COL, 'Subregion analysis blocks over columns')
-       newhdr['CTRPROW'] = (CTRL_PER_ROW, 'Subregion analysis blocks over rows')
-       newhdr['FLXWIN'] = (blkHlfCent*2+1, 'Width in pixels of Flux-weight centroid region')
-       # Make the fits table columns
-       c1 = fits.Column(name='TIC', format='K', array=tics)
-       c2 = fits.Column(name='FLXCOL', format='E', unit='pix', array=newCols)
-       c3 = fits.Column(name='FLXROW', format='E', unit='pix', array=newRows)
-    
-       c4 = fits.Column(name='FLX', format='E', unit='counts', array=newFluxes)
-       c5 = fits.Column(name='BKG', format='E', unit='counts', array=newBkgs)
-    
-       c6 = fits.Column(name='FLXVALID', format='I', array=gdPrfs)
-    
-       # Make the extension table 
-       hduex = fits.BinTableHDU.from_columns([c1, c2, c3, c4, c5, c6],
-                                             name='WCS_Stars')
-       #append wcs parameter to primary header            
-       hdulistCal[0].header.extend(newhdr, update=True)
-       # Now merge the hdus
-       all_hdus = fits.HDUList([hdulistCal[0], hduex])
-       # Actually write fits file
-       #fileBase = os.path.splitext(os.path.basename(curImg))[0]
-       #outFits = os.path.join(outputDir, fileBase+'_wcs.fits')        
-       all_hdus.writeto(curImg, checksum=True, overwrite=True)
-    
-       # Show where the prfs were deemed not good
-       if DEBUG_LEVEL>2:
-           plt.plot(newCols, newRows, '.')
-           idx = np.where(gdPrfs == 0)[0]
-           plt.plot(newCols[idx], newRows[idx], '.')
-           idx = np.where(gdPrfs == -1)[0]
-           plt.plot(newCols[idx], newRows[idx], '.k')
-           idx = np.where(gdPrfs == -2)[0]
-           plt.plot(newCols[idx], newRows[idx], '.r')
-           plt.show()
-    
-        # save diagnostic fit quality for image
-        return allStd, brightStd,FaintStd,\
-            allStdPix, brightStdPix, faiantStdPix,\
-            hdulistCal[dataKey].header[timeKey], \
-            exResids[0], exResids[1],exResids[2],exResids[3]
 
 
-    with Pool(n_cores) as p:
-        result = p.imap( worker, inputImgList)
-    print(result)
-    print(np.shape(result))
+    result = []
+    print(DEBUG_LEVEL)
+    if n_cores > 1:
+        p = Pool(n_cores)
+        collect_results = lambda x: result.append(x)
+
+        for ii,Img in enumerate(inputImgList):
+            if np.mod(ii, FIGOUTEVERY) == 0:
+                PLOT_FIG = True
+            else:
+                PLOT_FIG = False
+            result.append( p.apply( worker, ((Img, 
+                                              obscols,obsrows,
+                                              colCtrl2D_flat,
+                                              blkidxs,
+                                              fixApertures,
+                                              midcols,midrows,
+                                              blkHlf, blkHlfCent,
+                                              fitDegree,
+                                              ras,decs,tics,tmags,
+                                              SECTOR_WANT,
+                                              CAMERA_WANT, CCD_WANT, 
+                                              CTRL_PER_COL,CTRL_PER_ROW,
+                                              DEBUG_LEVEL, PLOT_FIG,
+                                              wingFAC, contrastFAC,), ))
+                       )
+        p.close()
+        p.join()
+            #with Pool(n_cores) as p:
+            #    result = p.map( worker, inputImgList,)
+
+    else:
+        for ii,Img in enumerate(inputImgList):
+            if np.mod(ii, FIGOUTEVERY) == 0:
+                PLOT_FIG = True
+            else:
+                PLOT_FIG = False
+            result.append(worker( (Img,
+                                   obscols,obsrows,
+                                   colCtrl2D_flat,
+                                   blkidxs,
+                                   fixApertures,
+                                   midcols,midrows,
+                                   blkHlf, blkHlfCent,
+                                   fitDegree,
+                                   ras,decs,tics,tmags,
+                                   SECTOR_WANT,
+                                   CAMERA_WANT, CCD_WANT, 
+                                   CTRL_PER_COL,CTRL_PER_ROW,
+                                   DEBUG_LEVEL, PLOT_FIG,
+                                   wingFAC, contrastFAC))
+                      )
+
+    result = np.array(result)
     # save diagnostic fit quality for image
     allStds       = result[:,0]
     brightStds    = result[:,1]
@@ -1352,11 +1428,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
     exStd1s = result[:,8]
     exStd2s = result[:,9]
     exStd3s = result[:,10]
-
-
-    iImg = iImg +1
-
-        
+    gdFracs = result[:,11]
 
 
     # Finished all images make some diagnostic figures
@@ -1458,9 +1530,10 @@ if __name__ == '__main__':
                         "shifts occur.")
     parser.add_argument("-dbg", "--debug", type=int, \
                         help="Debug level; integer higher has more output")
-
+    parser.add_argument("--parallel", type=int, default=1,
+                        help="run files in parallel on number of processors specified here")
     parser.add_argument("-l", "--log", metavar="LOG_FILE",
-                        help="save logging output to thiss file")
+                        help="save logging output to this file")
     args = parser.parse_args()
 
 # DEBUG BLOCK for hard coding input parameters and testing
@@ -1534,10 +1607,11 @@ if __name__ == '__main__':
             logging.info('     {} = {}'.format(key, vars(args)[key]) )
     starttime = time()
     
-    fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, \
-                    IMG_LIST_STR, outputDir, fitDegree, 
+    fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA, 
+                      IMG_LIST_STR, outputDir, fitDegree, 
                       fixApertures,
-                      saveDiag, DEBUG_LEVEL)
+                      saveDiag, DEBUG_LEVEL,
+                      n_cores= args.parallel)
         
     runtime = time() - starttime
     logging.info("Runtime: {0:.2f}sec".format(runtime) )

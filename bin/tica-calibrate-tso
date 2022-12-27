@@ -12,6 +12,7 @@
 
 o1=''
 o2=''
+orbseg=''
 #directory where data are; assume that subdirs are
 #orbit-${o1}/ffi_fits and same for o2
 dstem=''
@@ -20,7 +21,7 @@ CALDIR=''
 NCORES=''
 
 USAGE="
-  Usage: tica-calibrate-tso o1=<orbit1> o2=<orbit2> dstem=<data_dir_path> CALDIR=<calibration_dir_path> NCORES=<int>
+  Usage: tica-calibrate-tso o1=<orbit1> o2=<orbit2> orbseg=<str> dstem=<data_dir_path> CALDIR=<calibration_dir_path> NCORES=<int>
 
    This script sets up directories and runs tica-cal-ffi2ccds.
      tica-cal-ffi2ccds is a python script that reads TESS Science
@@ -39,6 +40,10 @@ USAGE="
      orbit 1 or orbit 2.  In general, orbits should be paired to match
      a single sector (i.e., o1=101 o2=102), though this is not
      required.
+
+   orbseg=<str> sets the ORB_SEG keyword in the outputfiles, either
+     o1a, o1b, o2a, o2b.  Not used if processing multiple segments or
+     orbits.
 
    <data_dir_path> is the directory in which the POC keeps the orbit
      directories.  This script assumes that the raw ffis in FITS format
@@ -66,15 +71,25 @@ while [ $# -gt 0 ] ; do
 done
 
 #check that all variables are set
-[[ $o1 == '' ]] && { echo "$USAGE" ; echo "set orbit 1 to an integer (or 'None'): o1=<\d\d>" ; exit ; }
-[[ $o2 == '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
+[[ "$o1" == '' ]] && { echo "$USAGE" ; echo "set orbit 1 to an integer (or 'None'): o1=<\d\d>" ; exit ; }
+[[ "$o2" == '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
 [[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
-[[ $CALDIR == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit ; }
-#[[ $NCORES == '' ]] && { echo "$USAGE" ; echo "number of cores to use in parallel processing" ; exit ; }
+[[ "$CALDIR" == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit ; }
+#[[ "$NCORES" == '' ]] && { echo "$USAGE" ; echo "number of cores to use in parallel processing" ; exit ; }
 
-[[ $NCORES == '' ]] && let NCORES=1
+[[ "$NCORES" == '' ]] && let NCORES=1
 #[ -z $verbose ] || v=yes
 
+[[ "$orbseg" == '' ]] && { echo "orbseg is not set, running both ffi_fits-haho and ffi_fits and will not write keyword ORB_SEG in output files". ;}
+
+[[ "$o1" != "None" ]] && [[ $o2 != "None" ]] && { echo "Configuration Error.  Both orbits are set, cannot use orbseg.  Processes individual orbits if you need this keyword set."; exit ;}
+
+#exit if orbseg does not match expected orbit
+[[ "$orbseg" =~ 'o1'  ]] && [[ $o1 == 'None' ]] && { echo "Configuration Error. o1 is None but orbseg is set to $orbseg."; exit ;}
+[[ "$orbseg" =~ 'o2'  ]] && [[ $o2 == 'None' ]] && { echo "Configuration Error. o2 is None but orbseg is set to $orbseg."; exit ;}
+
+[[ "$orbseg" =~ 'o1'  ]] && [[ $o2 != 'None' ]] && { echo "Configuration Error. o1 is set, but orbseg requested something from orbit 1. orbseg must match the orbit that is set."; exit ;}
+[[ "$orbseg" =~ 'o2'  ]] && [[ $o1 != 'None' ]] && { echo "Configuration Error. o1 is set, but orbseg requested something from orbit 2.  orbseg must match the orbit that is set."; exit ;}
 
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
@@ -82,6 +97,7 @@ for i in 1 2 3 4; do
     done
 done
 mkdir tica_logs
+
 
 #make inlist for tica, 
 for i in 1 2 3 4; do
@@ -92,44 +108,124 @@ for i in 1 2 3 4; do
     fi
 
     if [ $o1 != "None" ]; then
-	ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  >> inlist
+	if [ "$orbseg" == '' ]; then
+	    if [ -d ${dstem}//orbit-{$o1}/ffi_fits-haho ]; then
+		ls ${dstem}//orbit-${o1}/ffi_fits-haho/tess*-${i}-crm-ffi.fits*  >> inlist
+	    fi
+	    ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  >> inlist
+	else
+	    #this code may be useful later---it finds the stamps used
+	    #for processign HAHOs and LAHOs; need ot adapt for ffi_fits-haho and ffi_fits
+
+	    ##check orbit segments
+	    #stamps=$(ls ${dstem}//orbit-${o1}/ffi_fits/tess*-${i}-crm-ffi.fits*  |\
+            #   awk -F- '{print $3}' | sort | uniq | awk -Ftess '{print $2}')
+	    #Nstamps=$(echo $stamps | wc | awk '{print $2}')
+	    #
+	    ##weird exception where awk will not do the right thing
+	    ##if there is only one item in $stamps, needed for o1a
+	    #if [ "$Nstamps" == 1 ]; then
+	    #	stamp_first=$stamps;
+	    #else
+	    #	stamp_first=$(echo  $stamps  | awk '{print $1}')
+	    #fi
+	    #stamp_second=$(echo $stamps  | awk '{print $2}')	    
+	    #
+	    #
+	    #[[ "$orbseg" =~ 'a' ]] && { stampuse=$stamp_first ; }
+	    #[[ "$orbseg" =~ 'b' ]] && { stampuse=$stamp_second ; }
+	    #if [ "$stampuse" == '' ]; then 
+	    #	echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o1/ffi_fits."
+	    #	exit
+	    #fi
+
+	    [[ "$orbseg" =~ 'a' ]] && { subdir="ffi_fits-haho"; }
+	    [[ "$orbseg" =~ 'b' ]] && { subdir="ffi_fits"; }
+	    if [ "$subdir" == '' ]; then 
+		echo "Error.  Requested $orbseg but could not find a valid subdirectory (ffi_fits-haho or ffi_fits)."
+		exit
+	    fi
+
+
+            ls ${dstem}//orbit-${o1}/${subdir}/tess${stampuse}*-${i}-crm-ffi.fits*  >> inlist
+	    
+	fi
     fi
 
     if [ $o2 != "None" ]; then
-	ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
+	if [ "$orbseg" == '' ]; then
+	    if [ -d ${dstem}//orbit-{$o2}/ffi_fits-haho ]; then
+		ls ${dstem}//orbit-${o2}/ffi_fits-haho/tess*-${i}-crm-ffi.fits*  >> inlist
+	    fi
+	    ls ${dstem}/orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*   >> inlist
+	else
+	    #check orbit segments
+            #stamps=$(ls ${dstem}//orbit-${o2}/ffi_fits/tess*-${i}-crm-ffi.fits*  |\
+            #   awk -F- '{print $3}' | sort | uniq | awk -Ftess '{print $2}')
+	    #Nstamps=$(echo $stamps | wc | awk '{print $2}')
+	    #
+	    ##weird exception where awk will not do the right thing
+	    ##if there is only one item in $stamps, needed for o1a
+	    #if [ "$Nstamps" == 1 ]; then
+	    #	stamp_first=$stamps;
+	    #else
+	    #	stamp_first=$(echo  $stamps  | awk '{print $1}')
+	    #fi
+	    #stamp_second=$(echo $stamps  | awk '{print $2}')	    
+	    #
+	    #[[ "$orbseg" =~ 'a' ]] && { stampuse=$stamp_first ; }
+	    ##[[ "$orbseg" =~ 'b' ]] && { stampuse=$stamp_second ; }
+	    #if [ "$stampuse" == '' ] ; then 
+	    #	echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o2/ffi_fits." 
+	    #	exit
+	    #fi
+	    [[ "$orbseg" =~ 'a' ]] && { subdir="ffi_fits-haho"; }
+	    [[ "$orbseg" =~ 'b' ]] && { subdir="ffi_fits"; }
+	    if [ "$subdir" == '' ]; then 
+		echo "Error.  Requested $orbseg but could not find a valid subdirectory (ffi_fits-haho or ffi_fits)."
+		exit
+	    fi
+
+
+            ls ${dstem}//orbit-${o2}/${subdir}/tess${stampuse}*-${i}-crm-ffi.fits*  >> inlist
+	
+	fi
     fi
 
     cd ..
 done
 
 # define log file
-if [ $o1 != "None" ] && [ $o2 == "None" ] ; then
-    logfile='../tica_logs/o1_tica.log'
-elif  [ $o1 == "None" ] && [ $o2 != "None" ] ; then
-    logfile='../tica_logs/o2_tica.log'
-elif  [ $o1 != "None" ] && [ $o2 != "None" ] ; then
-    logfile='../tica_logs/o1_o2_tica.log'
+if [ "$orbseg" == '' ]; then
+    if [ $o1 != "None" ]; then
+	if [ $o2 != "None" ]; then
+	    logfile="../tica_logs/o1o2_tica.log"
+	else
+	    logfile="../tica_logs/o1_tica.log"
+	fi
+    else
+	logfile="../tica_logs/o2_tica.log"
+    fi
 else
-    echo "no logfile set"
-    exit
+    logfile="../tica_logs/""$orbseg""_tica.log"
 fi
 
 #run tica
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
-    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile
+
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile --orb_seg "$orbseg" --no_gzip
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done
     cd ..
 done
 
-for i in 1 2 3 4; do
-   for j in 1 2 3 4; do
-       cd "cam$i""_ccd$j"
-       gunzip *gz &
-       cd ..
-   done
-done
-wait
-
+#for i in 1 2 3 4; do
+#   for j in 1 2 3 4; do
+#       cd "cam$i""_ccd$j"
+#       gunzip *gz &
+#       cd ..
+#   done
+#done
+#wait
