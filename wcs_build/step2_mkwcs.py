@@ -841,7 +841,7 @@ def worker( intuple):
     PLOT_FIG         = intuple[21]
     wingFAC          = intuple[22]
     contrastFAC      = intuple[23]     
- 
+    outputDir        = intuple[24]
  
     #do the calcs
     hdulistCal = fits.open(curImg)
@@ -1088,10 +1088,9 @@ def worker( intuple):
  
     # Write out FIGOUTEVERY image
     FIGOUTPREFIX = None
-    if saveDiag == True:
-        if PLOT_FIG:
-            fileBase = os.path.splitext(os.path.basename(curImg))[0]
-            FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
+    if PLOT_FIG:
+        fileBase = os.path.splitext(os.path.basename(curImg))[0]
+        FIGOUTPREFIX= os.path.join(outputDir, 'wcs_diags2', fileBase)
  
     newhdr, allStd, brightStd,\
         faintStd, allStdPix, \
@@ -1363,7 +1362,6 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
 
 
     result = []
-    print(DEBUG_LEVEL)
     if n_cores > 1:
         p = Pool(n_cores)
         collect_results = lambda x: result.append(x)
@@ -1386,7 +1384,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                                               CAMERA_WANT, CCD_WANT, 
                                               CTRL_PER_COL,CTRL_PER_ROW,
                                               DEBUG_LEVEL, PLOT_FIG,
-                                              wingFAC, contrastFAC,), ))
+                                              wingFAC, contrastFAC,
+                                              outputDir), ))
                        )
         p.close()
         p.join()
@@ -1412,7 +1411,8 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                                    CAMERA_WANT, CCD_WANT, 
                                    CTRL_PER_COL,CTRL_PER_ROW,
                                    DEBUG_LEVEL, PLOT_FIG,
-                                   wingFAC, contrastFAC))
+                                   wingFAC, contrastFAC,
+                                   outputDir))
                       )
 
     result = np.array(result)
@@ -1508,15 +1508,9 @@ if __name__ == '__main__':
     parser.add_argument("-rd", "--refdata", type=argparse.FileType('rb'), \
                         help="Reference image control point data created in step1")
     parser.add_argument("-if", "--imgfiles", nargs="*",
-                        help="This requires including wildcard * character in filename like"\
-                             " ls that would list the single camera/ccd image files."\
-                            " You MUST PUT QUOTES AROUND THIS argrument with wildcard"\
-                            " or else the shell expands the argument list to all images")
-    parser.add_argument("-od", "--outputdir",\
-                        help="Output directory for results.  NOTE: Currently"\
-                             " writes separate fits file with wcs in header"\
-                             " and target information in data.  It does not"\
-                             " touch the data files yet.")
+                        help="List of input files.")
+    parser.add_argument("-od", "--outputdir", default='./',
+                        help="Output directory for results.")
     parser.add_argument("-fd", "--fitdegree", type=int,\
                         help="Degree of wcs fit")
     parser.add_argument("--savediaginfo", action="store_true",\

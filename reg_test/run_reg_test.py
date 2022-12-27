@@ -64,9 +64,10 @@ def run_wcs_fit(sector, cam, ccd, refdata, imglist):
     #print('in func!', sector, cam, ccd, refdata, imglist)
     fit_wcs_in_imgdir(sector, cam, ccd,
                       refdata, imglist,
-                      outdir, fitdeg,
-                      fixApertures,
-                      save, debug)
+                      outdir, fitDegree = fitdeg,
+                      fixApertures = fixApertures,
+                      saveDiag = save, 
+                      DEBUG_LEVEL=debug)
 
 def check_outputs(check_file_name, verbose=False):
     gold_f = fits.open(check_file_name)
@@ -244,6 +245,7 @@ if __name__ == "__main__":
         #ref_file = 'ref_stars_new/reftica_s35_{}-{}.h5'.format(cam,ccd)
         run_wcs_fit( 35, cam, ccd, ref_file, [os.path.basename( output_checks[ii] )] )
 
+        print('checking {}'.format(output_checks[ii]))
         warning_flag += check_outputs(output_checks[ii], verbose=args.verbose)
 
         os.remove(os.path.basename( output_checks[ii] ))
