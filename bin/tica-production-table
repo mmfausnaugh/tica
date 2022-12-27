@@ -435,6 +435,7 @@ if __name__ == "__main__":
                 outline_list.append('{:>35s}'.format(''))
                 outline_list.append('{:>35s}'.format(''))           
 
+            print(out3[idx]['runtime'])
             outline_list.append( '{:>35s}'.format(out3[idx]['runtime'][idx] ))
             outline_list.append( '{:>35d}'.format(1))
 

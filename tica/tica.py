@@ -526,6 +526,11 @@ class CCD(object):
         return np.asarray(ccd_out)
 
 
+    def get_image_mode(self):
+        pixels = np.ravel( self.get_image() )
+        values, bins = np.histogram( pixels, bins = 500 )
+        mode = values[ values == values.max() ][0]
+        return mode
 
 
 

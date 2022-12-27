@@ -30,8 +30,9 @@ from multiprocessing import Pool
 #there should be a ref_stars directory with the star lists, 16 files, one per CCD
 
 
+duse = sys.argv[1]
 #start by checking the directory structure, number of files
-topdirs = glob.glob('*')
+topdirs = glob.glob( os.path.join(duse, '*') )
 #dirs_to_check = ['o1-cam1-ccd1','o1-cam1-ccd2','o1-cam1-ccd3','o1-cam1-ccd4',
 #                 'o1-cam2-ccd1','o1-cam2-ccd2','o1-cam2-ccd3','o1-cam2-ccd4',
 #                 'o1-cam3-ccd1','o1-cam3-ccd2','o1-cam3-ccd3','o1-cam3-ccd4',
@@ -57,9 +58,9 @@ except AssertionError:
 
 for d in dirs_to_check:
     try:
-        assert d in topdirs
+        assert os.path.join(duse, d) in topdirs
     except AssertionError:
-        print('Directory {} not in expected CCD/ref_star directories'.format(d))
+        print('Directory {} not in expected CCD/ref_star directories'.format(os.path.join(duse, d)  ))
         sys.exit()
 
 #check the ref_stars files, and that no columns are none
@@ -69,7 +70,9 @@ filestems_to_check = ['cam1-ccd1','cam1-ccd2','cam1-ccd3','cam1-ccd4',
                       'cam4-ccd1','cam4-ccd2','cam4-ccd3','cam4-ccd4']
 
 #ref_files = glob.glob('ref_stars/*')
-ref_files = glob.glob('ref-stars/*')
+ref_files = glob.glob(os.path.join( duse, 
+                                    'ref-stars','*')
+                  )
 
 try:
     assert len(ref_files) == 16
@@ -187,7 +190,10 @@ def worker( in_tuple ):
     
 p = Pool(16)
 for d in dirs_to_check[0:-1]:
-    p.apply_async(worker, ( (d, N_cad_check_o1), ) )
+    p.apply_async(worker, ( ( os.path.join(duse, d) , 
+                              N_cad_check_o1), ) )
+    #worker( (os.path.join(duse,d), N_cad_check_o1) )
+
 p.close()
 p.join()
 
