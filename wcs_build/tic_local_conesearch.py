@@ -11,13 +11,17 @@ author:  Michael Fausnaugh
 """
 
 import numpy as np
+import os
 import sys
 import json
 import time
 
 import psycopg2
 
-from tic_postgres_param import  tic_host, tic_db, tic_user, tic_port
+DIR = os.path.abspath(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(DIR, '..'))
+
+from wcs_build.tic_postgres_param import  tic_host, tic_db, tic_user, tic_port
     
 
 def tic_local_conesearch(starRa, starDec, radius, minTmag, maxTmag):
@@ -25,7 +29,7 @@ def tic_local_conesearch(starRa, starDec, radius, minTmag, maxTmag):
     #depends on configuration of TIC and postgres on MIT servers
 
     con = psycopg2.connect(
-        "host='{} dbname='{}' user='{}' port='{}'".format(
+        "host='{}' dbname='{}' user='{}' port='{}'".format(
             tic_host, tic_db, tic_user, tic_port
         ))
 
@@ -37,84 +41,40 @@ def tic_local_conesearch(starRa, starDec, radius, minTmag, maxTmag):
 
     rad_ra = starRa*np.pi/180.
     rad_dec = starDec*np.pi/180.
-    querystr="selectid,ra,dec,tmag,kmag,gaiamag,pmra,pmdec,disposition"\
+    #radius is passed in as arcsec, but submit to postgres as radius
+    querystr="select id,ra,dec,tmag,kmag,gaiamag,pmra,pmdec,disposition"\
         " from ticentries where"\
-        "spoint(radians(ra),radians(dec)) @ scircle '< ({},{}), {} >'"\
-        "and tmag between {} and {}"\
-        "and pmra between -100.0 and 100.0"\
-        "and pmdec between -100.0 and 100.0".format(rad_ra, read_dec, 
-                                                    radius/3600.*np.pi/180.,
+        " spoint(radians(ra),radians(dec)) @ scircle '< ({},{}), {} >'"\
+        " and tmag between {} and {}"\
+        " and pmra between -100.0 and 100.0"\
+        " and pmdec between -100.0 and 100.0 ; ".format(rad_ra, rad_dec, 
+                                                    radius/3600*np.pi/180.,
                                                     minTmag, maxTmag)
 
     cur.execute(querystr)
-    
-
     output = cur.fetchall()
+    output = np.array(output)
 
-    print(output)
-    print(np.shape(output))
 
-    #while True:    
-    #    headers, outString = mastQuery(request)
-    #    try:
-    #        outObject = json.loads(outString)
-    #        if outObject['status'] != 'EXECUTING':
-    #            break
-    #    except:
-    #        print('Problem at MAST. Resting and trying again')
-    #        time.sleep(10)
-    #    if time.time() - startTime > 30:
-    #            print('Working...')
-    #            startTime = time.time()
-    #    time.sleep(5)
-    #
-    #try:
-    #    outObject2 = []
-    #    for x in outObject['data']:
-    #        if x['disposition'] == 'DUPLICATE' or x['disposition'] == 'SPLIT':
-    #            continue
-    #        else:
-    #            outObject2.append(x)
-    #    ticList = np.array([x['ID'] for x in outObject2], dtype=np.int64)
-    #    ticRas = np.array([x['ra'] for x in outObject2], dtype=np.float)
-    #    ticDecs = np.array([x['dec'] for x in outObject2], dtype=np.float)
-    #    ticTmags = np.array([x['Tmag'] for x in outObject2], dtype=np.float)
-    #    ticKmags = np.array([x['Kmag'] for x in outObject2], dtype=np.float)
-    #    ticGmags = np.array([x['GAIAmag'] for x in outObject2], dtype=np.float)
-    #    ticpmRA = np.array([x['pmRA'] for x in outObject2], dtype=np.float)
-    #    ticpmDec = np.array([x['pmDEC'] for x in outObject2], dtype=np.float)
-    #    
-    #except:
-    #    # Try rerunning search
-    #    while True:    
-    #        headers, outString = mastQuery(request)
-    #        try:
-    #            outObject = json.loads(outString)
-    #            if outObject['status'] != 'EXECUTING':
-    #                break
-    #        except:
-    #            print('Problem at MAST. Resting and trying again')
-    #            time.sleep(20)
-    #        if time.time() - startTime > 30:
-    #                print('Working...')
-    #                startTime = time.time()
-    #        time.sleep(5)
-    #        
-    #    try:
-    #        ticList = np.array([x['ID'] for x in outObject['data']], dtype=np.int64)
-    #        ticRas = np.array([x['ra'] for x in outObject['data']], dtype=np.float)
-    #        ticDecs = np.array([x['dec'] for x in outObject['data']], dtype=np.float)
-    #        ticTmags = np.array([x['Tmag'] for x in outObject['data']], dtype=np.float)
-    #        ticKmags = np.array([x['Kmag'] for x in outObject['data']], dtype=np.float)
-    #        ticGmags = np.array([x['GAIAmag'] for x in outObject['data']], dtype=np.float)
-    #        ticpmRA = np.array([x['pmRA'] for x in outObject['data']], dtype=np.float)
-    #        ticpmDec = np.array([x['pmDEC'] for x in outObject['data']], dtype=np.float)
-    #    except:
-    #        print('Tried MAST cone search twice and failed. Exiting')
-    #        exit()
-    #    
-    #
-    #return ticList, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRA, ticpmDec
+    ##if disposition is not set to None, then remove the sources
+    m = output[:,8] == None
+    output = output[m]
+    idx = np.argsort(output[:,0])
+    output = output[idx]
+
+    ticList  = output[:,0].astype(np.int64)
+    ticRas   = output[:,1].astype(np.float64)
+    ticDecs  = output[:,2].astype(np.float64)
+    ticTmags = output[:,3].astype(np.float64)
+    ticKmags = output[:,4].astype(np.float64)
+    ticGmags = output[:,5].astype(np.float64)
+    ticpmRA  = output[:,6].astype(np.float64)
+    ticpmDec = output[:,7].astype(np.float64)
+
+    return ticList, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRA, ticpmDec
 
 if __name__ == "__main__":
-    tic_local_conesearch( 180.0 , 45.0, 2.39, 7.5, 10):    
+    out = tic_local_conesearch( 180.0 , 45.0, 8640.0, 7.5, 10)
+    for o in out:
+        print(o)
+
