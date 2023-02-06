@@ -40,7 +40,8 @@ setup(
         'matplotlib>=3.5.1',
         'h5py>=3.6.0',
         'tess-point>=0.6.3',
-        'gwcs==0.15.0'
+        'gwcs==0.15.0',
+        'psycopg2==2.9.5'
         ]
 
 )    
