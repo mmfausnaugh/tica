@@ -6,6 +6,8 @@ Created on Mon Sep 28 14:15:43 2020
 @author: cjburke
 """
 
+import os
+os.environ['OPENBLAS_NUM_THREADS'] = '1'
 import numpy as np
 
 import h5py
@@ -17,7 +19,6 @@ from astropy.coordinates import SkyCoord
 from gwcs.wcstools import wcs_from_points
 from gwcs.wcs import WCS as WCS_gwcs
 from gwcs.coordinate_frames import *
-import os
 import glob
 import sys
 from multiprocessing import Pool
@@ -1586,7 +1587,11 @@ if __name__ == '__main__':
             else:
                 os.rename(args.log, args.log + '_run{}'.format(ii) )
                 break
-    
+                
+    testdir = os.path.dirname(os.path.abspath(args.log))
+    if not os.path.isdir(testdir):
+        os.makedirs(testdir)
+
     tica.setup_logging(filename=args.log)
     info_lines = tica.platform_info()
     for info_line in info_lines:

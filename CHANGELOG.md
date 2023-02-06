@@ -10,14 +10,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 ### Removed
 
-## [1.2.0] - 2022-12-30
+## [1.2.0] - 2022-1-7
 Parallelized wcs step2, changed step1 to do local database querries
 ### Changed
+- Invalid logging directories are made rather than crashing the scripts.
+- Fixed versions of dependencies, for reproducibility
 ### Added
 - Added `parallel` argument to step2_mkwcs.py.
-- Added tic_local_conesearch.py
-- Added function in tica.CCD to calculate mode of science pixels
+- Added tic_local_conesearch.py, and changed step1 of wcs to use local server database.
+- added psycopg2 (v2.9.5) dependency for local query
+- Added function in tica.CCD to calculate mode of science pixels.
 
+	
 ## [1.2.0] - 2022-09-09
 Added 200sec models, and keyword specifying which half of an orbit FFIs came from.
 ### Changed

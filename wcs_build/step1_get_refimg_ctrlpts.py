@@ -29,7 +29,8 @@ import logging
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
 
-from wcs_build.mast_filter_conesearch import mast_filter_conesearch
+#from wcs_build.mast_filter_conesearch import mast_filter_conesearch
+from wcs_build.tic_local_conesearch import tic_local_conesearch
 
 
 from astropy import units as u
@@ -278,12 +279,14 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     for i, curRa in enumerate(raCtrl2D_flat):
         curDec = decCtrl2D_flat[i]
         # Do mast cone Search on this subimage region
-        tics, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRAs, ticpmDecs = mast_filter_conesearch(curRa, curDec, radSearch, TMAG_MIN, TMAG_MAX)
+        # tics, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRAs, ticpmDecs = mast_filter_conesearch(curRa, curDec, radSearch, TMAG_MIN, TMAG_MAX)
+        tics, ticRas, ticDecs, ticTmags, ticKmags, ticGmags, ticpmRAs, ticpmDecs = tic_local_conesearch(curRa, curDec, radSearch, TMAG_MIN, TMAG_MAX)
         nSrch = len(tics)
         # Sort the targets with brightest first
         idx = np.argsort(ticTmags)
         tics, ticRas, ticDecs, ticTmags, ticpmRAs, ticpmDecs = idx_filter(idx, \
                         tics, ticRas, ticDecs, ticTmags, ticpmRAs, ticpmDecs)
+
         #print(len(tics), ' ', curRa,' ', curDec, ' ', radSearch)
         ticRas, ticDecs = apply_proper_motion(ticRas, ticDecs, ticpmRAs, ticpmDecs, 21.0)
 
@@ -567,6 +570,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
                                          kpApCols, kpApRows)
 
 
+
     # Save data reference image results
     fout = h5py.File(outputFile, 'w')
 
@@ -829,6 +833,11 @@ if __name__ == '__main__':
     args.outputfile.close()
     outputFile = args.outputfile.name
     DEBUG_LEVEL = args.debug
+
+
+    testdir = os.path.dirname(os.path.abspath(args.log))
+    if not os.path.isdir(testdir):
+        os.makedirs(testdir)
 
     tica.setup_logging(filename=args.log)    
     info_lines = tica.platform_info()

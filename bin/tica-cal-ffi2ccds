@@ -96,18 +96,10 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    #each time we run tica, copy the old log file
-    #this forces tica.log to match tica_wcs_step2*log
-    if os.path.isfile(args.log):
-        jj = 1
-       ## while True:
-       ##     if os.path.isfile(args.log + '_run{}'.format(jj) ):
-       ##         jj += 1
-       ##     else:
-       ##         os.rename(args.log, args.log + '_run{}'.format(jj) )
-       ##         break
+    testdir = os.path.dirname(os.path.abspath(args.log))
+    if not os.path.isdir(testdir):
+        os.makedirs(testdir)
 
-    # setup logging
     tica.setup_logging(debug=args.debug, filename=args.log)
     logger = logging.getLogger(__name__)
     info_lines = tica.platform_info()

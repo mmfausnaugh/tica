@@ -69,6 +69,7 @@ fi
 
 DEBUGIT=2
 
+
 for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
   for ((jCcd = 1; jCcd <=4 ; jCcd++)); do
       USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)

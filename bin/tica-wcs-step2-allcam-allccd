@@ -6,9 +6,10 @@ DEBUGIT=0
 
 dstem=''
 
+NCORES=''
 
 USAGE="
-  Usage: tica-wcs-step2-allcam-allccd SECTOR=<sector> dstem=<data_dir_path> DEBUGIT=<debug_flag>
+  Usage: tica-wcs-step2-allcam-allccd SECTOR=<sector> dstem=<data_dir_path> DEBUGIT=<debug_flag> NCORES=<int>
 
   This script runs step2_mkwcs.py step2_mkwcs.py is a python script
     that loops over FFIs in a given directory, measures star
@@ -39,6 +40,7 @@ USAGE="
   <debug_flag> is an integer, 0 for no output, 1 to print various
     debugging statements.  Default is 0.
 
+   <int> is the number of cores to use for parallel processing.  Defaults to 1.
 "
 [ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
 
@@ -55,11 +57,11 @@ done
 [[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
 
 
-
+[[ "$NCORES" == '' ]] && let NCORES=1
 
 for i in 1 2 3 4; do 
     for j in 1 2 3 4; do
-	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT --log tica_logs/tica_wcs_step2_cam"$i"_ccd"$j".log  &
+	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6 --savediaginfo -dbg $DEBUGIT --log tica_logs/tica_wcs_step2_cam"$i"_ccd"$j".log  --parallel $NCORES &
     done
 done
 
