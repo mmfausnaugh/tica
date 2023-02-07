@@ -21,7 +21,7 @@ import psycopg2
 DIR = os.path.abspath(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(DIR, '..'))
 
-from wcs_build.tic_postgres_param import  tic_host, tic_db, tic_user, tic_port
+from wcs_build.tic_postgres_param import  tic_host, tic_db, tic_user, tic_port, password
     
 
 def tic_local_conesearch(starRa, starDec, radius, minTmag, maxTmag):
@@ -29,8 +29,8 @@ def tic_local_conesearch(starRa, starDec, radius, minTmag, maxTmag):
     #depends on configuration of TIC and postgres on MIT servers
 
     con = psycopg2.connect(
-        "host='{}' dbname='{}' user='{}' port='{}'".format(
-            tic_host, tic_db, tic_user, tic_port
+        "host='{}' dbname='{}' user='{}' port='{}' password='{}'".format(
+            tic_host, tic_db, tic_user, tic_port, password
         ))
 
     cur = con.cursor()
@@ -42,13 +42,21 @@ def tic_local_conesearch(starRa, starDec, radius, minTmag, maxTmag):
     rad_ra = starRa*np.pi/180.
     rad_dec = starDec*np.pi/180.
     #radius is passed in as arcsec, but submit to postgres as radius
+    ##querystr="select id,ra,dec,tmag,kmag,gaiamag,pmra,pmdec,disposition"\
+    ##    " from ticentries where"\
+    ##    " spoint(radians(ra),radians(dec)) @ scircle '< ({},{}), {} >'"\
+    ##    " and tmag between {} and {}"\
+    ##    " and pmra between -100.0 and 100.0"\
+    ##    " and pmdec between -100.0 and 100.0 ; ".format(rad_ra, rad_dec, 
+    ##                                                radius/3600*np.pi/180.,
+    ##                                                minTmag, maxTmag)
     querystr="select id,ra,dec,tmag,kmag,gaiamag,pmra,pmdec,disposition"\
         " from ticentries where"\
-        " spoint(radians(ra),radians(dec)) @ scircle '< ({},{}), {} >'"\
+        " q3c_radial_query(ra,dec, {},{}, {}) "\
         " and tmag between {} and {}"\
         " and pmra between -100.0 and 100.0"\
-        " and pmdec between -100.0 and 100.0 ; ".format(rad_ra, rad_dec, 
-                                                    radius/3600*np.pi/180.,
+        " and pmdec between -100.0 and 100.0 ; ".format(starRa, starDec,
+                                                    radius/3600.,
                                                     minTmag, maxTmag)
 
     cur.execute(querystr)
