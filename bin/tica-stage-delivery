@@ -62,12 +62,12 @@ function do_move(){
 	[[ "$subdir" =~ 'o2' ]] && { orbit='o2' ;}
 	    
 	    
-
+	#ls tess*fits | wc
 	for ii in $(ls tess*fits ); do
 	    #fin can be got from the filename
 	    fin=$(echo "$ii" | awk -F\- '{print$2}')
-
-
+	
+	
 	    indir=$(pwd)
 	    cp "$indir"/$ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
 #	    cp $ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
