@@ -532,8 +532,10 @@ class CCD(object):
             values, bins = np.histogram( pixels, bins = 500 )
         else:
             values,bins = np.histogram(pixels,bins=bins)
-
-        mode = bins[ values == values.max() ][0]
+        bin_midpoints = np.mean([ bins[0:-1], bins[1:]],
+                                axis=0)
+            
+        mode = bin_midpoints[ values == values.max() ][0]
         return mode
 
 
