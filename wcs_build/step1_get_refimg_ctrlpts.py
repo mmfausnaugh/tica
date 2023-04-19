@@ -234,6 +234,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     #  idea for the ra and dec for each sub region center.
     raCtrl2D_flat = np.zeros_like(colCtrl2D_flat)
     decCtrl2D_flat = np.zeros_like(rowCtrl2D_flat)
+
     for i,curCol in enumerate(colCtrl2D_flat):
         curRow = rowCtrl2D_flat[i]
         # on first time scinfo does not exist; it is faster to pass it in on subsequent calls
@@ -276,6 +277,8 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
     # Here is the main work loop where over each sub image region
     #  query TIC to get stars
     #  go over stars and make sure they have well behaved PRFs for isloated stars
+
+    #parallize this loop???
     for i, curRa in enumerate(raCtrl2D_flat):
         curDec = decCtrl2D_flat[i]
         # Do mast cone Search on this subimage region
