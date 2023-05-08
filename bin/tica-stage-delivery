@@ -11,15 +11,18 @@
 #for each new delivery, make this v01, v02, etc.
 version=$1
 outdir=$2
+subdir=$3
 
 function do_move(){
         camnum=$1
 	ccdnum=$2
-	cd "cam$camnum""_ccd$ccdnum"
+	subdir=$3
+	cd "cam$camnum""_ccd$ccdnum""/$subdir"
+
 	#cam, ccd, and sector can be got from the the directory structures
 	cam=$(pwd |  grep -o "cam[1-4]")
 	ccd=$(pwd |  grep -o "ccd[1-4]")
-	sector=$(pwd | grep -o "[0-9][0-9]" )
+	sector=$(pwd | grep -o "sector[0-9][0-9]" | grep -o "[0-9][0-9]" )
 
 	outdir_use="$outdir/""$cam""-$ccd"
 	if [ -d $outdir_use ]; then
@@ -55,22 +58,21 @@ function do_move(){
 	#ffi_last=$(ls tess*fits | tail -n 1)
 	#stamp_last=${ffi_last:4:13}
 	
+	[[ "$subdir" =~ 'o1' ]] && { orbit='o1' ;}
+	[[ "$subdir" =~ 'o2' ]] && { orbit='o2' ;}
+	    
+	    
+	#ls tess*fits | wc
 	for ii in $(ls tess*fits ); do
 	    #fin can be got from the filename
 	    fin=$(echo "$ii" | awk -F\- '{print$2}')
-
-	    echo "${ii:4:13}" "$stamp_first" "$stamp_second" "$stamp_third" "$stamp_fourth"
-	    if [ ${ii:4:13} == $stamp_first ] || [ ${ii:4:13} == $stamp_second ] ; then
-		orbit="o1"
-	    elif [ ${ii:4:13} == $stamp_third ] || [ ${ii:4:13} == $stamp_fourth ]; then
-		orbit="o2"
-	    fi
-	    #outdir_use="$outdir/""$orbit""-$cam""-$ccd"
-
-	    cp $ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
+	
+	
+	    indir=$(pwd)
+	    cp "$indir"/$ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
 #	    cp $ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
 	done
-	cd ..
+	cd ../../
 
 	#copy the reference star list
 	if [ -d $outdir"/ref-stars" ]; then
@@ -78,8 +80,8 @@ function do_move(){
 	else
 	    mkdir $outdir"/ref-stars"
 	fi
-
-	cp "refout/reftica_s$sector"_"$camnum""-$ccdnum"".h5" "$outdir""/ref-stars/hlsp_tica_tess_ffi_s00$sector""-$cam""-$ccd""_tess_$version""_cat.h5"
+	indir=$(pwd)
+	cp "$indir/refout/reftica_s$sector"_"$camnum""-$ccdnum"".h5" "$outdir""/ref-stars/hlsp_tica_tess_ffi_s00$sector""-$cam""-$ccd""_tess_$version""_cat.h5"
 
 
 }
@@ -87,6 +89,6 @@ function do_move(){
 #loop over ccds
 for camnum in 1 2 3 4; do
     for ccdnum in 1 2 3 4; do
-	do_move $camnum $ccdnum & 
+	do_move $camnum $ccdnum $subdir& 
     done
 done

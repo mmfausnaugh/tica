@@ -87,6 +87,7 @@ def get_from_logs(infile):
         py_env     = [np.nan]*16
         sector     = [np.nan]*16
         N_pools    = [np.nan]*16
+        parallel   = [np.nan]*16
         runtime    = [np.nan]*16
 
         wcs_sector = [np.nan]*16
@@ -112,7 +113,7 @@ def get_from_logs(infile):
                 tica_ver_reg = re.search('TICA version: (.*)',fline)
                 tica_ver_working = tica_ver_reg.group(1)
             if 'Python version:' in fline:
-                py_ver_reg = re.search('Python version: (.*) \(default,',fline)
+                py_ver_reg = re.search('Python version: (.*) \(',fline)
                 py_ver_working =  py_ver_reg.group(1) 
             if 'Host:' in fline:
                 host_reg = re.search('Host: (.*)',fline)
@@ -162,6 +163,9 @@ def get_from_logs(infile):
             if 'N Pools' in fline:
                 pool_reg = re.search('N Pools = (\d+)',fline)
                 N_pools[map_idx] =  pool_reg.group(1)
+            if 'parallel = ' in fline:
+                parallel_reg = re.search('parallel = (\d+)',fline)
+                parallel[map_idx] =  parallel_reg.group(1)
             if 'Runtime:' in fline:
                 runtime_reg = re.search('Runtime: (.*)sec',fline)
                 runtime[map_idx] =  runtime_reg.group(1)
@@ -210,6 +214,7 @@ def get_from_logs(infile):
                       'py_env':py_env,
                       'sector':sector,
                       'N_pool':N_pools,
+                      'parallel' : parallel,
                       'runtime':runtime,
                       'wcs_sector':wcs_sector, 
                       'ref':ref, 
@@ -436,7 +441,9 @@ if __name__ == "__main__":
                 outline_list.append('{:>35s}'.format(''))           
 
             outline_list.append( '{:>35s}'.format(out3[idx]['runtime'][idx] ))
-            outline_list.append( '{:>35d}'.format(1))
+            #outline_list.append( '{:>35d}'.format(1))
+            
+            outline_list.append( '{:>35s}'.format(out3[idx]['parallel'][idx] ))
 
             outline_list.append('{:>.2f}'.format(wcs_data[idx][0]))
             outline_list.append('{:>.2f}'.format(wcs_data[idx][1]))
