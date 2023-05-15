@@ -47,6 +47,7 @@ def worker( in_tuple ):
     trim = in_tuple[2]
     orbit_segment = in_tuple[3]
     no_gzip = in_tuple[4]
+    no_diagnostics = in_tuple[5]
 
     #it knows about calibration as a global variable...very yucky...
     im = FFI_File(filename, 
@@ -60,6 +61,19 @@ def worker( in_tuple ):
     else:
         im.write_calibrated_CCDs(
             no_gzip = no_gzip)
+
+    if not no_diagnostics:
+        #mode of the image, to track scattered light
+        modes = []
+        #1D bias corrections, by CCD output channel, 
+        #to track saturation/bad calibration
+        bias_corrections = []
+        for ccd in im.calibrated_CCDs:
+            modes.append( ccd.get_image_mode(bins=np.r_[500:1.e6:250]  ) )
+            bias_corrections = np.r_[bias_corrections, ccd.overclock_corrections ]
+        return (filename, np.r_[modes, bias_corrections ])
+
+
 
 if __name__ == "__main__":
 
@@ -93,6 +107,8 @@ if __name__ == "__main__":
                         help="save logging output to this file")
     parser.add_argument("--orb_seg", type=str, help="if set, write ORB_SEG header keyword in calibrated files.")
     parser.add_argument("--no_gzip",action="store_true", help="if set, do not write gzipped files regardless of input file extension.")
+    parser.add_argument("--no_diagnostics",action="store_true", help="if set, do not write txt file with "
+                        "1D bias corrections or background estimates.")
 
     args = parser.parse_args()
 
@@ -139,18 +155,89 @@ if __name__ == "__main__":
     starttime = time()
 
     if args.parallel > 1:
+        results = []
         p = Pool(args.parallel)
         for ii, filename in enumerate(inlist):
-            p.apply_async(worker, ( (filename, outdir, 
-                                     args.trim, args.orb_seg, 
-                                     args.no_gzip, ), ))
+            results.append(  p.apply_async(worker, ( (filename, outdir, 
+                                                      args.trim, args.orb_seg, 
+                                                      args.no_gzip, 
+                                                      args.no_diagnostics), ))
+                         )
+
         p.close()
         p.join()
+
+        if not args.no_diagnostics:
+            out_fname = []
+            out_data = []
+            for result in results:
+                fname, data = result.get()
+                out_fname.append(fname)
+                out_data.append(data)
+            out_fname = np.array([os.path.basename(fname) for fname in out_fname]).astype(str)
+            out_data = np.array(out_data)
+            idx = np.argsort(out_fname)
+
+
     else:
+        out_fname = []
+        out_data = []
+
         for ii,filename in enumerate(inlist):
-            worker( (filename,  outdir, 
-                     args.trim, args.orb_seg,
-                     args.no_gzip, ),)
+            if not args.no_diagnostics:
+                fname, data = worker( (filename,  outdir, 
+                                       args.trim, args.orb_seg,
+                                       args.no_gzip, 
+                                       args.no_diagnostics),)
+                out_fname.append(fname)
+                out_data.append(data)
+
+
+            else:
+                worker( (filename,  outdir, 
+                         args.trim, args.orb_seg,
+                         args.no_gzip, 
+                         args.no_diagnostics),)
+
+        if not args.no_diagnostics:        
+            out_fname = np.array([os.path.basename(fname) for fname in out_fname]).astype(str)
+            out_data = np.array(out_data)
+            idx = np.argsort(out_fname)
+
+
+
+    if not args.no_diagnostics:
+        with open('cal_timeseries.txt','a') as fout:
+            fout.write('{:>45s} '
+                       '{:>15s}{:>15s}{:>15s}{:>15s}'
+                       '{:>15s}{:>15s}{:>15s}{:>15s}'
+                       '{:>15s}{:>15s}{:>15s}{:>15s}'
+                       '{:>15s}{:>15s}{:>15s}{:>15s}\n'.format('name',
+                                                               'mode_ccd1','mode_ccd2','mode_ccd3','mode_ccd4',
+                                                               'outputA_ccd1','outputB_ccd1','outputC_ccd1','outputD_ccd1',
+                                                               'outputA_ccd2','outputB_ccd2','outputC_ccd2','outputD_ccd2',
+                                                               'outputA_ccd3','outputB_ccd3','outputC_ccd3','outputD_ccd3',
+                                                               'outputA_ccd4','outputB_ccd4','outputC_ccd4','outputD_ccd4'),
+
+                   )
+            for id in idx:
+                fout.write('{:>45s} '
+                           '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
+                           '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
+                           '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
+                           '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}\n'.format(out_fname[id],
+                                                                           out_data[id][0],out_data[id][1],
+                                                                           out_data[id][2],out_data[id][3],
+                                                                           out_data[id][4],out_data[id][5],
+                                                                           out_data[id][6],out_data[id][7],
+                                                                           out_data[id][8],out_data[id][9],
+                                                                           out_data[id][10],out_data[id][11],
+                                                                           out_data[id][12],out_data[id][13],
+                                                                           out_data[id][14],out_data[id][15],
+                                                                           out_data[id][16],out_data[id][17],
+                                                                           out_data[id][18],out_data[id][19],)
+                       )
+
     runtime = time() - starttime
 
     print("Runtime: {0:.2f}sec".format(runtime), "N Pools = {}".format( args.parallel ) )

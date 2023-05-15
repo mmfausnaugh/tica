@@ -106,7 +106,7 @@ for ref_file in ref_files:
         try:
             assert col in f.keys()
         except AssertionError:
-            print('  Unexpected olumn {} found in file'.format(col))
+            print('  Unexpected column {} found in file'.format(col))
             sys.exit()
         try:
             assert not any( np.isnan(f[col]) )
@@ -121,7 +121,7 @@ for ref_file in ref_files:
 columns_to_check = ['TIC', 'FLXCOL', 'FLXROW', 'FLXVALID']
 #N_cad_check_o1 = len(glob.glob('o1-cam4-ccd4/*fits'))
 #N_cad_check_o2 = len(glob.glob('o2-cam4-ccd4/*fits'))
-N_cad_check_o1 = len(glob.glob('cam4-ccd4/*fits'))
+N_cad_check_o1 = len(glob.glob( os.path.join(duse, 'cam4-ccd4/*fits')   ))
 #N_cad_check_o2 = len(glob.glob('cam4-ccd4/*fits'))
 #don't check the ref_stars directory
 
@@ -179,13 +179,11 @@ def worker( in_tuple ):
                 assert col in f[1].data.names
             except AssertionError:
                 print('  File {} has unexpected column {} in extension 1'.format(ffi, col) )
-                sys.exit()
 
             try:
                 assert not any(np.isnan(f[1].data[col]))
             except AssertionError:
                 print('  File {} has NaN in column {} (ext 1)'.format(ffi, col) )
-                sys.exit()
 
     
 p = Pool(16)

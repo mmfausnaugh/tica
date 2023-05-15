@@ -214,7 +214,10 @@ fi
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
 
-    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile --orb_seg "$orbseg" --no_gzip
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile --orb_seg "$orbseg" --no_gzip || exit $?
+   #if [[ $? -ne 0 ]]; then
+   #	exit $?
+   #fi
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done

@@ -84,7 +84,7 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
       fi
 
       #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
-      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1.log &
+      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1_cam"$iCam"_ccd"$jCcd".log &
   done
 done
 wait

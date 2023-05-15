@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 ### Removed
 
+## [1.4.0] - 2022-5-8
+Code auotomatically finds a good reference image for step1_wcs.  Other aspects of logging and checking to automate.
+
+	
 ## [1.3.0] - 2022-5-8
 Parallelized wcs step2, changed step1 to do local database querries
 ### Changed

@@ -12,17 +12,22 @@
 version=$1
 outdir=$2
 subdir=$3
+sector=$4
 
 function do_move(){
         camnum=$1
 	ccdnum=$2
 	subdir=$3
+	sector=$4
+	outputSECTOR=$(printf "%04d" $sector)
+
 	cd "cam$camnum""_ccd$ccdnum""/$subdir"
 
 	#cam, ccd, and sector can be got from the the directory structures
 	cam=$(pwd |  grep -o "cam[1-4]")
 	ccd=$(pwd |  grep -o "ccd[1-4]")
-	sector=$(pwd | grep -o "sector[0-9][0-9]" | grep -o "[0-9][0-9]" )
+	#old way required a definite path, hard to test
+	###sector=$(pwd | grep -o "sector[0-9][0-9]" | grep -o "[0-9][0-9]" )
 
 	outdir_use="$outdir/""$cam""-$ccd"
 	if [ -d $outdir_use ]; then
@@ -69,7 +74,7 @@ function do_move(){
 	
 	
 	    indir=$(pwd)
-	    cp "$indir"/$ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
+	    cp "$indir"/$ii "$outdir_use/""hlsp_tica_tess_ffi_s$outputSECTOR""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
 #	    cp $ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
 	done
 	cd ../../
@@ -81,7 +86,7 @@ function do_move(){
 	    mkdir $outdir"/ref-stars"
 	fi
 	indir=$(pwd)
-	cp "$indir/refout/reftica_s$sector"_"$camnum""-$ccdnum"".h5" "$outdir""/ref-stars/hlsp_tica_tess_ffi_s00$sector""-$cam""-$ccd""_tess_$version""_cat.h5"
+	cp "$indir/refout/reftica_s$sector"_"$camnum""-$ccdnum"".h5" "$outdir""/ref-stars/hlsp_tica_tess_ffi_s$outputSECTOR""-$cam""-$ccd""_tess_$version""_cat.h5"
 
 
 }
@@ -89,6 +94,8 @@ function do_move(){
 #loop over ccds
 for camnum in 1 2 3 4; do
     for ccdnum in 1 2 3 4; do
-	do_move $camnum $ccdnum $subdir& 
+	do_move $camnum $ccdnum $subdir $sector &
     done
 done
+
+wait

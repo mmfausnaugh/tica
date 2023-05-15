@@ -352,8 +352,19 @@ if __name__ == "__main__":
     sector = out['sector']
 
     if args.wcs1:
-        out2 = get_from_logs('tica_logs/tica_wcs_step1.log')
-        test_output_dict(out2)
+        out2 = []
+        for ii in [1,2,3,4]:
+            for jj in [1,2,3,4]:
+                ccd_log_file = 'tica_logs/tica_wcs_step1_cam{}_ccd{}.log'.format(ii,jj)
+                out2.append( get_from_logs(ccd_log_file))
+                test_output_dict(out2[-1])
+                end_date_object = datetime.strptime(out2[-1]['end_date'],'%Y.%m.%d-%H:%M:%S')
+
+                if end_date_object > end_date_object1:
+                    end_date = out2[-1]['end_date']
+                    end_date_object1 = datetime.strptime(out2[-1]['end_date'],'%Y.%m.%d-%H:%M:%S')
+
+
     else:
         out2 = None
     #print( out2 )
@@ -368,9 +379,10 @@ if __name__ == "__main__":
             ref_star_file = 'refout/reftica_s{:02d}_{}-{}.h5'.format(int(sector),ii,jj)
             ref_star_data.append(calculate_step1_metrics(ref_star_file) )
 
-            wcs_file = 'cam{}_ccd{}/wcs_diags2/wcs_diag_S{:02d}_{}{}_data.h5'.format(ii,jj,
-                                                                                 int(sector),
-                                                                                     ii,jj)
+            wcs_file = 'cam{}_ccd{}/{}/wcs_diags2/wcs_diag_S{:02d}_{}{}_data.h5'.format(ii,jj,
+                                                                                        args.segments,
+                                                                                        int(sector),
+                                                                                        ii,jj)
             wcs_data.append(calculate_step2_metrics(wcs_file) )
             ccd_log_file = 'tica_logs/tica_wcs_step2_cam{}_ccd{}.log'.format(ii,jj)
             out3.append( get_from_logs(ccd_log_file))
@@ -386,7 +398,8 @@ if __name__ == "__main__":
     #'Sector','TICA version','Python version',
     #'Host','Environment','Flexibel Apertures', 
     if out2 is not None:
-        assert out['sector'] == out2['wcs_sector']
+        for s in out2:
+            assert out['sector'] == s['wcs_sector']
 
         for s in out3:
             assert out['sector'] == s['wcs_sector']
@@ -394,16 +407,17 @@ if __name__ == "__main__":
     for key in ['tica_ver','py_ver','host','py_env']:
         
         if out2 is not None:
-            try:
-                assert out[key] == out2[key]
-            except AssertionError as e:
-                print('Warning!! key {} in wcs step1 {} not equal to {}'.format(out2[key], out[key]))
+            for s in out2:
+                try:
+                    assert out[key] == s[key]
+                except AssertionError as e:
+                    print('Warning!! key {} in wcs step1 {} not equal to {}'.format(s[key], out[key]))
                 
         for s in out3:
             try:
                 assert out[key] == s[key], print(key, out[key], s[key])
             except AssertionError as e:
-                print('Warning!! key {} in wcs step2 {} not equal to {}'.format(out3[key], out[key]))
+                print('Warning!! key {} in wcs step2 {} not equal to {}'.format(s[key], out[key]))
                             
 
     t1 = datetime.strptime(start_date,'%Y.%m.%d-%H:%M:%S')
@@ -455,7 +469,7 @@ if __name__ == "__main__":
             if out2 is  None:
                 outline_list.append( '{:>35s}'.format('') )
             elif ii == 0 and jj == 0:
-                outline_list.append( '{:>35s}'.format(out2['reffin']) )
+                outline_list.append( '{:>35s}'.format(out2[0]['reffin']) )
             else:
                 outline_list.append( '{:>35s}'.format('') )
 
@@ -470,15 +484,15 @@ if __name__ == "__main__":
                 outline_list.append('{:>35s}'.format('') )
 
             else:
-                outline_list.append( '{:>35s}'.format(out2['runtime'][idx] ))
+                outline_list.append( '{:>35s}'.format(out2[idx]['runtime'][idx] ))
                 outline_list.append( '{:>35d}'.format(1))
-                outline_list.append('{:>35s}'.format(out2['wing'][idx] ))
-                outline_list.append('{:>35s}'.format(out2['contrast'][idx] ))
-                outline_list.append('{:>35s}'.format(out2['N_ref_targets'][idx] ))
+                outline_list.append('{:>35s}'.format(out2[idx]['wing'][idx] ))
+                outline_list.append('{:>35s}'.format(out2[idx]['contrast'][idx] ))
+                outline_list.append('{:>35s}'.format(out2[idx]['N_ref_targets'][idx] ))
                 outline_list.append('{:>.2f}-{:>.2f}'.format(ref_star_data[idx][1],
                                                              ref_star_data[idx][2]))
-                outline_list.append('{:>35s}'.format(out2['N_ref_trim_targ'][idx] ))
-                outline_list.append('{:>35s}'.format(out2['ref_bright_fit_res'][idx] ))
+                outline_list.append('{:>35s}'.format(out2[idx]['N_ref_trim_targ'][idx] ))
+                outline_list.append('{:>35s}'.format(out2[idx]['ref_bright_fit_res'][idx] ))
                 #outline_list.append('{:>35s}'.format(out2['ref_faint_fit_res'][idx] ))
 
 

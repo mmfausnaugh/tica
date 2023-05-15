@@ -1362,7 +1362,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
     
 
 
-    result = []
+    results_async = []
     if n_cores > 1:
         p = Pool(n_cores)
         collect_results = lambda x: result.append(x)
@@ -1372,40 +1372,29 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                 PLOT_FIG = True
             else:
                 PLOT_FIG = False
-            result.append( p.apply( worker, ((Img, 
-                                              obscols,obsrows,
-                                              colCtrl2D_flat,
-                                              blkidxs,
-                                              fixApertures,
-                                              midcols,midrows,
-                                              blkHlf, blkHlfCent,
-                                              fitDegree,
-                                              ras,decs,tics,tmags,
-                                              SECTOR_WANT,
-                                              CAMERA_WANT, CCD_WANT, 
-                                              CTRL_PER_COL,CTRL_PER_ROW,
-                                              DEBUG_LEVEL, PLOT_FIG,
-                                              wingFAC, contrastFAC,
-                                              outputDir), ))
-                       )
-            #p.apply_async( worker, ((Img, 
-            #                         obscols,obsrows,
-            #                         colCtrl2D_flat,
-            #                         blkidxs,
-            #                         fixApertures,
-            #                         midcols,midrows,
-            #                         blkHlf, blkHlfCent,
-            #                         fitDegree,
-            #                         ras,decs,tics,tmags,
-            #                         SECTOR_WANT,
-            #                         CAMERA_WANT, CCD_WANT, 
-            #                         CTRL_PER_COL,CTRL_PER_ROW,
-            #                         DEBUG_LEVEL, PLOT_FIG,
-            #                         wingFAC, contrastFAC,
-            #                         outputDir), ))
+            results_async.append( p.apply_async( worker, ((Img, 
+                                                          obscols,obsrows,
+                                                          colCtrl2D_flat,
+                                                          blkidxs,
+                                                          fixApertures,
+                                                          midcols,midrows,
+                                                          blkHlf, blkHlfCent,
+                                                          fitDegree,
+                                                          ras,decs,tics,tmags,
+                                                          SECTOR_WANT,
+                                                          CAMERA_WANT, CCD_WANT, 
+                                                          CTRL_PER_COL,CTRL_PER_ROW,
+                                                          DEBUG_LEVEL, PLOT_FIG,
+                                                          wingFAC, contrastFAC,
+                                                          outputDir), ))
+                              )
                        
         p.close()
         p.join()
+
+        result = []
+        for res in results_async:
+            result.append( res.get())
             #with Pool(n_cores) as p:
             #    result = p.map( worker, inputImgList,)
 
