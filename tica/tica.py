@@ -537,7 +537,8 @@ class CCD(object):
         if bins is None:
             values, bins = np.histogram( pixels, bins = 500 )
         else:
-            pixels[ pixels > bins[-1] ] = bins[-1]
+            #safer to do get saturated cadences with the 1D bias corrections
+            #pixels[ pixels > bins[-1] ] = bins[-1]
             #but ignore weird pixels, like things that are negative
             #pixels[ pixels < bins[0] ]  = bins[0]
 

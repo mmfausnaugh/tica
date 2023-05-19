@@ -82,7 +82,7 @@ done
 
 [[ "$orbseg" == '' ]] && { echo "orbseg is not set, running both ffi_fits-haho and ffi_fits and will not write keyword ORB_SEG in output files". ;}
 
-[[ "$o1" != "None" ]] && [[ $o2 != "None" ]] && { echo "Configuration Error.  Both orbits are set, cannot use orbseg.  Processes individual orbits if you need this keyword set."; exit ;}
+[[ "$o1" != "None" ]] && [[ $o2 != "None" ]] && [[ $orbseg != "" ]] && { echo "Configuration Error.  Both orbits are set, cannot use orbseg.  Processes individual orbits if you need this keyword set."; exit ;}
 
 #exit if orbseg does not match expected orbit
 [[ "$orbseg" =~ 'o1'  ]] && [[ $o1 == 'None' ]] && { echo "Configuration Error. o1 is None but orbseg is set to $orbseg."; exit ;}

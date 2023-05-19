@@ -212,12 +212,14 @@ if __name__ == "__main__":
                        '{:>15s}{:>15s}{:>15s}{:>15s}'
                        '{:>15s}{:>15s}{:>15s}{:>15s}'
                        '{:>15s}{:>15s}{:>15s}{:>15s}'
-                       '{:>15s}{:>15s}{:>15s}{:>15s}\n'.format('name',
-                                                               'mode_ccd1','mode_ccd2','mode_ccd3','mode_ccd4',
-                                                               'outputA_ccd1','outputB_ccd1','outputC_ccd1','outputD_ccd1',
-                                                               'outputA_ccd2','outputB_ccd2','outputC_ccd2','outputD_ccd2',
-                                                               'outputA_ccd3','outputB_ccd3','outputC_ccd3','outputD_ccd3',
-                                                               'outputA_ccd4','outputB_ccd4','outputC_ccd4','outputD_ccd4'),
+                       '{:>15s}{:>15s}{:>15s}{:>15s}'
+                       '{:>15s}{:>15s}{:>15s}{:>15s}'
+                       '\n'.format('name',
+                                   'mode_ccd1','mode_ccd2','mode_ccd3','mode_ccd4',
+                                   'outputA_ccd1','outputB_ccd1','outputC_ccd1','outputD_ccd1',
+                                   'outputA_ccd2','outputB_ccd2','outputC_ccd2','outputD_ccd2',
+                                   'outputA_ccd3','outputB_ccd3','outputC_ccd3','outputD_ccd3',
+                                   'outputA_ccd4','outputB_ccd4','outputC_ccd4','outputD_ccd4'),
 
                    )
             for id in idx:
@@ -225,17 +227,19 @@ if __name__ == "__main__":
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
-                           '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}\n'.format(out_fname[id],
-                                                                           out_data[id][0],out_data[id][1],
-                                                                           out_data[id][2],out_data[id][3],
-                                                                           out_data[id][4],out_data[id][5],
-                                                                           out_data[id][6],out_data[id][7],
-                                                                           out_data[id][8],out_data[id][9],
-                                                                           out_data[id][10],out_data[id][11],
-                                                                           out_data[id][12],out_data[id][13],
-                                                                           out_data[id][14],out_data[id][15],
-                                                                           out_data[id][16],out_data[id][17],
-                                                                           out_data[id][18],out_data[id][19],)
+                           '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
+                           '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
+                           '\n'.format(out_fname[id],
+                                       out_data[id][0],out_data[id][1],
+                                       out_data[id][2],out_data[id][3],
+                                       out_data[id][4],out_data[id][5],
+                                       out_data[id][6],out_data[id][7],
+                                       out_data[id][8],out_data[id][9],
+                                       out_data[id][10],out_data[id][11],
+                                       out_data[id][12],out_data[id][13],
+                                       out_data[id][14],out_data[id][15],
+                                       out_data[id][16],out_data[id][17],
+                                       out_data[id][18],out_data[id][19],)
                        )
 
     runtime = time() - starttime
