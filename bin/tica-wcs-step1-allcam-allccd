@@ -42,11 +42,16 @@ USAGE="
     there.
 
 "
-[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+#exit code 2 is a harder stop, makes automation bash script exit
+#exit code 1 flags an issue, but allows the automation code to continue
+#3xit code 0 allows automation code to continue
+
+[ $# -eq 0 ] && { echo "$USAGE" ; exit 2; }
 
 while [ $# -gt 0 ] ; do
   case $1 in
-    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    "-h" | "--help") echo "$USAGE" ; exit 2 ;;
     *)         eval $1 ;;
   esac
   shift
@@ -54,9 +59,9 @@ done
 
 
 #check that all variables are set
-[[ $SECTOR == '' ]] && { echo "$USAGE" ; echo "set sector to a two digit integer : SECTOR=<\d\d>" ; exit ; }
-[[ $REFFIN == '' ]] && { echo "$USAGE" ; echo "set reffin to an FFI_INDEX, which appears in the FFI file's name: reffin=<\d\d\d\d\d\d>" ; exit ; }
-[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
+[[ $SECTOR == '' ]] && { echo "$USAGE" ; echo "set sector to a two digit integer : SECTOR=<\d\d>" ; exit 2; }
+[[ $REFFIN == '' ]] && { echo "$USAGE" ; echo "set reffin to an FFI_INDEX, which appears in the FFI file's name: reffin=<\d\d\d\d\d\d>" ; exit 2 ; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit 2 ; }
 
 
 # TICA
@@ -69,7 +74,9 @@ fi
 
 DEBUGIT=2
 
-
+#set a flag if there are errors.
+#this lets us processes everything, but make a note of issues
+errorflag=0
 for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
   for ((jCcd = 1; jCcd <=4 ; jCcd++)); do
       USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)
@@ -84,8 +91,13 @@ for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
       fi
 
       #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
-      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1_cam"$iCam"_ccd"$jCcd".log &
+      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1_cam"$iCam"_ccd"$jCcd".log || {  errorflag=1 ; }  &
   done
 done
 wait
 
+if [[ $errorflag -eq 1 ]]; then
+    exit 1
+elif [[ $errorflag -eq 0 ]]; then
+    exit 0
+fi

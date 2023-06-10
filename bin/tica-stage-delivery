@@ -33,7 +33,7 @@ function do_move(){
 	if [ -d $outdir_use ]; then
 	    echo "$outdir_use"" exists"
 	else
-	    mkdir $outdir_use
+	    mkdir -p $outdir_use
 	fi
 
 	#outdir_use="$outdir/""o2-$cam""-$ccd"

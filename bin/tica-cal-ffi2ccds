@@ -69,7 +69,8 @@ def worker( in_tuple ):
         #to track saturation/bad calibration
         bias_corrections = []
         for ccd in im.calibrated_CCDs:
-            modes.append( ccd.get_image_mode(bins=np.r_[500:1.e6:250]  ) )
+            #modes.append( ccd.get_image_mode(bins=np.r_[500:1.e6:250]  ) )
+            modes.append( ccd.get_image_mode(10**(np.r_[2.7:7.7:4000j]) )   )
             bias_corrections = np.r_[bias_corrections, ccd.overclock_corrections ]
         return (filename, np.r_[modes, bias_corrections ])
 
@@ -176,7 +177,7 @@ if __name__ == "__main__":
                 out_data.append(data)
             out_fname = np.array([os.path.basename(fname) for fname in out_fname]).astype(str)
             out_data = np.array(out_data)
-            idx = np.argsort(out_fname)
+            idxs = np.argsort(out_fname)
 
 
     else:
@@ -202,44 +203,46 @@ if __name__ == "__main__":
         if not args.no_diagnostics:        
             out_fname = np.array([os.path.basename(fname) for fname in out_fname]).astype(str)
             out_data = np.array(out_data)
-            idx = np.argsort(out_fname)
+            idxs = np.argsort(out_fname)
 
 
 
     if not args.no_diagnostics:
-        with open('cal_timeseries.txt','a') as fout:
-            fout.write('{:>45s} '
-                       '{:>15s}{:>15s}{:>15s}{:>15s}'
-                       '{:>15s}{:>15s}{:>15s}{:>15s}'
-                       '{:>15s}{:>15s}{:>15s}{:>15s}'
-                       '{:>15s}{:>15s}{:>15s}{:>15s}'
-                       '{:>15s}{:>15s}{:>15s}{:>15s}'
-                       '\n'.format('name',
-                                   'mode_ccd1','mode_ccd2','mode_ccd3','mode_ccd4',
-                                   'outputA_ccd1','outputB_ccd1','outputC_ccd1','outputD_ccd1',
-                                   'outputA_ccd2','outputB_ccd2','outputC_ccd2','outputD_ccd2',
-                                   'outputA_ccd3','outputB_ccd3','outputC_ccd3','outputD_ccd3',
-                                   'outputA_ccd4','outputB_ccd4','outputC_ccd4','outputD_ccd4'),
+        if not os.path.isfile(os.path.join(args.outdir,'cal_timeseries.txt')):
+            with open('cal_timeseries.txt','a') as fout:
+                fout.write('{:>45s} '
+                           '{:>15s}{:>15s}{:>15s}{:>15s}'
+                           '{:>15s}{:>15s}{:>15s}{:>15s}'
+                           '{:>15s}{:>15s}{:>15s}{:>15s}'
+                           '{:>15s}{:>15s}{:>15s}{:>15s}'
+                           '{:>15s}{:>15s}{:>15s}{:>15s}'
+                           '\n'.format('name',
+                                       'mode_ccd1','mode_ccd2','mode_ccd3','mode_ccd4',
+                                       'outputA_ccd1','outputB_ccd1','outputC_ccd1','outputD_ccd1',
+                                       'outputA_ccd2','outputB_ccd2','outputC_ccd2','outputD_ccd2',
+                                       'outputA_ccd3','outputB_ccd3','outputC_ccd3','outputD_ccd3',
+                                       'outputA_ccd4','outputB_ccd4','outputC_ccd4','outputD_ccd4'),
 
                    )
-            for id in idx:
+        with open(os.path.join(args.outdir,'cal_timeseries.txt'),'a') as fout:
+            for idx in idxs:
                 fout.write('{:>45s} '
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
                            '{:>15.2f}{:>15.2f}{:>15.2f}{:>15.2f}'
-                           '\n'.format(out_fname[id],
-                                       out_data[id][0],out_data[id][1],
-                                       out_data[id][2],out_data[id][3],
-                                       out_data[id][4],out_data[id][5],
-                                       out_data[id][6],out_data[id][7],
-                                       out_data[id][8],out_data[id][9],
-                                       out_data[id][10],out_data[id][11],
-                                       out_data[id][12],out_data[id][13],
-                                       out_data[id][14],out_data[id][15],
-                                       out_data[id][16],out_data[id][17],
-                                       out_data[id][18],out_data[id][19],)
+                           '\n'.format(out_fname[idx],
+                                       out_data[idx][0],out_data[idx][1],
+                                       out_data[idx][2],out_data[idx][3],
+                                       out_data[idx][4],out_data[idx][5],
+                                       out_data[idx][6],out_data[idx][7],
+                                       out_data[idx][8],out_data[idx][9],
+                                       out_data[idx][10],out_data[idx][11],
+                                       out_data[idx][12],out_data[idx][13],
+                                       out_data[idx][14],out_data[idx][15],
+                                       out_data[idx][16],out_data[idx][17],
+                                       out_data[idx][18],out_data[idx][19],)
                        )
 
     runtime = time() - starttime

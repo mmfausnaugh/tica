@@ -1363,6 +1363,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
 
 
     results_async = []
+    result = []
     if n_cores > 1:
         p = Pool(n_cores)
         collect_results = lambda x: result.append(x)
@@ -1392,7 +1393,6 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
         p.close()
         p.join()
 
-        result = []
         for res in results_async:
             result.append( res.get())
             #with Pool(n_cores) as p:

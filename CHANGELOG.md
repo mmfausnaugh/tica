@@ -11,8 +11,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Removed
 
 ## [1.4.0] - 2022-5-8
-Code auotomatically finds a good reference image for step1_wcs.  Other aspects of logging and checking to automate.
-
+Code auotomatically finds a good reference image for step1_wcs.  Other aspects of logging and checking for automated configuration.
+### Changed
+-tica-cal-ffi2ccds now writes a file `cal_timeseries.txt`, which has the mode of the background level and 1D bias correction (overclock correction) as a function of time.
+-tica/tica.py has a function to calculate mode of an image.
+-Fixed some issues with error codes for parallelization in tica-check-delivery.
+-Fixed retrieval of parallelized output of step2_mkwcs.py.
+-Added exit codes to bash scripts and python scripts for auotmation.
+-Changed parameters for tica-stage-delivery so that it can automatically infer and make output directory.
+-Fixed issue with production table logging; wcs_step1 now outputs individual log files per CCD, and tica-production-table reads those files.
+### Added
+- Script `tica-darktime` which finds intervales of dark time, and writes out reffin.txt which are suitable for WCS.  Will also write a list of files for the reference image and rms images (difference iamging).
+	
 	
 ## [1.3.0] - 2022-5-8
 Parallelized wcs step2, changed step1 to do local database querries

@@ -54,14 +54,14 @@ try:
     assert len(dirs_to_check) == 17
 except AssertionError:
     print('Found {} directories instead of 17 (16 CCDS + ref_stars'.format(len(dirs_to_check) ) )
-    sys.exit()
+    sys.exit(1)
 
 for d in dirs_to_check:
     try:
         assert os.path.join(duse, d) in topdirs
     except AssertionError:
         print('Directory {} not in expected CCD/ref_star directories'.format(os.path.join(duse, d)  ))
-        sys.exit()
+        sys.exit(1)
 
 #check the ref_stars files, and that no columns are none
 filestems_to_check = ['cam1-ccd1','cam1-ccd2','cam1-ccd3','cam1-ccd4',
@@ -78,7 +78,7 @@ try:
     assert len(ref_files) == 16
 except AssertionError:
     print('Found {} ref_star files instead of 16'.format(len(ref_files)) )
-    sys.exit()
+    sys.exit(1)
 
 n_checks = 0
 for stem in filestems_to_check:
@@ -90,7 +90,7 @@ try:
     assert n_checks == 16
 except AssertionError:
     print('Found unexpected file {} in ref_star directory'.format(stem))
-    sys.exit()
+    sys.exit(1)
 
 columns_to_check = ['blkidxs', 
                     'contrastcols', 'contrastrows', 
@@ -107,12 +107,12 @@ for ref_file in ref_files:
             assert col in f.keys()
         except AssertionError:
             print('  Unexpected column {} found in file'.format(col))
-            sys.exit()
+            sys.exit(1)
         try:
             assert not any( np.isnan(f[col]) )
         except AssertionError:
             print('  NaN value found in column {}'.format(col) )
-            sys.exit()
+            sys.exit(1)
 
 
 #check the right number of files in each directory
@@ -187,12 +187,22 @@ def worker( in_tuple ):
 
     
 p = Pool(16)
+results_async = []
 for d in dirs_to_check[0:-1]:
-    p.apply_async(worker, ( ( os.path.join(duse, d) , 
+    results_async.append(  p.apply_async(worker, ( ( os.path.join(duse, d) , 
                               N_cad_check_o1), ) )
+                 )
     #worker( (os.path.join(duse,d), N_cad_check_o1) )
 
 p.close()
 p.join()
+
+results = [ ]
+for res in results_async:
+    try:
+        results.append(res.get() )
+    except Exception as e:
+        print(e)
+        sys.exit(1)
 
 print('check complete! No assertion errors')

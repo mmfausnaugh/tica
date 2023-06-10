@@ -546,7 +546,11 @@ class CCD(object):
         bin_midpoints = np.mean([ bins[0:-1], bins[1:]],
                                 axis=0)
             
-        mode = bin_midpoints[ values == values.max() ][0]
+        if len(pixels[ pixels < 500 ]) > len(pixels)//2:
+            mode = 0
+        else:
+            mode = bin_midpoints[ values == values.max() ][0]
+
         return mode
 
 

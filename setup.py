@@ -30,7 +30,9 @@ setup(
              'wcs_build/step2_mkwcs.py',
 
              'bin/tica-check-delivery',
-             'bin/tica-stage-delivery'
+             'bin/tica-stage-delivery',
+
+             'bin/tica-darktime'
 
          ],
     install_requires=[
