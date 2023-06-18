@@ -1071,7 +1071,10 @@ def worker( intuple):
         idx = np.where(blkidxs == curibad)[0]
         # pick three random ones in this subregion
         np.random.seed(1010101)
-        idxUse = np.random.choice(idx, (3,), replace=False)
+        if len(idx) >= 3:
+            idxUse = np.random.choice(idx, (3,), replace=False)
+        else:
+            idxUse = idx
         gdPrfs[idxUse] = -1 # record these random added for plotting and diagnostics
         idxgd = np.append(idxgd, idxUse)
         # These targets never had dc offset added from subregion
@@ -1528,7 +1531,7 @@ if __name__ == '__main__':
                         "in which case do not use this option. "
                         "This option would be helpful if >1-2 pixel "
                         "shifts occur.")
-    parser.add_argument("-dbg", "--debug", type=int, \
+    parser.add_argument("-dbg", "--debug", type=int, default=0,\
                         help="Debug level; integer higher has more output")
     parser.add_argument("--parallel", type=int, default=1,
                         help="run files in parallel on number of processors specified here")
