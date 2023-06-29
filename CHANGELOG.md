@@ -22,6 +22,7 @@ Code auotomatically finds a good reference image for step1_wcs.  Other aspects o
 -Fixed issue with production table logging; wcs_step1 now outputs individual log files per CCD, and tica-production-table reads those files.
 ### Added
 - Script `tica-darktime` which finds intervales of dark time, and writes out reffin.txt which are suitable for WCS.  Will also write a list of files for the reference image and rms images (difference iamging).
+- Script `doall_automate` that can run on chron to automatically configure and run TICA on each new data delivery from POC.
 	
 	
 ## [1.3.0] - 2022-5-8
