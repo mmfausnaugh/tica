@@ -1,0 +1,331 @@
+#!/usr/bin/env python
+
+import numpy as np
+import matplotlib.pyplot as plt
+from astropy.io import fits
+#import sys
+import glob
+import os
+import argparse
+
+
+
+#need reference image for WCS.  not too strigent, should be dark time. 1 image
+#need images for reference image.  Must be dark.  only need 20
+#need dark time intervals for RMS.  Must be dark, but balanced against as much time as possible
+
+
+def clean_islands(FFInums, mask_keep, N_ffis_per_island):
+
+
+    good_idx = np.where(mask_keep)[0]
+    if len(good_idx) == 0:
+        return mask_keep
+    min_idx = good_idx[0]
+    max_idx = good_idx[-1]
+
+
+    island_keep = np.zeros(len(FFInums),dtype=bool)
+
+    for ii in range(len( good_idx )):
+        idx = good_idx[ii]
+
+        if idx != min_idx:
+            dt1 = FFInums[idx] - FFInums[good_idx[ii - 1 ] ]            
+            #print(dt1)
+            #if next time interval is smaller than 1hr = 18 FFIs, grab
+            #these FFIs
+            if (dt1 < N_ffis_per_island) & (dt1 > 1):
+                #print(idx,dt1,'in dt1 additions')
+                m = (FFInums > FFInums[good_idx[ii -1] ]) & ( FFInums < FFInums[idx ])
+                island_keep[ m ] = 1
+
+
+        if idx != max_idx:
+
+            dt2 = FFInums[good_idx[ii + 1 ]] - FFInums[idx ]
+            if (dt2 < N_ffis_per_island) & ( dt2 > 1):
+                #print(idx,dt2,'in dt2 additions')
+                m = (FFInums > FFInums[idx]) & ( FFInums < FFInums[good_idx[ii + 1 ]])
+                island_keep[ m ] = 1
+        
+    return island_keep + mask_keep
+
+
+
+#N_low_modes = 3
+#mode_sigma = 5
+frac_above_min = 1.10
+#N_ffis_per_island = 18
+
+
+
+if __name__ == "__main__":
+    description_string = """
+
+    This script reads cal_timeseries.txt files, and identifies periods
+    of darktime needed for further processing.  It also identifies bad
+    calibrations based on the overclock corrections (for example, due
+    to saturated output channels from the earth/moon).
+
+    The outputs are an REFFIN needed for TICA wcs, a list of 20 dark
+    frames needed to make the difference imaging reference, and a long
+    list for rms images after the difference imaging (for a transient
+    search).
+
+    """
+
+    parser = argparse.ArgumentParser(description = description_string)
+    parser.add_argument("--mode_sigma",type=float,default=8.0,
+                        help="Determines threshold for rms_list.  "
+                        "rms_list is longest stretch of dark time, "
+                        "we use this to build the variability image "
+                        "for transient detections. Take "
+                        "mode_sigma*min(mode_bins) for rms_list.")
+
+    parser.add_argument("--N_low_modes",type=int,default=3,
+                        help="Determines number of low mode_bins "
+                        "for ref_list.  ref_list is the 20 darkesst "
+                        "frames, for making reference image for difference imaging.")
+
+    parser.add_argument("--N_ffis_per_island",type=int, default=120,
+                        help="Due to noise, some points jump above thresholds within"
+                        "darktime intervales.  This is the minimum number of points"
+                        "to be considered bright time, as apposed to on of these "
+                        "spurious islands.")
+
+    parser.add_argument("--use_first_ccd",action='store_true',
+                        help="If set, copy cam1_ccd1/ref_list to other CCDs.")
+
+    parser.add_argument("--save_reffin",action='store_true',
+                        help="If set, save lowest background REFFIN in reffin.txt, "
+                        "to use with wcs_step1.py.")
+
+    parser.add_argument("--save_reflist",action='store_true',
+                        help="If set, save 20 good REFFINs in cam?_ccd?/ref_list, "
+                        "suitable for making reference image for DIA.")
+
+    args = parser.parse_args()
+
+    if args.save_reffin:
+        if os.path.isfile('reffin.txt'):
+            os.remove('reffin.txt')
+
+    for ii in range(4):
+        infile = 'cam{}_ccd1/cal_timeseries.txt'.format(ii + 1)
+
+        fname_all = np.genfromtxt(infile,unpack=1,usecols=(0),dtype=str,skip_header=1)
+        data_all  = np.genfromtxt(infile,names=True,usecols=(1,2,3,4,
+                                                         5,6,7,8,
+                                                         9,10,11,12,
+                                                         13,14,15,16,
+                                                         17,18,19,20))
+        
+        #data =np.array(data).T
+        #unique_modes = np.sort(np.unique(mode))
+        FFInum_all = np.array([ int(e.split('-')[1]) for e in fname_all  ])
+        print(len(FFInum_all))
+        idx = np.argsort(FFInum_all)
+        FFInum_all = FFInum_all[idx]
+        fname_all=fname_all[idx]
+        data_all = data_all[idx]
+
+        
+
+        F,( axes ) = plt.subplots(4, 2,sharex='all')
+
+        for jj in range(len(axes)):
+
+            ccduse = 'mode_ccd{}'.format(jj+1)
+
+            try:
+                axes[jj][1].plot(FFInum_all, data_all['outputA_ccd{}'.format(jj+1)], 'k.')
+                axes[jj][1].plot(FFInum_all, data_all['outputB_ccd{}'.format(jj+1)], 'k.')
+                axes[jj][1].plot(FFInum_all, data_all['outputC_ccd{}'.format(jj+1)], 'k.')
+                axes[jj][1].plot(FFInum_all, data_all['outputD_ccd{}'.format(jj+1)], 'k.')
+            except:
+                pass
+            
+
+
+            ########################################################
+            #bad_calibration
+            ########################################################
+            bad_cal_trim = np.zeros(len(FFInum_all),dtype=bool)
+
+            for output_channel in ['A','B','C','D']:
+                overclock_correct = data_all['output{}_ccd{}'.format(output_channel,
+                                                                 jj+1)]
+
+                deviations = overclock_correct   - np.median(overclock_correct)
+                scatter = np.median(  abs( deviations) )/0.67449
+
+                bad_cal_trim += abs(deviations) > 20*scatter
+
+                low = np.ones(len(FFInum_all))*(np.median(overclock_correct)  - 18*scatter)
+                high = np.ones(len(FFInum_all))*(np.median(overclock_correct) + 18*scatter)
+                axes[jj][1].fill_between(FFInum_all, high, low, facecolor='k',alpha=0.2)
+                
+                axes[jj][1].plot(FFInum_all[bad_cal_trim], 
+                                 data_all['output{}_ccd{}'.format(output_channel,
+                                                                  jj+1)][bad_cal_trim], 'r.')
+
+
+                #mode = 0 is set if saturation is not yet spiking the overclocks,
+                #but imaging array is near zero or negative
+                bad_cal_trim += data_all[ccduse] == 0
+                
+            if len(np.where(bad_cal_trim)[0]) > 0:
+                np.savetxt('cam{}_ccd{}/bad_calibration.txt'.format(ii + 1, jj+1),
+                           np.c_[FFInum_all[bad_cal_trim] ],
+                           fmt='%d')
+                data = data_all[~bad_cal_trim]
+                FFInum = FFInum_all[~bad_cal_trim]
+                fname = fname_all[~bad_cal_trim]
+            else:
+                data   = data_all
+                FFInum = FFInum_all
+                fname  = fname_all
+
+                
+            ########################################################
+            #rms_list
+            ########################################################
+
+            unique_modes = np.unique(data['mode_ccd{}'.format(jj+1)])
+            thresh = args.mode_sigma*np.sqrt( unique_modes[0]) + unique_modes[0]
+
+            axes[jj][0].plot(FFInum, data['mode_ccd{}'.format(jj+1)], 'k.')
+            axes[jj][0].set_ylabel('CCD {}'.format(jj+1))
+
+            #print(unique_modes)
+
+
+
+            m = data[ccduse] < unique_modes[0]*frac_above_min
+            m = clean_islands(FFInum, m, args.N_ffis_per_island)
+            axes[jj][0].plot(FFInum[m], data[ccduse][m],'c.')
+            #make_rms(FFInum[m],ii+1,jj+1,'mask1_rms.fits')
+
+            #m = data['mode_ccd{}'.format(jj+1)] < unique_modes[low_modes_num]
+            m = data[ccduse] < thresh
+            m = clean_islands(FFInum, m, args.N_ffis_per_island)
+
+            axes[jj][0].plot(FFInum[m], data[ccduse][m],'b.')
+        
+
+            #make_rms(FFInum[m],ii+1,jj+1,'mask2_rms.fits')
+            #seems to work well for dark time interval, save for rms_list
+            outnames = []
+            for e in fname[m]:
+                out1 = 'conv_{}'.format(e).replace('.fits','_ccd{}.cal.fits'.format(jj+1) )
+                out1 = out1.replace('.gz','')
+                outnames.append(out1)
+
+
+            np.savetxt('cam{}_ccd{}/rms_list'.format(ii+1, jj+1),
+                       np.c_[outnames],fmt='%s')
+
+
+            
+            ########################################################
+            #REFFIN
+            ########################################################
+            #find the lowest bins, get something near the middle
+            m = data[ccduse] == unique_modes.min()
+            idxs = np.where(m)[0]
+            idx = idxs[ len(idxs)//2 ]
+            reffin = FFInum[idx]
+            
+            if args.save_reffin:
+                with open('reffin.txt','a') as fout:
+                    fout.write('cam{}_ccd{} {:08d}\n'.format( ii + 1, jj + 1,
+                                                              int(FFInum[idx]))  )  
+
+            l,h = axes[jj][0].get_ylim()
+            axes[jj][0].plot([reffin,reffin],
+                             [l,h],'k--')
+            axes[jj][0].set_ylim([l,h])
+
+            ########################################################
+            #ref_list
+            ########################################################
+            #pick 20 that are at darkest times
+            #have been assuming that spread out over time is good
+            #so, lowest few bins, and evenly spread over time
+            try:
+                m = data[ccduse] <= unique_modes[args.N_low_modes]
+                kk = 0
+                while len(m[m]) < 25:
+                    kk += 1
+                    m = data[ccduse] <= unique_modes[args.N_low_modes + kk ]
+
+                m = clean_islands(FFInum, m, args.N_ffis_per_island)
+                idxs = np.where(m)[0]
+                #trim 10% on boths sides
+                trim = int(len(idxs)*0.25)
+                idxs = idxs[trim:-trim]
+
+                #this is 20 points evenly spaced across the dark time range
+                #idx_ref = idxs[ np.r_[0:len(idxs) -1 :20j].astype(int) ]
+
+                #best is to concentrate them in time, about over 1
+                #1 day = 432 FFIs
+                #but, if not settle for 20 equal distributed
+                idx_mid = len(idxs)//2
+
+                if len(idxs) > 433:
+                    idx_ref = idxs[ np.r_[idx_mid - 216 : idx_mid + 216 :20j].astype(int) ]
+                elif len(idxs) > 20:
+                    #print(idxs)
+                    idx_ref = idxs[ np.r_[0:len(idxs)-1:20j].astype(int) ]
+                else:
+                    idx_ref = idxs
+
+
+
+                axes[jj][0].plot(FFInum[idxs],data['mode_ccd{}'.format(jj+1)][idxs],
+                                 '.',color='purple')
+                
+                l,h = axes[jj][0].get_ylim()
+                for idx_r in idx_ref:
+                
+                    axes[jj][0].plot([FFInum[idx_r],FFInum[idx_r]],
+                                     [l,h],'r--')
+                axes[jj][0].set_ylim([l,h])
+
+                    
+
+
+                if args.save_reflist:
+                    if args.use_first_ccd:
+                        if ii == 0 and jj == 0:
+                            with open('cam{}_ccd{}/ref_list'.format(ii+1,jj+1),'w') as fout:
+                                fstem = fname[0].split('-')[0]
+                                for idx_r in idx_ref:
+                                    fout.write('{}-{:08d}-{}-crm-ffi_ccd{}.cal.fits\n'.format(
+                                        fstem,FFInum[idx_r], ii+1, jj + 1))
+
+                    else:
+                        with open('cam{}_ccd{}/ref_list'.format(ii+1,jj+1),'w') as fout:
+                            fstem = fname[0].split('-')[0]
+                            for idx_r in idx_ref:
+                                fout.write('{}-{:08d}-{}-crm-ffi_ccd{}.cal.fits\n'.format(
+                                    fstem,FFInum[idx_r], ii+1, jj + 1))
+            except Exception as e:
+                print(e)
+                pass
+
+
+
+        F.suptitle('cam{}'.format(ii+1))
+        
+        axes[0][0].set_title('Image mode (background)')
+
+        axes[0][1].set_title('1D Bias correction')
+                   
+        F.set_size_inches(12,8)
+        F.subplots_adjust(hspace=0)
+        F.savefig(os.path.join( os.path.dirname(infile), 'cal_timeseries.png') )
+    plt.show()
+        

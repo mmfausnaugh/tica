@@ -32,7 +32,8 @@ setup(
              'bin/tica-check-delivery',
              'bin/tica-stage-delivery',
 
-             'bin/tica-darktime'
+             'bin/tica-darktime',
+             'bin/tica-doall-automate'
 
          ],
     install_requires=[
