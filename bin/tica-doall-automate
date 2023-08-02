@@ -1,0 +1,231 @@
+#!/usr/bin/env bash
+
+
+
+function ExitWithEmail() {
+    echo $1 | mail -s "tica proceessing error" mmfausnaugh@gmail.com
+    
+}
+
+
+CALDIR="/pdo/users/faus/python/tica/calibration_200sec"
+NCORES=57
+NCORES2=10
+
+
+outputdir="/pdo/qlp-data/tica-delivery/"
+#outputdir="/pdo/users/faus/scratch/test_data_for_automate/o1a_test_out/"
+
+dstem="/pdo/poc-data/orbits/"
+
+#does errors in camera 1
+#dstem="/pdo/users/faus/scratch/test_data_for_automate/o1a_test/"
+lastdir=$(ls -rt $dstem | grep orbit | tail -n 1)
+
+    
+
+datadir="$dstem""/$lastdir""/ffi_fits"
+
+countcam1=$(ls "$datadir"/*-1-*fits* | wc -l)
+countcam2=$(ls "$datadir"/*-2-*fits* | wc -l)
+countcam3=$(ls "$datadir"/*-3-*fits* | wc -l)
+countcam4=$(ls "$datadir"/*-4-*fits* | wc -l)
+
+echo "$countcam1 $countcam2 $countcam3 $countcam4"
+
+
+
+#logic for orbit o1a, o1b, o2a, o2b
+segment1=''
+segment2=''
+
+orbit=$(echo $lastdir | awk -F- '{print $2}')
+
+
+mod=$(($orbit%2))
+if [[ $mod -eq 1 ]]; then
+    echo 'odd' $orbit $mod
+    segment1="o1"
+elif [[ $mod -eq 0 ]]; then
+    echo 'even' $orbit $mod
+    segment1="o2"
+fi
+
+#maybe bash arrays are disfavored, it is a nice way to count, though
+
+Nstems=$(ls "$datadir"/*-1-* | awk -F/ '{print $NF}' | awk -F- '{print $1}' | sort -u | wc -l)
+echo $Nstems
+
+if [[ $Nstems -eq 1 ]]; then
+    segment2="a"
+elif [[ $Nstems -eq 2 ]]; then
+    segment2="b"
+#need logic for empty directory or directory with no permissions???
+else
+    echo "found $Nstem processing stems in $datadir.  Appears to be an"\
+           "off nominal downlink.  In this case, do not run data automatically."
+    exit 1
+fi
+
+#does the same thing, but with a bash array.  Keeping around in case
+#knowing the stems turns out to be useful
+
+# datestems=() 
+#for s in $(ls "$datadir"/*-1-* | awk -F- '{print $3}' | sort -u | awk -F/ '{print#$3}'); do 
+#   datestems+=($s) ;
+#done
+#
+#
+#if [[ ${#datestems[@]} -eq 1 ]]; then
+#    segment2="a"
+#elif [[ ${#datestems[@]} -eq 2 ]]; then
+#    segment2="b"
+#fi
+
+segment="$segment1""$segment2"
+echo $orbit $segment
+
+#or, can set orbit and segment by hand
+while [ $# -gt 0 ]; do
+    case $1 in
+	*) eval $1 ;;
+    esac
+    shift
+done
+
+echo "after overwrite: $orbit $segment"
+mod=$(($orbit%2))
+
+#integer division
+SECTOR=$((($orbit - 7)/2))
+echo "sector: "$SECTOR
+outputSECTOR=$(printf "%04d" $SECTOR)
+
+
+errorflag=0
+
+echo "Running tica-calibrate-tso..."
+#if [[ $segment =~ "o1" ]]; then
+if [[ $mod -eq 1 ]]; then
+    tica-calibrate-tso o1="$orbit" o2="None" orbseg="$segment" dstem="$dstem" \
+	CALDIR="$CALDIR" NCORES="$NCORES" || {  
+	if [[ $? == 2 ]]; then
+	    echo "Configuration error running tica-calibrate-tso, exiting.";
+	    ExitWithEmail "Configuration error running tica-calibrate-tso, $SECTOR $orbit $segment, exting....";
+	    exit 2
+	elif [[ $? == 1 ]]; then
+	    echo "Error in tica-calibrate-tso, continuing fo"
+	    errorflag=1;
+	else
+	    echo "Unknown  error, abort!"
+	    exit 3
+	fi
+	
+    }
+#elif [[ $segment =~ "o2" ]]; then
+elif [[ $mod -eq 0 ]]; then
+    tica-calibrate-tso o1="None" o2="$orbit" orbseg="$segment" dstem="$dstem" \
+	CALDIR="$CALDIR" NCORES="$NCORES" || {  
+	if [[ $? == 2 ]]; then
+            echo "Configuration error running tica-calibrate-tso, exiting.";
+            ExitWithEmail "Configuration error running tica-calibrate-tso, $SECTOR $orbit $segment, exting....";
+            exit 2
+        elif [[ $? == 1 ]]; then
+            echo "Error in tica-calibration-tso, continuing fo"
+            errorflag=1;
+	else
+	    echo "Unknown  error, abort!"
+	    exit 3
+        fi
+
+    }
+fi
+
+echo "Running tica-darktime..."
+if [[ $segment =~ "o1a" ]]; then
+    tica-darktime --save_reflist --save_reffin --use_first_ccd
+    reffin=$(awk '{print $2}' reffin.txt | head -1)
+else
+    tica-darktime 
+fi
+
+if [[ $segment =~ "o1a" ]]; then
+    echo "Running tica-wcs-step1-allcam-allccd..."
+    tica-wcs-step1-allcam-allccd SECTOR="$SECTOR" dstem="./" REFFIN="$reffin" ||{
+	if [[ $? == 2 ]]; then
+            echo "Configuration error running tica-wcs-step1-allcam-allccd, exiting.";
+            ExitWithEmail "Configuration error running tica-wcs-step1-allcam-allccd, $SECTOR $orbit $segment, exting....";
+            exit 2
+	elif [[ $? == 1 ]]; then
+            echo "Error in tica-wcs-step1-allcam-allccd, continuing forward"
+            errorflag=1;
+	else
+	    echo "Unknown  error, abort!"
+	    exit 3
+	fi
+    }
+
+fi
+
+
+echo "Running tica-wcs-step2-allcam-allccd..."
+tica-wcs-step2-allcam-allccd SECTOR="$SECTOR" dstem="./" NCORES="$NCORES2" ||{  
+    if [[ $? == 2 ]]; then
+        echo "Configuration error running tica-wcs-step2-allcam-allccd, exiting.";
+        ExitWithEmail "Configuration error running tica-wcs-step2-allcam-allccd, $SECTOR $orbit $segment, exting....";
+        exit 2
+    elif [[ $? == 1 ]]; then
+        echo "Error in tica-wcs-step1-allcam-allccd, continuing forward"
+        errorflag=1;
+    else
+        echo "Unknown  error, abort!"
+        exit 3
+    fi
+
+}
+
+for i in 1 2 3 4; do 
+    for j in 1 2 3 4; do 
+	if [[ -d "cam$i""_ccd$j" ]]; then 
+	    cd "cam$i""_ccd$j"
+	    pwd
+	    [[ -d $segment ]] || { mkdir $segment ; }
+	    mv tess*fits $segment
+	    mv wcs_diags2 $segment
+	    mv rms_list $segment
+	    if [[ $j -eq 1 ]]; then
+		mv cal_timeseries.txt $segment
+		mv cal_timeseries.png $segment
+	    fi
+	    cd ..
+	fi
+    done
+done
+
+
+echo "Running tica-stage-delivery..."
+tica-stage-delivery v01 "$outputdir"/s"$outputSECTOR" $segment $SECTOR
+
+
+echo "Running tica-check-delivery..."
+tica-check-delivery "$outputdir"/s"$outputSECTOR"  ||{
+    echo "Error running tica-check-delivery.";
+    errorflag=1;
+}
+
+
+echo "my error flag" $errorflag
+if [[ $errorflag -eq 0 ]]; then
+    msg=$(printf "TICA s$SECTOR $segment processing complete with no errors. Data can be retrieved at $outputdir/s""$outputSECTOR""\n(This is a first test of automated tica scripts. )"   )
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com roland@space.mit.edu qlp-operators@mit.edu halewis@stsci.edu fleming@stsci.edu  grr@space.mit.edu
+
+elif [[ $errorflag -eq 1 ]]; then
+    msg=$(printf "TICA s$SECTOR $segment processing complete, but there were errors. Look in  $outputdir/s""$outputSECTOR""\n(This is a first test of automated tica scripts. )");
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com 
+else
+    echo "major error, erroflag not set. ";
+    msg=$( printf "major error, erroflag not set. ");
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com 
+fi
+
+
