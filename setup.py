@@ -42,7 +42,7 @@ setup(
         'astropy==5.0',
         'matplotlib==3.5.1',
         'h5py==3.6.0',
-        'tess-point>=0.6.3',
+        'tess-point>=0.8.0',
         'gwcs==0.15.0',
         'psycopg2-binary==2.9.5'
         ]

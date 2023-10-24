@@ -3,7 +3,7 @@
 
 
 function ExitWithEmail() {
-    echo $1 | mail -s "tica proceessing error" mmfausnaugh@gmail.com
+    echo $1 | mail -s "tica proceessing error" mmfausnaugh@gmail.com  petitpas@mit.edu
     
 }
 
@@ -31,7 +31,7 @@ countcam2=$(ls "$datadir"/*-2-*fits* | wc -l)
 countcam3=$(ls "$datadir"/*-3-*fits* | wc -l)
 countcam4=$(ls "$datadir"/*-4-*fits* | wc -l)
 
-echo "$countcam1 $countcam2 $countcam3 $countcam4"
+#echo "$countcam1 $countcam2 $countcam3 $countcam4"
 
 
 
@@ -44,17 +44,18 @@ orbit=$(echo $lastdir | awk -F- '{print $2}')
 
 mod=$(($orbit%2))
 if [[ $mod -eq 1 ]]; then
-    echo 'odd' $orbit $mod
+    #echo 'odd' $orbit $mod
     segment1="o1"
 elif [[ $mod -eq 0 ]]; then
-    echo 'even' $orbit $mod
+    #echo 'even' $orbit $mod
     segment1="o2"
 fi
 
 #maybe bash arrays are disfavored, it is a nice way to count, though
 
 Nstems=$(ls "$datadir"/*-1-* | awk -F/ '{print $NF}' | awk -F- '{print $1}' | sort -u | wc -l)
-echo $Nstems
+stem=$(ls "$datadir"/*-1-* | awk -F/ '{print $NF}' | awk -F- '{print $1}' | sort -u | tail -n 1)
+#echo $Nstems
 
 if [[ $Nstems -eq 1 ]]; then
     segment2="a"
@@ -83,7 +84,7 @@ fi
 #fi
 
 segment="$segment1""$segment2"
-echo $orbit $segment
+#echo $orbit $segment
 
 #or, can set orbit and segment by hand
 while [ $# -gt 0 ]; do
@@ -93,16 +94,32 @@ while [ $# -gt 0 ]; do
     shift
 done
 
-echo "after overwrite: $orbit $segment"
+#echo "after overwrite: $orbit $segment"
 mod=$(($orbit%2))
 
 #integer division
 SECTOR=$((($orbit - 7)/2))
-echo "sector: "$SECTOR
+#echo "sector: "$SECTOR
 outputSECTOR=$(printf "%04d" $SECTOR)
 
 
 errorflag=0
+
+#setup control for cron
+checkstr=$(echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem  )
+compstr=$(grep "$orbit $segment" /data/tess/image_sub/tica-processing-records.txt)
+#echo $compstr
+#echo $checkstr
+#echo "grep exit code" $?
+
+if [[ $? == "0" ]]; then
+    if [[ $compstr =~ $checkstr ]]; then
+	#echo "grep successful, matched checkstr, do not run"
+	exit 0
+    fi
+fi
+
+
 
 echo "Running tica-calibrate-tso..."
 #if [[ $segment =~ "o1" ]]; then
@@ -216,16 +233,25 @@ tica-check-delivery "$outputdir"/s"$outputSECTOR"  ||{
 
 echo "my error flag" $errorflag
 if [[ $errorflag -eq 0 ]]; then
-    msg=$(printf "TICA s$SECTOR $segment processing complete with no errors. Data can be retrieved at $outputdir/s""$outputSECTOR""\n(This is a first test of automated tica scripts. )"   )
-    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com roland@space.mit.edu qlp-operators@mit.edu halewis@stsci.edu fleming@stsci.edu  grr@space.mit.edu
+    msg=$(printf "TICA s$SECTOR $segment processing complete with no errors. Data can be retrieved at $outputdir/s""$outputSECTOR""\n"   )
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com roland@space.mit.edu qlp-operators@mit.edu halewis@stsci.edu fleming@stsci.edu  tberger@stsci.edu jimig@stsci.edu grr@space.mit.edu
+
+
+    echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "finished" >> /data/tess/image_sub/tica-processing-records.txt
+
 
 elif [[ $errorflag -eq 1 ]]; then
     msg=$(printf "TICA s$SECTOR $segment processing complete, but there were errors. Look in  $outputdir/s""$outputSECTOR""\n(This is a first test of automated tica scripts. )");
     echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com 
+
+    echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "error" >> /data/tess/image_sub/tica-processing-records.txt
+
 else
     echo "major error, erroflag not set. ";
     msg=$( printf "major error, erroflag not set. ");
     echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com 
+
+    echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "error" >> /data/tess/image_sub/tica-processing-records.txt
 fi
 
 
