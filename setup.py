@@ -44,7 +44,8 @@ setup(
         'h5py==3.6.0',
         'tess-point>=0.8.0',
         'gwcs==0.15.0',
-        'psycopg2-binary==2.9.5'
+        'psycopg2-binary==2.9.5',
+        'spiceypy==6.0.0',
         ]
 
 )    
