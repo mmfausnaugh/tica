@@ -33,7 +33,9 @@ setup(
              'bin/tica-stage-delivery',
 
              'bin/tica-darktime',
-             'bin/tica-doall-automate'
+             'bin/tica-doall-automate',
+
+             'btjd/tica-dump-ephemeris.py'
 
          ],
     install_requires=[

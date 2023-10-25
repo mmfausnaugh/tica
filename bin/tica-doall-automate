@@ -106,7 +106,7 @@ outputSECTOR=$(printf "%04d" $SECTOR)
 errorflag=0
 
 #setup control for cron
-checkstr=$(echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem  )
+checkstr=$(echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem  "error")
 compstr=$(grep "$orbit $segment" /data/tess/image_sub/tica-processing-records.txt)
 #echo $compstr
 #echo $checkstr
@@ -119,7 +119,12 @@ if [[ $? == "0" ]]; then
     fi
 fi
 
+msg="Automated tica processing as a cron job has started. An update will be sent when the processing finishes."
+echo $msg | mail -s "tica s$SECTOR $segment proceessing started" mmfausnaugh@gmail.com qlp-operators@mit.edu
 
+
+echo "Running tica-dump-ephemeris"
+tica-dump-ephemeris.py --ephemeris "/pdo/poc-data/kernels/pdo_tess_setup.tm" --outdir "/pdo/users/faus/python/tica/btjd/"
 
 echo "Running tica-calibrate-tso..."
 #if [[ $segment =~ "o1" ]]; then
