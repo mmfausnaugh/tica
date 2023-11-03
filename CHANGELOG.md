@@ -25,6 +25,7 @@ Code auotomatically finds a good reference image for step1_wcs.  Other aspects o
 - Script `tica-doall-automate` that can run on chron to automatically configure and run TICA on each new data delivery from POC. Also updates `tica-processing-records.txt` and `production-table.md`. Emails users whe script completes.
 - File to track processing in tica-processing-records.txt.
 - Script `btjd/tica-dump-ephemeris.py`, which automatically updates `btjd/tess_ephem.txt`. Assumes SPICE kernels are set up in /pdo/poc-data/kernels/pdo_tess_setup.tm, along with associated files. Also adds dependency on spiceypy==6.0.0.
+- Added tica-processing-records.txt.
 	
 	
 ## [1.3.0] - 2022-5-8
