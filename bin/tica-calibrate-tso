@@ -60,21 +60,27 @@ USAGE="
 
 "
 
-[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+#exit code 2 is a harder stop, makes automation bash script exit
+#exit code 1 flags an issue, but allows the automation code to continue
+#3xit code 0 allows automation code to continue
+
+[ $# -eq 0 ] && { echo "$USAGE" ; exit 2; }
 
 while [ $# -gt 0 ] ; do
   case $1 in
-    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    "-h" | "--help") echo "$USAGE" ; exit 2 ;;
     *)         eval $1 ;;
   esac
   shift
 done
 
+
+
 #check that all variables are set
-[[ "$o1" == '' ]] && { echo "$USAGE" ; echo "set orbit 1 to an integer (or 'None'): o1=<\d\d>" ; exit ; }
-[[ "$o2" == '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit ; }
-[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
-[[ "$CALDIR" == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit ; }
+[[ "$o1" == '' ]] && { echo "$USAGE" ; echo "set orbit 1 to an integer (or 'None'): o1=<\d\d>" ; exit 2 ; }
+[[ "$o2" == '' ]] && { echo "$USAGE" ; echo "set orbit 2 to an integer (or 'None'): o2=<\d\d>" ; exit 2 ; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit 2 ; }
+[[ "$CALDIR" == '' ]] && { echo "$USAGE" ; echo "set calibration directory (comes with tica): CALDIR=<path_to_caldir>" ; exit 2 ; }
 #[[ "$NCORES" == '' ]] && { echo "$USAGE" ; echo "number of cores to use in parallel processing" ; exit ; }
 
 [[ "$NCORES" == '' ]] && let NCORES=1
@@ -82,14 +88,14 @@ done
 
 [[ "$orbseg" == '' ]] && { echo "orbseg is not set, running both ffi_fits-haho and ffi_fits and will not write keyword ORB_SEG in output files". ;}
 
-[[ "$o1" != "None" ]] && [[ $o2 != "None" ]] && { echo "Configuration Error.  Both orbits are set, cannot use orbseg.  Processes individual orbits if you need this keyword set."; exit ;}
+[[ "$o1" != "None" ]] && [[ $o2 != "None" ]] && [[ $orbseg != "" ]] && { echo "Configuration Error.  Both orbits are set, cannot use orbseg.  Processes individual orbits if you need this keyword set."; exit 2 ;}
 
 #exit if orbseg does not match expected orbit
-[[ "$orbseg" =~ 'o1'  ]] && [[ $o1 == 'None' ]] && { echo "Configuration Error. o1 is None but orbseg is set to $orbseg."; exit ;}
-[[ "$orbseg" =~ 'o2'  ]] && [[ $o2 == 'None' ]] && { echo "Configuration Error. o2 is None but orbseg is set to $orbseg."; exit ;}
+[[ "$orbseg" =~ 'o1'  ]] && [[ $o1 == 'None' ]] && { echo "Configuration Error. o1 is None but orbseg is set to $orbseg."; exit 2 ;}
+[[ "$orbseg" =~ 'o2'  ]] && [[ $o2 == 'None' ]] && { echo "Configuration Error. o2 is None but orbseg is set to $orbseg."; exit 2 ;}
 
-[[ "$orbseg" =~ 'o1'  ]] && [[ $o2 != 'None' ]] && { echo "Configuration Error. o1 is set, but orbseg requested something from orbit 1. orbseg must match the orbit that is set."; exit ;}
-[[ "$orbseg" =~ 'o2'  ]] && [[ $o1 != 'None' ]] && { echo "Configuration Error. o1 is set, but orbseg requested something from orbit 2.  orbseg must match the orbit that is set."; exit ;}
+[[ "$orbseg" =~ 'o1'  ]] && [[ $o2 != 'None' ]] && { echo "Configuration Error. o1 is set, but orbseg requested something from orbit 1. orbseg must match the orbit that is set."; exit 2 ;}
+[[ "$orbseg" =~ 'o2'  ]] && [[ $o1 != 'None' ]] && { echo "Configuration Error. o1 is set, but orbseg requested something from orbit 2.  orbseg must match the orbit that is set."; exit 2 ;}
 
 for i in 1 2 3 4; do
     for j in 1 2 3 4; do
@@ -133,7 +139,7 @@ for i in 1 2 3 4; do
 	    [[ "$orbseg" =~ 'b' ]] && { stampuse=$stamp_second ; }
 	    if [ "$stampuse" == '' ]; then 
 	    	echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o1/ffi_fits."
-	    	exit
+	    	exit 2
 	    fi
 
 	    #[[ "$orbseg" =~ 'a' ]] && { subdir="ffi_fits-haho"; }
@@ -177,7 +183,7 @@ for i in 1 2 3 4; do
 
 	    if [ "$stampuse" == '' ] ; then 
 	    	echo "Error.  Requested $orbseg but could not find correct segment in $dstem/orbit-$o2/ffi_fits." 
-	    	exit
+	    	exit 2
 	    fi
 	    #[[ "$orbseg" =~ 'a' ]] && { subdir="ffi_fits-haho"; }
 	    #[[ "$orbseg" =~ 'b' ]] && { subdir="ffi_fits"; }
@@ -211,16 +217,29 @@ else
 fi
 
 #run tica
+#set a flag if there are errors.
+#this lets us processes everything, but make a note of issues
+errorflag=0
 for i in 1 2 3 4; do    
     cd cam${i}_ccd1
 
-    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile --orb_seg "$orbseg" --no_gzip
+    tica-cal-ffi2ccds inlist --outdir . --caldir $CALDIR --parallel $NCORES --log $logfile --orb_seg "$orbseg" --no_gzip  || {
+	errorflag=1;
+    }
+   #if [[ $? -ne 0 ]]; then
+   #	exit $?
+   #fi
     for j in 2 3 4; do
 	mv tess*ccd${j}.cal.fits* ../cam${i}_ccd${j}
     done
     cd ..
 done
 
+if [[ $errorflag -eq 1 ]]; then
+    exit 1
+elif [[ $errorflag -eq 0 ]]; then
+    exit 0
+fi
 #for i in 1 2 3 4; do
 #   for j in 1 2 3 4; do
 #       cd "cam$i""_ccd$j"

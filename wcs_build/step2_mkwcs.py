@@ -1071,7 +1071,10 @@ def worker( intuple):
         idx = np.where(blkidxs == curibad)[0]
         # pick three random ones in this subregion
         np.random.seed(1010101)
-        idxUse = np.random.choice(idx, (3,), replace=False)
+        if len(idx) >= 3:
+            idxUse = np.random.choice(idx, (3,), replace=False)
+        else:
+            idxUse = idx
         gdPrfs[idxUse] = -1 # record these random added for plotting and diagnostics
         idxgd = np.append(idxgd, idxUse)
         # These targets never had dc offset added from subregion
@@ -1362,6 +1365,7 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
     
 
 
+    results_async = []
     result = []
     if n_cores > 1:
         p = Pool(n_cores)
@@ -1372,40 +1376,28 @@ def fit_wcs_in_imgdir(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_DATA,
                 PLOT_FIG = True
             else:
                 PLOT_FIG = False
-            result.append( p.apply( worker, ((Img, 
-                                              obscols,obsrows,
-                                              colCtrl2D_flat,
-                                              blkidxs,
-                                              fixApertures,
-                                              midcols,midrows,
-                                              blkHlf, blkHlfCent,
-                                              fitDegree,
-                                              ras,decs,tics,tmags,
-                                              SECTOR_WANT,
-                                              CAMERA_WANT, CCD_WANT, 
-                                              CTRL_PER_COL,CTRL_PER_ROW,
-                                              DEBUG_LEVEL, PLOT_FIG,
-                                              wingFAC, contrastFAC,
-                                              outputDir), ))
-                       )
-            #p.apply_async( worker, ((Img, 
-            #                         obscols,obsrows,
-            #                         colCtrl2D_flat,
-            #                         blkidxs,
-            #                         fixApertures,
-            #                         midcols,midrows,
-            #                         blkHlf, blkHlfCent,
-            #                         fitDegree,
-            #                         ras,decs,tics,tmags,
-            #                         SECTOR_WANT,
-            #                         CAMERA_WANT, CCD_WANT, 
-            #                         CTRL_PER_COL,CTRL_PER_ROW,
-            #                         DEBUG_LEVEL, PLOT_FIG,
-            #                         wingFAC, contrastFAC,
-            #                         outputDir), ))
+            results_async.append( p.apply_async( worker, ((Img, 
+                                                          obscols,obsrows,
+                                                          colCtrl2D_flat,
+                                                          blkidxs,
+                                                          fixApertures,
+                                                          midcols,midrows,
+                                                          blkHlf, blkHlfCent,
+                                                          fitDegree,
+                                                          ras,decs,tics,tmags,
+                                                          SECTOR_WANT,
+                                                          CAMERA_WANT, CCD_WANT, 
+                                                          CTRL_PER_COL,CTRL_PER_ROW,
+                                                          DEBUG_LEVEL, PLOT_FIG,
+                                                          wingFAC, contrastFAC,
+                                                          outputDir), ))
+                              )
                        
         p.close()
         p.join()
+
+        for res in results_async:
+            result.append( res.get())
             #with Pool(n_cores) as p:
             #    result = p.map( worker, inputImgList,)
 
@@ -1539,7 +1531,7 @@ if __name__ == '__main__':
                         "in which case do not use this option. "
                         "This option would be helpful if >1-2 pixel "
                         "shifts occur.")
-    parser.add_argument("-dbg", "--debug", type=int, \
+    parser.add_argument("-dbg", "--debug", type=int, default=0,\
                         help="Debug level; integer higher has more output")
     parser.add_argument("--parallel", type=int, default=1,
                         help="run files in parallel on number of processors specified here")

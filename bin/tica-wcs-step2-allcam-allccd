@@ -42,31 +42,46 @@ USAGE="
 
    <int> is the number of cores to use for parallel processing.  Defaults to 1.
 "
-[ $# -eq 0 ] && { echo "$USAGE" ; exit ; }
+
+
+#exit code 2 is a harder stop, makes automation bash script exit
+#exit code 1 flags an issue, but allows the automation code to continue
+#3xit code 0 allows automation code to continue
+
+[ $# -eq 0 ] && { echo "$USAGE" ; exit 2 ; }
 
 while [ $# -gt 0 ] ; do
   case $1 in
-    "-h" | "--help") echo "$USAGE" ; exit  ;;
+    "-h" | "--help") echo "$USAGE" ; exit 2 ;;
     *)         eval $1 ;;
   esac
   shift
 done
 
 #check that all variables are set
-[[ $SECTOR == '' ]] && { echo "$USAGE" ; echo "set sector to a two digit integer : SECTOR=<\d\d>" ; exit ; }
-[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit ; }
+[[ $SECTOR == '' ]] && { echo "$USAGE" ; echo "set sector to a two digit integer : SECTOR=<\d\d>" ; exit 2; }
+[[ $dstem == '' ]] &&  { echo "$USAGE" ; echo "set dstem to the location of the data: dstem=<path_to_data>" ;  exit 2; }
 
 
 [[ "$NCORES" == '' ]] && let NCORES=1
 
+
+#set a flag if there are errors.
+#this lets us processes everything, but make a note of issues
+errorflag=0
 for i in 1 2 3 4; do 
     for j in 1 2 3 4; do
-	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6  -dbg $DEBUGIT --log tica_logs/tica_wcs_step2_cam"$i"_ccd"$j".log  --savediaginfo --parallel $NCORES &
+	step2_mkwcs.py -s ${SECTOR} -ca $i -cd $j -rd "$dstem"/refout/reftica_s$"$SECTOR"_"$i""-$j".h5 -if $(ls "$dstem"/cam"$i"_ccd"$j"/tess*-"$i"-crm-ffi_ccd"$j".cal.fits) -fd 6  -dbg $DEBUGIT --log tica_logs/tica_wcs_step2_cam"$i"_ccd"$j".log  --savediaginfo --parallel $NCORES || {  errorflag=1;  } &
     done
 done
 
 wait
 
+if [[ $errorflag -eq 1 ]]; then
+    exit 1
+elif [[ $errorflag -eq 0 ]]; then
+    exit 0
+fi
 
 # In this parallel commmand there are two inputs given after :::
 #  This will execute 16 jobs where {1} {2} are replaced by the inputs

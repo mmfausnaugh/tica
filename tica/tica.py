@@ -76,6 +76,7 @@ class Sector(object):
         self.underclock = underclock.astype(float)
         self.science = science.astype(float)
         self.overclock = overclock.astype(float)
+        self.correction = None
 
     def rebin(self, ncombine, axis, region):
         """attr is the variable for which we will rebin (along rows)"""
@@ -296,8 +297,7 @@ class CCD(object):
         ###Apply 1D bias correction (dehoc)
         self.logger.debug("doing overclock correction on camera: %d and CCD: %d" % (self.camnum, self.ccdnum))
         #still a CCD object
-        out = out.overclock_correct()
-
+        out, overclock_corrections = out.overclock_correct()
 
         #Convert to electrons
         #still a CCD object
@@ -324,7 +324,9 @@ class CCD(object):
         #this overwrite the gains!
         out  = CCD(self.flatfield_correct(out, self.camnum, self.ccdnum))
         out.gains = self.gains
+        out.overclock_corrections = overclock_corrections
         #print(self.gains)
+
 
         return out
     
@@ -359,12 +361,16 @@ class CCD(object):
         mask_row = slice(750,None)
 
         cal = CCD(np.zeros((2078,2136)))
+        corrections  = []
         for i in range(len(self.sectors)):
             correct = np.mean(self.sectors[i].overclock[mask_row, mask_col] )
-            cal.sectors[i].underclock = self.sectors[i].underclock - correct
+            #save for later, good for automatically finding saturated cadences
+            corrections.append( correct )
+            cal.sectors[i].underclock   = self.sectors[i].underclock - correct
             cal.sectors[i].science      = self.sectors[i].science - correct
-            cal.sectors[i].overclock   = self.sectors[i].overclock - correct
-        return cal
+            cal.sectors[i].overclock    = self.sectors[i].overclock - correct
+
+        return cal,corrections
     
     def convert_to_electrons(self, out):
         """default is gain == 1, unless it is CCD file with cam/ccd info in the
@@ -531,11 +537,20 @@ class CCD(object):
         if bins is None:
             values, bins = np.histogram( pixels, bins = 500 )
         else:
+            #safer to do get saturated cadences with the 1D bias corrections
+            #pixels[ pixels > bins[-1] ] = bins[-1]
+            #but ignore weird pixels, like things that are negative
+            #pixels[ pixels < bins[0] ]  = bins[0]
+
             values,bins = np.histogram(pixels,bins=bins)
         bin_midpoints = np.mean([ bins[0:-1], bins[1:]],
                                 axis=0)
             
-        mode = bin_midpoints[ values == values.max() ][0]
+        if len(pixels[ pixels < 500 ]) > len(pixels)//2:
+            mode = 0
+        else:
+            mode = bin_midpoints[ values == values.max() ][0]
+
         return mode
 
 
