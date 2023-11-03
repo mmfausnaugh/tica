@@ -272,6 +272,7 @@ else
     echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com 
 
     echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "error" >> /data/tess/image_sub/tica-processing-records.txt
+    cp /data/tess/image_sub/tica-processing-records.txt /pdo/users/faus/python/tica/
 fi
 
 
