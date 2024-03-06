@@ -356,7 +356,7 @@ def get_refimg_ctrlpts(SECTOR_WANT, CAMERA_WANT, CCD_WANT, REF_IMAGE, outputFile
             j = j+1
         if (gotN < nTry):
             print('Something went wrong determining initial pixel position correction on reference image!')
-            print('Could not find nTry: {0:d} targets passing gdPRF'.format(nTry))
+            print('Could not find nTry: {} targets passing gdPRF (gotN: {})'.format(nTry,gotN))
             logging.error('Something went wrong determining initial pixel position correction on reference image!')
             logging.error('Could not find nTry: {0:d} targets passing gdPRF'.format(nTry))
             exit()

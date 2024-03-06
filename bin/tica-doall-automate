@@ -248,7 +248,7 @@ tica-check-delivery "$outputdir"/s"$outputSECTOR"  ||{
 echo "my error flag" $errorflag
 if [[ $errorflag -eq 0 ]]; then
     msg=$(printf "TICA s$SECTOR $segment processing complete with no errors. Data can be retrieved at $outputdir/s""$outputSECTOR""\n"   )
-    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com roland@space.mit.edu qlp-operators@mit.edu halewis@stsci.edu fleming@stsci.edu  tberger@stsci.edu jimig@stsci.edu grr@space.mit.edu
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com roland@space.mit.edu qlp-operators@mit.edu fleming@stsci.edu  tberger@stsci.edu jimig@stsci.edu grr@space.mit.edu
 
 
     echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "finished" >> /data/tess/image_sub/tica-processing-records.txt
@@ -262,14 +262,14 @@ if [[ $errorflag -eq 0 ]]; then
 
 elif [[ $errorflag -eq 1 ]]; then
     msg=$(printf "TICA s$SECTOR $segment processing complete, but there were errors. Look in  $outputdir/s""$outputSECTOR""\n(This is a first test of automated tica scripts. )");
-    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com 
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com petitpas@mit.edu
 
     echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "error" >> /data/tess/image_sub/tica-processing-records.txt
 
 else
     echo "major error, erroflag not set. ";
     msg=$( printf "major error, erroflag not set. ");
-    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com 
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com petitpas@mit.edu
 
     echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "error" >> /data/tess/image_sub/tica-processing-records.txt
     cp /data/tess/image_sub/tica-processing-records.txt /pdo/users/faus/python/tica/
