@@ -134,7 +134,7 @@ else
     mkdir "/data/tess/image_sub/sector$SECTOR"
     cd "/data/tess/image_sub/sector$SECTOR"
 fi
-
+pwd
 echo "Running tica-calibrate-tso..."
 #if [[ $segment =~ "o1" ]]; then
 if [[ $mod -eq 1 ]]; then

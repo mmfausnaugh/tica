@@ -74,7 +74,7 @@ function do_move(){
 	
 	
 	    indir=$(pwd)
-	    cp "$indir"/$ii "$outdir_use/""hlsp_tica_tess_ffi_s$outputSECTOR""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
+	    rsync "$indir"/$ii "$outdir_use/""hlsp_tica_tess_ffi_s$outputSECTOR""-$orbit""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
 #	    cp $ii "$outdir_use/""hlsp_tica_tess_ffi_s00$sector""-$fin""-$cam""-$ccd""_tess_$version""_img.fits"
 	done
 	cd ../../
@@ -86,7 +86,7 @@ function do_move(){
 	    mkdir $outdir"/ref-stars"
 	fi
 	indir=$(pwd)
-	cp "$indir/refout/reftica_s$sector"_"$camnum""-$ccdnum"".h5" "$outdir""/ref-stars/hlsp_tica_tess_ffi_s$outputSECTOR""-$cam""-$ccd""_tess_$version""_cat.h5"
+	rsync "$indir/refout/reftica_s$sector"_"$camnum""-$ccdnum"".h5" "$outdir""/ref-stars/hlsp_tica_tess_ffi_s$outputSECTOR""-$cam""-$ccd""_tess_$version""_cat.h5"
 
 
 }
