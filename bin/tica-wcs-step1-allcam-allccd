@@ -78,21 +78,18 @@ DEBUGIT=2
 #this lets us processes everything, but make a note of issues
 errorflag=0
 for ((iCam = 1 ; iCam <= 4 ; iCam++)); do
-  for ((jCcd = 1; jCcd <=4 ; jCcd++)); do
-      USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)
-      USE_OUT="$dstem""refout/reftica_s$SECTOR""_$iCam""-$jCcd"".h5"
-
-      #echo ${USE_REF}
-      #echo ${USE_OUT}
+    for ((jCcd = 1; jCcd <=4 ; jCcd++)); do
+	USE_REF=$(ls "$dstem""cam$iCam""_ccd$jCcd""/tess"*"$REFFIN"*)
+	USE_OUT="$dstem""refout/reftica_s$SECTOR""_$iCam""-$jCcd"".h5"
       
-      if [ -e $USE_OUT ]; then
-	  echo "skipping $USE_OUT; already exists"
-	  continue
-      fi
+	if [ -e $USE_OUT ]; then
+	    echo "skipping $USE_OUT; already exists"
+	    continue
+	fi
 
-      #assumes setup.py will install step1_get_refimg_ctrlpts.py into path
-      step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1_cam"$iCam"_ccd"$jCcd".log || {  errorflag=1 ; }  &
-  done
+	#assumes setup.py will install step1_get_refimg_ctrlpts.py into path
+	step1_get_refimg_ctrlpts.py -s ${SECTOR} -ca ${iCam} -cd ${jCcd} -ri ${USE_REF} -o ${USE_OUT} -dbg ${DEBUGIT} -l tica_logs/tica_wcs_step1_cam"$iCam"_ccd"$jCcd".log || {  errorflag=1 ; }  &
+    done
 done
 wait
 

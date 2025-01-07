@@ -209,14 +209,21 @@ if __name__ == "__main__":
 
             #m = data['mode_ccd{}'.format(jj+1)] < unique_modes[low_modes_num]
             m = data[ccduse] < thresh
+            print(thresh, unique_modes[0])
             m = clean_islands(FFInum, m, args.N_ffis_per_island)
 
             axes[jj][0].plot(FFInum[m], data[ccduse][m],'b.')
-        
+            l,h = axes[jj][0].get_xlim()
+            axes[jj][0].plot([l,h], [thresh,thresh],'b--')
+            axes[jj][0].set_xlim([l,h])
 
             #make_rms(FFInum[m],ii+1,jj+1,'mask2_rms.fits')
             #seems to work well for dark time interval, save for rms_list
             outnames = []
+            if len(fname[m]) < 20:
+                m = data[ccduse] < unique_modes[0]*frac_above_min
+                m = clean_islands(FFInum, m, args.N_ffis_per_island)
+
             for e in fname[m]:
                 out1 = 'conv_{}'.format(e).replace('.fits','_ccd{}.cal.fits'.format(jj+1) )
                 out1 = out1.replace('.gz','')

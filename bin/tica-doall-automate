@@ -112,6 +112,10 @@ compstr=$(grep "$orbit $segment" /data/tess/image_sub/tica-processing-records.tx
 #echo $checkstr
 #echo "grep exit code" $?
 
+
+echo $compstr
+echo $checkstr
+
 if [[ $? == "0" ]]; then
     if [[ $compstr =~ $checkstr ]]; then
 	#echo "grep successful, matched checkstr, do not run"
