@@ -6,6 +6,7 @@ from astropy.io import fits
 #import sys
 import glob
 import os
+import re
 import argparse
 
 
@@ -104,6 +105,10 @@ if __name__ == "__main__":
     parser.add_argument("--save_reflist",action='store_true',
                         help="If set, save 20 good REFFINs in cam?_ccd?/ref_list, "
                         "suitable for making reference image for DIA.")
+
+    parser.add_argument("--orbit",type=str,default='',
+                        help="If set, addes the orbit name to the image title and filename."
+                        "If not set, just ignores.")
 
     args = parser.parse_args()
 
@@ -204,7 +209,8 @@ if __name__ == "__main__":
 
             m = data[ccduse] < unique_modes[0]*frac_above_min
             m = clean_islands(FFInum, m, args.N_ffis_per_island)
-            axes[jj][0].plot(FFInum[m], data[ccduse][m],'c.')
+            axes[jj][0].plot(FFInum[m], data[ccduse][m],'c.',
+                             label='$<$ {} of lowest bkg'.format(frac_above_min) )
             #make_rms(FFInum[m],ii+1,jj+1,'mask1_rms.fits')
 
             #m = data['mode_ccd{}'.format(jj+1)] < unique_modes[low_modes_num]
@@ -212,7 +218,8 @@ if __name__ == "__main__":
             print(thresh, unique_modes[0])
             m = clean_islands(FFInum, m, args.N_ffis_per_island)
 
-            axes[jj][0].plot(FFInum[m], data[ccduse][m],'b.')
+            axes[jj][0].plot(FFInum[m], data[ccduse][m],'b.',
+                             label='$<$ {}$\sigma$ of lowest bkg'.format(args.mode_sigma) )
             l,h = axes[jj][0].get_xlim()
             axes[jj][0].plot([l,h], [thresh,thresh],'b--')
             axes[jj][0].set_xlim([l,h])
@@ -292,7 +299,8 @@ if __name__ == "__main__":
 
 
                 axes[jj][0].plot(FFInum[idxs],data['mode_ccd{}'.format(jj+1)][idxs],
-                                 '.',color='purple')
+                                 '.',color='purple',
+                                 label='Trimmed times for ref')
                 
                 l,h = axes[jj][0].get_ylim()
                 for idx_r in idx_ref:
@@ -301,7 +309,7 @@ if __name__ == "__main__":
                                      [l,h],'r--')
                 axes[jj][0].set_ylim([l,h])
 
-                    
+
 
 
                 if args.save_reflist:
@@ -324,15 +332,28 @@ if __name__ == "__main__":
                 pass
 
 
+        wrkdir = os.getcwd()
+        sector_match = re.search(r'sector(\d+)', wrkdir)
+        sector = sector_match.group(1)
 
-        F.suptitle('cam{}'.format(ii+1))
+        if args.orbit:
+            F.suptitle('cam{} sector{} o{}'.format(ii+1, sector, args.orbit), )
+        else:
+            F.suptitle('cam{} sector{}'.format(ii+1, sector), )
         
         axes[0][0].set_title('Image mode (background)')
+
+        axes[00][0].legend(fontsize=8)
 
         axes[0][1].set_title('1D Bias correction')
                    
         F.set_size_inches(12,8)
         F.subplots_adjust(hspace=0)
-        F.savefig(os.path.join( os.path.dirname(infile), 'cal_timeseries.png') )
+
+        
+        if args.orbit:
+            F.savefig(os.path.join( os.path.dirname(infile), 'cal_timeseries_{}.png' .format(args.orbit) ) )
+        else:
+            F.savefig(os.path.join( os.path.dirname(infile), 'cal_timeseries.png') )
     plt.show()
         

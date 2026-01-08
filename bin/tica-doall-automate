@@ -203,10 +203,10 @@ fi
 
 echo "Running tica-darktime..."
 if [[ $segment =~ "o1a" ]]; then
-    tica-darktime --save_reflist --save_reffin --use_first_ccd
+    tica-darktime --save_reflist --save_reffin --use_first_ccd --orbit $segment
     reffin=$(awk '{print $2}' reffin.txt | head -1)
 else
-    tica-darktime 
+    tica-darktime --orbit $segment
 fi
 
 if [[ $segment =~ "o1a" ]]; then
