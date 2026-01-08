@@ -63,9 +63,14 @@ function do_move(){
 	#ffi_last=$(ls tess*fits | tail -n 1)
 	#stamp_last=${ffi_last:4:13}
 	
+	echo $subdir
+
 	[[ "$subdir" =~ 'o1' ]] && { orbit='o1' ;}
 	[[ "$subdir" =~ 'o2' ]] && { orbit='o2' ;}
+	[[ "$subdir" =~ 'o3' ]] && { orbit='o3' ;}
+	[[ "$subdir" =~ 'o4' ]] && { orbit='o4' ;}
 	    
+	echo $orbit
 	    
 	#ls tess*fits | wc
 	for ii in $(ls tess*fits ); do

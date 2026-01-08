@@ -43,7 +43,15 @@ orbit=$(echo $lastdir | awk -F- '{print $2}')
 
 
 mod=$(($orbit%2))
-if [[ $mod -eq 1 ]]; then
+if [[ $orbit -eq 203 ]]; then
+    segment1="o3"
+elif [[ $orbit -eq 204 ]]; then
+    segment1="o4"
+elif [[ $orbit -eq 207 ]]; then
+    segment1="o3"
+elif [[ $orbit -eq 208 ]]; then
+    segment1="o4"
+elif [[ $mod -eq 1 ]]; then
     #echo 'odd' $orbit $mod
     segment1="o1"
 elif [[ $mod -eq 0 ]]; then
@@ -97,11 +105,28 @@ done
 #echo "after overwrite: $orbit $segment"
 mod=$(($orbit%2))
 
-#integer division
-SECTOR=$((($orbit - 7)/2))
-#echo "sector: "$SECTOR
-outputSECTOR=$(printf "%04d" $SECTOR)
 
+if [[ $orbit -eq 203 ]]; then
+    SECTOR=97
+elif [[ $orbit -eq 204 ]]; then
+    SECTOR=97
+elif [[ $orbit -eq 205 ]]; then
+    SECTOR=98
+elif [[ $orbit -eq 206 ]]; then
+    SECTOR=98
+elif [[ $orbit -eq 207 ]]; then
+    SECTOR=98
+elif [[ $orbit -eq 208 ]]; then
+    SECTOR=98
+elif [[ $orbit -gt 208 ]]; then
+    SECTOR=$((($orbit - 11)/2))
+else
+    #integer division
+    SECTOR=$((($orbit - 7)/2))
+    #echo "sector: "$SECTOR
+fi
+
+outputSECTOR=$(printf "%04d" $SECTOR)
 
 errorflag=0
 
@@ -231,6 +256,8 @@ for i in 1 2 3 4; do
 	    if [[ $j -eq 1 ]]; then
 		mv cal_timeseries.txt $segment
 		mv cal_timeseries.png $segment
+		mv bad_calibration.txt $segment
+
 	    fi
 	    cd ..
 	fi
@@ -252,18 +279,18 @@ tica-check-delivery "$outputdir"/s"$outputSECTOR"  ||{
 echo "my error flag" $errorflag
 if [[ $errorflag -eq 0 ]]; then
     msg=$(printf "TICA s$SECTOR $segment processing complete with no errors. Data can be retrieved at $outputdir/s""$outputSECTOR""\n"   )
-    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com roland@space.mit.edu qlp-operators@mit.edu fleming@stsci.edu  tberger@stsci.edu jimig@stsci.edu grr@space.mit.edu
+    echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com roland@space.mit.edu qlp-operators@mit.edu fleming@stsci.edu  tberger@stsci.edu jimig@stsci.edu grr@space.mit.edu rethiraj@ttu.edu 
 
-
+    
     echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "finished" >> /data/tess/image_sub/tica-processing-records.txt
 
-
+    
     if [[ $segment =~ "o1a" ]]; then
 	tica-production-table --segments $segment --wcs1
     else
 	tica-production-table --segments $segment
     fi
-
+    
 elif [[ $errorflag -eq 1 ]]; then
     msg=$(printf "TICA s$SECTOR $segment processing complete, but there were errors. Look in  $outputdir/s""$outputSECTOR""\n(This is a first test of automated tica scripts. )");
     echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com petitpas@mit.edu
@@ -274,7 +301,7 @@ else
     echo "major error, erroflag not set. ";
     msg=$( printf "major error, erroflag not set. ");
     echo $msg | mail -s "tica s$SECTOR $segment proceessing" mmfausnaugh@gmail.com petitpas@mit.edu
-
+    
     echo $SECTOR $orbit $segment $countcam1 $countcam2 $countcam3 $countcam4 $stem "error" >> /data/tess/image_sub/tica-processing-records.txt
     cp /data/tess/image_sub/tica-processing-records.txt /pdo/users/faus/python/tica/
 fi
