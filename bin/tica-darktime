@@ -119,13 +119,15 @@ if __name__ == "__main__":
     for ii in range(4):
         infile = 'cam{}_ccd1/cal_timeseries.txt'.format(ii + 1)
 
-        fname_all = np.genfromtxt(infile,unpack=1,usecols=(0),dtype=str,skip_header=1)
-        data_all  = np.genfromtxt(infile,names=True,usecols=(1,2,3,4,
-                                                         5,6,7,8,
-                                                         9,10,11,12,
-                                                         13,14,15,16,
-                                                         17,18,19,20))
-        
+        try:
+            fname_all = np.genfromtxt(infile,unpack=1,usecols=(0),dtype=str,skip_header=1)
+            data_all  = np.genfromtxt(infile,names=True,usecols=(1,2,3,4,
+                                                                 5,6,7,8,
+                                                                 9,10,11,12,
+                                                                 13,14,15,16,
+                                                                 17,18,19,20))
+        except FileNotFoundError:
+            continue
         #data =np.array(data).T
         #unique_modes = np.sort(np.unique(mode))
         FFInum_all = np.array([ int(e.split('-')[1]) for e in fname_all  ])
@@ -199,7 +201,7 @@ if __name__ == "__main__":
 
             unique_modes = np.unique(data['mode_ccd{}'.format(jj+1)])
             thresh = args.mode_sigma*np.sqrt( unique_modes[0]) + unique_modes[0]
-
+            print('threshold:', unique_modes[0], thresh)
             axes[jj][0].plot(FFInum, data['mode_ccd{}'.format(jj+1)], 'k.')
             axes[jj][0].set_ylabel('CCD {}'.format(jj+1))
 
