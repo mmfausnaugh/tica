@@ -128,7 +128,7 @@ def get_from_logs(infile):
 
 
             if 'working directory' in fline:
-                sector_reg = re.search('/sector(\d\d)/',fline)
+                sector_reg = re.search(r'/sector(\d+)/',fline)
 
                 cam_reg = re.search('/cam(\d)_ccd(\d)',fline)
                 cam = cam_reg.group(1) 

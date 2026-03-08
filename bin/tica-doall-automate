@@ -254,8 +254,8 @@ for i in 1 2 3 4; do
 	    mv wcs_diags2 $segment
 	    mv rms_list $segment
 	    if [[ $j -eq 1 ]]; then
-		mv cal_timeseries.txt $segment
-		mv cal_timeseries.png $segment
+		mv cal_timeseries*.txt $segment
+		mv cal_timeseries*.png $segment
 		mv bad_calibration.txt $segment
 
 	    fi
