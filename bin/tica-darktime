@@ -168,6 +168,11 @@ if __name__ == "__main__":
                 scatter = np.median(  abs( deviations) )/0.67449
 
                 bad_cal_trim += abs(deviations) > 20*scatter
+                print(scatter, 20*scatter, 
+                      bad_cal_trim[FFInum_all.astype(float) == 27587 ],
+                      bad_cal_trim[FFInum_all.astype(float) == 27588 ],
+                      FFInum_all[bad_cal_trim],
+                )
 
                 low = np.ones(len(FFInum_all))*(np.median(overclock_correct)  - 18*scatter)
                 high = np.ones(len(FFInum_all))*(np.median(overclock_correct) + 18*scatter)
@@ -199,7 +204,18 @@ if __name__ == "__main__":
             #rms_list
             ########################################################
 
-            unique_modes = np.unique(data['mode_ccd{}'.format(jj+1)])
+            #failure mode where a low point sneaks through bad
+            #calibration, and then all other points are cut relative
+            #to this.  
+            #so, do sigma clipping on on the modes that survive bad calibration
+            deviations = data['mode_ccd{}'.format(jj+1)] - np.median(data['mode_ccd{}'.format(jj+1)])
+            scatter = np.median( abs(deviations) )/0.67449
+
+            mkeep = abs(deviations) < 7*scatter
+
+            unique_modes = np.unique(data['mode_ccd{}'.format(jj+1)][mkeep] )
+            
+
             thresh = args.mode_sigma*np.sqrt( unique_modes[0]) + unique_modes[0]
             print('threshold:', unique_modes[0], thresh)
             axes[jj][0].plot(FFInum, data['mode_ccd{}'.format(jj+1)], 'k.')
@@ -209,14 +225,14 @@ if __name__ == "__main__":
 
 
 
-            m = data[ccduse] < unique_modes[0]*frac_above_min
+            m = (data[ccduse] < unique_modes[0]*frac_above_min ) & ( abs(deviations) < 7*scatter )
             m = clean_islands(FFInum, m, args.N_ffis_per_island)
             axes[jj][0].plot(FFInum[m], data[ccduse][m],'c.',
                              label='$<$ {} of lowest bkg'.format(frac_above_min) )
             #make_rms(FFInum[m],ii+1,jj+1,'mask1_rms.fits')
 
             #m = data['mode_ccd{}'.format(jj+1)] < unique_modes[low_modes_num]
-            m = data[ccduse] < thresh
+            m = (data[ccduse] < thresh) & (abs(deviations) < 7*scatter )
             print(thresh, unique_modes[0])
             m = clean_islands(FFInum, m, args.N_ffis_per_island)
 
